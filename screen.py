@@ -1,0 +1,135 @@
+"""Auto NSE screener: 44-DMA cross / approach alerts. Alerts only, never places orders."""
+import argparse, datetime as dt, io, json, logging, os, smtplib, sys, time
+from email.mime.text import MIMEText
+from pathlib import Path
+import pandas as pd, requests, yaml
+
+ROOT = Path(__file__).resolve().parent
+IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
+log = logging.getLogger("dma")
+NSE_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
+
+def load_cfg():
+    return yaml.safe_load((ROOT / "config.yaml").read_text())
+
+def universe():
+    cache = ROOT / "universe.csv"
+    try:
+        r = requests.get(NSE_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+        r.raise_for_status()
+        df = pd.read_csv(io.StringIO(r.text))
+        df.columns = [c.strip() for c in df.columns]
+        syms = df[df["SERIES"].str.strip() == "EQ"]["SYMBOL"].str.strip().tolist()
+        pd.DataFrame({"SYMBOL": syms}).to_csv(cache, index=False)
+        return syms
+    except Exception as e:
+        log.warning("NSE list failed (%s); using cached list", e)
+        return pd.read_csv(cache)["SYMBOL"].tolist()
+
+def moving_avg(close, kind, n):
+    return close.rolling(n).mean() if kind.upper() == "SMA" else close.ewm(span=n, adjust=False).mean()
+
+def classify(sym, df, c):
+    """Return a signal dict (buy/sell/near) or None. Pure function, easy to test."""
+    df = df.dropna(subset=["Close"])
+    if len(df) < c["ma_period"] + 2:
+        return None
+    close = df["Close"]
+    m = moving_avg(close, c["ma_type"], c["ma_period"])
+    c0, c1, m0, m1 = close.iloc[-1], close.iloc[-2], m.iloc[-1], m.iloc[-2]
+    if c0 < c["min_price"] or df["Volume"].tail(20).mean() < c["min_avg_volume"]:
+        return None
+    pct = (c0 / m0 - 1) * 100
+    if c1 <= m1 and c0 > m0: kind = "buy"
+    elif c1 >= m1 and c0 < m0: kind = "sell"
+    elif abs(pct) <= c["near_pct"]: kind = "near"
+    else: return None
+    return dict(symbol=sym, price=round(float(c0), 2), ma=round(float(m0), 2),
+                pct=round(float(pct), 2), volume=int(df["Volume"].iloc[-1]), type=kind)
+
+def fetch(syms, batch=150, period="8mo"):
+    import yfinance as yf
+    out = {}
+    for i in range(0, len(syms), batch):
+        chunk = [s + ".NS" for s in syms[i:i + batch]]
+        d = None
+        for attempt in range(3):
+            try:
+                d = yf.download(chunk, period=period, interval="1d", group_by="ticker",
+                                threads=True, progress=False, auto_adjust=False)
+                break
+            except Exception as e:
+                log.warning("batch %d retry %d: %s", i, attempt, e); time.sleep(5 * (attempt + 1))
+        if d is None or d.empty: continue
+        for t in chunk:
+            try: out[t[:-3]] = d[t][["Close", "Volume"]]
+            except KeyError: pass
+        time.sleep(1)
+    return out
+
+def format_msg(sigs, title, cap):
+    lines = [title]
+    for kind, label in (("buy", "🟢 BUY signals"), ("sell", "🔴 SELL signals"), ("near", "🟡 Approaching")):
+        g = sorted([s for s in sigs if s["type"] == kind], key=lambda s: abs(s["pct"]))
+        if not g: continue
+        lines.append(f"\n{label} ({len(g)})")
+        for s in g[:cap]:
+            lines.append(f"{s['symbol']}  ₹{s['price']}  MA ₹{s['ma']}  {s['pct']:+}%  "
+                         f"https://www.tradingview.com/chart/?symbol=NSE:{s['symbol']}")
+    lines.append("\nResearch alert only, not financial advice.")
+    return "\n".join(lines)[:4000]
+
+def notify(text):
+    sent = False
+    tok, chat = os.getenv("TELEGRAM_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
+    if tok and chat:
+        r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
+                          data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
+        log.info("telegram %s", r.status_code); sent = r.ok
+    user, pw, to = os.getenv("EMAIL_USER"), os.getenv("EMAIL_APP_PASSWORD"), os.getenv("EMAIL_TO")
+    if user and pw and to:
+        msg = MIMEText(text); msg["Subject"] = text.split("\n")[0]; msg["From"] = user; msg["To"] = to
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
+            s.login(user, pw); s.send_message(msg)
+        sent = True
+    if not sent: log.warning("No alert channel configured (set secrets)")
+    return sent
+
+def in_market_hours(now):
+    return now.weekday() < 5 and dt.time(9, 15) <= now.time() <= dt.time(15, 45)
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--force", action="store_true", help="ignore market-hours gate")
+    ap.add_argument("--summary", action="store_true", help="send full end-of-day summary")
+    ap.add_argument("--test-alert", action="store_true", help="send a sample alert and exit")
+    a = ap.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    c = load_cfg(); now = dt.datetime.now(IST)
+    if a.test_alert:
+        demo = [dict(symbol="RELIANCE", price=2910.5, ma=2875.2, pct=1.2, volume=1, type="buy")]
+        sys.exit(0 if notify(format_msg(demo, "🧪 TEST alert", 5)) else 1)
+    if not (a.force or a.summary or in_market_hours(now)):
+        log.info("Outside market hours, skipping"); return
+    data = fetch(universe())
+    if not data: log.error("No price data fetched"); sys.exit(1)
+    latest = max(d.dropna().index[-1].date() for d in data.values() if not d.dropna().empty)
+    if latest != now.date() and not (a.force or a.summary):
+        log.info("No bar for today (holiday?), skipping"); return
+    sigs = [s for s in (classify(k, v, c) for k, v in data.items()) if s]
+    (ROOT / "signals.json").write_text(json.dumps(
+        {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"],
+         "ma_type": c["ma_type"], "signals": sigs}, indent=1))
+    sf = ROOT / "state.json"
+    st = json.loads(sf.read_text())
+    if st["date"] != str(now.date()): st = {"date": str(now.date()), "sent": []}
+    if a.summary:
+        notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])); return
+    new = [s for s in sigs if f"{s['symbol']}:{s['type']}" not in st["sent"]]
+    if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
+        st["sent"] += [f"{s['symbol']}:{s['type']}" for s in new]
+    sf.write_text(json.dumps(st))
+    log.info("%d symbols, %d signals, %d new", len(data), len(sigs), len(new))
+
+if __name__ == "__main__":
+    main()

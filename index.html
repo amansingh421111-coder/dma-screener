@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>44-DMA Watch</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#14213d">
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--ink:#14213d;--mute:#6b7690;--line:#dde2ec;--buy:#0a8f5b;--sell:#c8372d;--near:#b7791f}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1424;--card:#171f35;--ink:#e8ecf6;--mute:#8f9ab5;--line:#27314d;--buy:#35c78b;--sell:#ff6b5e;--near:#e8b04a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0}
+.sub{color:var(--mute);font-size:13px;margin-bottom:14px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-weight:600}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:12px;margin-bottom:8px;text-decoration:none;color:inherit}
+.row b{font-size:17px}.row .p{text-align:right;font-weight:600}
+.row small{color:var(--mute)}
+.pct{font-weight:700;color:var(--c)}
+.empty{color:var(--mute);text-align:center;padding:32px 8px}
+details{margin-top:18px;color:var(--mute);font-size:13px}
+.demo{background:var(--near);color:#000;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:10px}
+</style></head><body><main>
+<h1>44-DMA Watch</h1>
+<div class="sub" id="meta">Loading…</div>
+<div id="demo" class="demo" hidden>Showing sample data. Add your data URL in Settings below.</div>
+<div class="tabs" role="tablist" id="tabs"></div>
+<input id="q" placeholder="Search symbol" autocomplete="off">
+<div id="list"></div>
+<details><summary>Settings</summary>
+<p>Data URL (your screener's signals.json):</p>
+<input id="url" placeholder="/signals.json">
+<button onclick="saveUrl()">Save and reload</button>
+</details>
+</main>
+<script>
+const TABS=[["buy","Buy","var(--buy)"],["sell","Sell","var(--sell)"],["near","Approaching","var(--near)"]];
+const SAMPLE={updated:new Date().toISOString(),ma_period:44,signals:[
+{symbol:"RELIANCE",price:2910.5,ma:2875.2,pct:1.2,volume:5200000,type:"buy"},
+{symbol:"TATAMOTORS",price:945.1,ma:962.4,pct:-1.8,volume:8100000,type:"sell"},
+{symbol:"INFY",price:1488.0,ma:1471.9,pct:1.1,volume:3300000,type:"near"},
+{symbol:"ITC",price:421.3,ma:428.0,pct:-1.6,volume:9900000,type:"near"}]};
+let data=SAMPLE,tab="buy";
+const $=id=>document.getElementById(id);
+function safe(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function saveUrl(){try{localStorage.setItem("dataUrl",$("url").value.trim())}catch(e){}location.reload()}
+async function load(){
+ const u=safe("dataUrl")||"/signals.json";$("url").value=safe("dataUrl")||"";
+ try{const r=await fetch(u+"?t="+Date.now());if(!r.ok)throw 0;data=await r.json()}
+ catch(e){data=SAMPLE;$("demo").hidden=false}
+ render()}
+function render(){
+ const when=new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
+ $("meta").textContent=`${data.ma_period}-day average · updated ${when} IST`;
+ $("tabs").innerHTML=TABS.map(([k,l])=>`<button role="tab" aria-selected="${k===tab}" onclick="tab='${k}';render()">${l} (${data.signals.filter(s=>s.type===k).length})</button>`).join("");
+ const c=TABS.find(t=>t[0]===tab)[2],q=$("q").value.trim().toUpperCase();
+ const rows=data.signals.filter(s=>s.type===tab&&s.symbol.includes(q));
+ $("list").innerHTML=rows.length?rows.map(s=>`<a class="row" style="--c:${c}" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}"><b>${s.symbol}</b><span class="p">₹${s.price.toLocaleString("en-IN")}</span><small>${data.ma_period}-DMA ₹${s.ma.toLocaleString("en-IN")} · vol ${(s.volume/1e5).toFixed(1)}L</small><span class="pct" style="text-align:right">${s.pct>0?"+":""}${s.pct}%</span></a>`).join(""):`<div class="empty">No ${tab==="near"?"approaching":tab} signals right now.</div>`}
+$("q").oninput=render;
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
+load();setInterval(load,300000);
+</script></body></html>

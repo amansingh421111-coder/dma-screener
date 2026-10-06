@@ -1,0 +1,6 @@
+ma_type: SMA        # SMA or EMA
+ma_period: 44       # change to 20, 50, 200...
+near_pct: 1.5       # "approaching" = within this % of the average
+min_price: 50
+min_avg_volume: 100000
+max_near_alerts: 25 # cap per alert message
