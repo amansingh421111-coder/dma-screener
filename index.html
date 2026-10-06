@@ -3,65 +3,169 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>44-DMA Watch</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg">
-<meta name="theme-color" content="#14213d">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#0f1b2d">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3f5f9;--card:#fff;--ink:#14213d;--mute:#6b7690;--line:#dde2ec;--buy:#0a8f5b;--sell:#c8372d;--near:#b7791f}
-@media(prefers-color-scheme:dark){:root{--bg:#0e1424;--card:#171f35;--ink:#e8ecf6;--mute:#8f9ab5;--line:#27314d;--buy:#35c78b;--sell:#ff6b5e;--near:#e8b04a}}
+:root{--bg:#f3f5f9;--card:#fff;--ink:#0f1b2d;--mute:#5d6b82;--line:#e0e5ee;--buy:#0b8f5f;--sell:#d03a30;--near:#a8690c;--buy-bg:#e2f5ec;--sell-bg:#fcebe9;--near-bg:#fbf0d9;--accent:#1f4fd8}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1322;--card:#131d32;--ink:#e8edf7;--mute:#92a0ba;--line:#233150;--buy:#3ccb96;--sell:#ff7468;--near:#eab14d;--buy-bg:#12332b;--sell-bg:#3a1c22;--near-bg:#3a2e14;--accent:#7fa2ff}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-main{max-width:640px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:4px 0}
-.sub{color:var(--mute);font-size:13px;margin-bottom:14px}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tabs button{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-weight:600}
-.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
-input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;margin-bottom:10px}
-.row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:12px;margin-bottom:8px;text-decoration:none;color:inherit}
-.row b{font-size:17px}.row .p{text-align:right;font-weight:600}
-.row small{color:var(--mute)}
-.pct{font-weight:700;color:var(--c)}
-.empty{color:var(--mute);text-align:center;padding:32px 8px}
-details{margin-top:18px;color:var(--mute);font-size:13px}
-.demo{background:var(--near);color:#000;border-radius:8px;padding:6px 10px;font-size:13px;margin-bottom:10px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+main{max-width:1040px;margin:0 auto;padding:16px 14px 32px}
+header{display:flex;align-items:center;gap:10px}header svg{width:30px;height:30px;flex:none}
+h1{font-size:20px;margin:0;font-weight:700}
+.meta{color:var(--mute);font-size:13px;margin:3px 0 12px;display:flex;gap:6px;align-items:center}
+.live{width:8px;height:8px;border-radius:50%;background:var(--buy);flex:none}.stale .live{background:var(--near)}
+.note{background:var(--near-bg);color:var(--near);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+.help{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;color:var(--mute)}
+.help summary{cursor:pointer;color:var(--ink);font-weight:600}.help p{margin:8px 0 0}.help b{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.tile{--c:var(--ink);--cb:var(--card);text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:9px 11px;font:inherit;cursor:pointer}
+.tile.buy{--c:var(--buy);--cb:var(--buy-bg)}.tile.sell{--c:var(--sell);--cb:var(--sell-bg)}.tile.near{--c:var(--near);--cb:var(--near-bg)}
+.tile b{display:block;font-size:24px;line-height:1.1;color:var(--c)}.tile span{font-size:12.5px;color:var(--mute)}
+.tile[aria-pressed=true]{background:var(--cb);border-color:var(--c)}
+.wrap{display:block}
+#filters{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;font-size:13.5px}
+#filters[hidden]{display:none}
+#filters h2{font-size:12.5px;margin:14px 0 6px;color:var(--mute);font-weight:600}#filters h2:first-child{margin-top:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 11px;border:1px solid var(--line);border-radius:99px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.bar input{flex:1;min-width:140px}.bar select{width:auto;flex:none}
+.btn{padding:9px 13px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
+.count{font-size:13px;color:var(--mute);margin:2px 2px 8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{--c:var(--buy);--cb:var(--buy-bg);background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.row.sell{--c:var(--sell);--cb:var(--sell-bg)}.row.near{--c:var(--near);--cb:var(--near-bg)}
+.head{all:unset;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;gap:12px;padding:12px 14px 4px;cursor:pointer}
+.l b{font-size:17px;font-weight:600}.tag{margin-left:8px;font-size:11.5px;padding:1px 8px;border-radius:99px;background:var(--cb);color:var(--c);font-weight:600}
+.sub{display:block;font-size:12.5px;color:var(--mute)}.star{color:var(--near);letter-spacing:1px;margin-left:4px}
+.r{text-align:right}.px{display:block;font-weight:600;font-size:16px}
+.dist{display:block;font-size:12.5px;color:var(--c);font-weight:600}.chg{font-size:12px;color:var(--mute)}
+.gauge{padding:4px 14px 6px}
+.g{position:relative;height:6px;border-radius:3px;background:var(--line)}
+.g .band{position:absolute;top:0;bottom:0;background:var(--cb);border-radius:3px}
+.g .mid{position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink);opacity:.55}
+.g .fill{position:absolute;top:0;bottom:0;background:var(--c);border-radius:3px}
+.g .pin{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--c);border:2px solid var(--card)}
+.gl{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:6px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 12px}
+.pills span{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--mute)}
+.more{border-top:1px solid var(--line);padding:12px 14px;font-size:13.5px;color:var(--mute);animation:o .18s ease-out}
+@keyframes o{from{opacity:0;transform:translateY(-4px)}}
+.chart{width:100%;height:84px;display:block;margin-bottom:2px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 12px;margin:12px 0}
+.facts b{display:block;color:var(--ink);font-weight:600}
+.more a{color:var(--accent);font-weight:600;text-decoration:none}
+.empty{text-align:center;color:var(--mute);padding:36px 12px}
+footer{color:var(--mute);font-size:12px;margin-top:18px}
+details.set{margin-top:14px;font-size:13px;color:var(--mute)}
+@media(min-width:900px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}#filters{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;display:block!important}#ft{display:none}}
+@media(max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body><main>
-<h1>44-DMA Watch</h1>
-<div class="sub" id="meta">Loading…</div>
-<div id="demo" class="demo" hidden>Showing sample data. Add your data URL in Settings below.</div>
-<div class="tabs" role="tablist" id="tabs"></div>
-<input id="q" placeholder="Search symbol" autocomplete="off">
+<header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
+<div class="meta" id="meta"></div>
+<div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
+<details class="help"><summary>How to read this screen</summary>
+<p><b>The % under the price</b> is the distance from the stock's moving average. "−0.17% vs 44-DMA" means today's price is 0.17% below the average of its last 44 closing prices.</p>
+<p><b>Signals.</b> <b>Buy</b>: price just crossed above the average. <b>Sell</b>: it just crossed below. <b>Approaching</b>: within 1.5% of the average, a possible cross soon.</p>
+<p><b>The bar</b>: the centre line is the average; the dot shows where price sits from −5% to +5%; the shaded zone is the "approaching" band.</p>
+<p><b>Stars (0-3)</b>: one each for a candle that agrees with the expected move, a close near the day's high (buys) or low (sells), and volume at least 1.5x its 20-day average. <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>200-DMA</b> shows the long-term trend. <b>Days</b> is how long price has been on its current side of the average.</p></details>
+<div class="tiles" id="tiles"></div>
+<button class="btn" id="ft" onclick="$('filters').hidden=!$('filters').hidden" style="margin-bottom:10px">Filters</button>
+<div class="wrap">
+<aside id="filters" hidden>
+<h2>Quick screens</h2><div class="chips">
+<button class="chip" onclick="preset('best')">Best setups</button><button class="chip" onclick="preset('trend')">Buys in an uptrend</button><button class="chip" onclick="preset('dip')">Dips in uptrends</button><button class="chip" onclick="preset('over')">Oversold near average</button><button class="chip" onclick="preset('reset')">Reset all</button></div>
+<h2>Candle</h2><div class="chips" id="candles"></div>
+<h2>Minimum stars</h2><div class="chips" id="stars"></div>
+<h2>Price (₹)</h2><div class="two"><input id="pmin" type="number" placeholder="Min"><input id="pmax" type="number" placeholder="Max"></div>
+<h2>Distance from average (%)</h2><div class="two"><input id="dmin" type="number" step="0.1" placeholder="Min, e.g. -1"><input id="dmax" type="number" step="0.1" placeholder="Max, e.g. 1"></div>
+<h2>RSI (14)</h2><div class="two"><input id="rmin" type="number" placeholder="Min"><input id="rmax" type="number" placeholder="Max"></div>
+<h2>Volume</h2><div class="two"><input id="vmin" type="number" placeholder="Min lakh shares"><select id="vx"><option value="">Any surge</option><option value="1.2">1.2x or more</option><option value="1.5">1.5x or more</option><option value="2">2x or more</option></select></div>
+<h2>Long-term trend</h2><select id="trend"><option value="">Any</option><option value="up">Above 200-DMA</option><option value="down">Below 200-DMA</option></select>
+<h2>Distance from 52-week high</h2><select id="hi"><option value="">Any</option><option value="5">Within 5%</option><option value="10">Within 10%</option><option value="20">Within 20%</option></select>
+<h2>Days on current side of average</h2><select id="since"><option value="">Any</option><option value="1">1 day (fresh)</option><option value="3">3 days or fewer</option><option value="5">5 days or fewer</option><option value="10">10 days or fewer</option></select>
+</aside>
+<section>
+<div class="bar"><input id="q" type="search" placeholder="Search symbol" autocomplete="off" aria-label="Search symbol">
+<select id="sort" aria-label="Sort by"><option value="score">Strongest first</option><option value="close">Closest to average</option><option value="vol">Highest volume</option><option value="gain">Top gainers today</option><option value="lose">Top losers today</option><option value="rsi">RSI, low to high</option><option value="az">A to Z</option></select></div>
+<div class="bar"><div class="count" id="count" style="flex:1"></div><button class="btn" onclick="exportCsv()">Export CSV</button><button class="btn" onclick="copyList()">Copy for TradingView</button></div>
 <div id="list"></div>
-<details><summary>Settings</summary>
-<p>Data URL (your screener's signals.json):</p>
-<input id="url" placeholder="/signals.json">
-<button onclick="saveUrl()">Save and reload</button>
-</details>
+</section></div>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable.</footer>
+<details class="set"><summary>Settings</summary><p>Data link (leave empty for the default):</p><input id="url" placeholder="/signals.json"><button class="btn" style="margin-top:8px" onclick="saveUrl()">Save and reload</button></details>
 </main>
 <script>
-const TABS=[["buy","Buy","var(--buy)"],["sell","Sell","var(--sell)"],["near","Approaching","var(--near)"]];
-const SAMPLE={updated:new Date().toISOString(),ma_period:44,signals:[
-{symbol:"RELIANCE",price:2910.5,ma:2875.2,pct:1.2,volume:5200000,type:"buy"},
-{symbol:"TATAMOTORS",price:945.1,ma:962.4,pct:-1.8,volume:8100000,type:"sell"},
-{symbol:"INFY",price:1488.0,ma:1471.9,pct:1.1,volume:3300000,type:"near"},
-{symbol:"ITC",price:421.3,ma:428.0,pct:-1.6,volume:9900000,type:"near"}]};
-let data=SAMPLE,tab="buy";
 const $=id=>document.getElementById(id);
-function safe(k){try{return localStorage.getItem(k)}catch(e){return null}}
+const NAMES={bullish:"Bullish candle",bearish:"Bearish candle",doji:"Doji, undecided",hammer:"Hammer",shooting_star:"Shooting star"};
+const WHY={bullish:"Closed above its open: buyers led the day.",bearish:"Closed below its open: sellers led the day.",hammer:"Long lower shadow, closed near the high: buyers pushed back.",shooting_star:"Long upper shadow, closed near the low: sellers pushed back.",doji:"Open and close nearly equal: no clear winner."};
+const TABS=[["buy","Buy"],["sell","Sell"],["near","Approaching"],["all","All signals"]];
+const sp=Array.from({length:60},(_,i)=>100+Math.sin(i/7)*6+i*.1),sm=sp.map((v,i)=>100+Math.sin((i-6)/7)*4+i*.1);
+const SAMPLE={updated:new Date().toISOString(),ma_period:44,signals:[
+{symbol:"RELIANCE",price:2910.5,ma:2875.2,pct:1.2,chg:1.4,volume:5200000,type:"buy",candle:"bullish",score:3,vol_x:2.1,rsi:61,above200:true,from_hi:-3.2,hi52:3006,lo52:2220,since:1,spark:sp,sparkma:sm},
+{symbol:"TATAMOTORS",price:945.1,ma:962.4,pct:-1.8,chg:-1.1,volume:8100000,type:"sell",candle:"bearish",score:2,vol_x:1.6,rsi:38,above200:false,from_hi:-22,hi52:1210,lo52:890,since:1,spark:sp,sparkma:sm},
+{symbol:"INFY",price:1488,ma:1471.9,pct:1.1,chg:.3,volume:3300000,type:"near",candle:"hammer",score:1,vol_x:1.1,rsi:55,above200:true,from_hi:-8,hi52:1620,lo52:1300,since:6,spark:sp,sparkma:sm}]};
+let data=SAMPLE,tab="buy",minStars=0,candles=new Set(),shown=50,opened=new Set();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const sg=n=>(n>0?"+":"")+n;
+const num=id=>{const v=$(id).value.trim();return v===""?null:Number(v)};
+const rd=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 function saveUrl(){try{localStorage.setItem("dataUrl",$("url").value.trim())}catch(e){}location.reload()}
-async function load(){
- const u=safe("dataUrl")||"/signals.json";$("url").value=safe("dataUrl")||"";
- try{const r=await fetch(u+"?t="+Date.now());if(!r.ok)throw 0;data=await r.json()}
- catch(e){data=SAMPLE;$("demo").hidden=false}
- render()}
+async function load(){const u=rd("dataUrl")||"/signals.json";$("url").value=rd("dataUrl")||"";
+ try{const r=await fetch(u+"?t="+Date.now());if(!r.ok)throw 0;data=await r.json();$("note").hidden=true}catch(e){data=SAMPLE;$("note").hidden=false}render()}
+function ago(iso){const m=Math.max(0,Math.round((Date.now()-new Date(iso))/6e4));return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"}
+function pass(s){
+ if(tab!=="all"&&s.type!==tab)return false;
+ const q=$("q").value.trim().toUpperCase();if(q&&!s.symbol.toUpperCase().includes(q))return false;
+ const ok=(v,lo,hi)=>!((lo!==null&&(v==null||v<lo))||(hi!==null&&(v==null||v>hi)));
+ const tr=$("trend").value,hh=num("hi");
+ return ok(s.price,num("pmin"),num("pmax"))&&ok(s.pct,num("dmin"),num("dmax"))&&ok(s.rsi,num("rmin"),num("rmax"))&&ok(s.volume/1e5,num("vmin"),null)&&ok(s.vol_x,num("vx"),null)
+  &&(s.score||0)>=minStars&&(!candles.size||candles.has(s.candle))&&(!tr||(tr==="up"?s.above200===true:s.above200===false))
+  &&ok(s.from_hi,hh===null?null:-hh,null)&&ok(s.since,null,num("since"));}
+const SORTS={score:(a,b)=>(b.score||0)-(a.score||0)||Math.abs(a.pct)-Math.abs(b.pct),close:(a,b)=>Math.abs(a.pct)-Math.abs(b.pct),vol:(a,b)=>b.volume-a.volume,gain:(a,b)=>(b.chg??-99)-(a.chg??-99),lose:(a,b)=>(a.chg??99)-(b.chg??99),rsi:(a,b)=>(a.rsi??999)-(b.rsi??999),az:(a,b)=>a.symbol.localeCompare(b.symbol)};
+function gauge(s){const L=5,p=Math.max(-L,Math.min(L,s.pct)),pos=50+p/L*50,nb=(data.near_pct||1.5)/L*50,fl=p>=0?`left:50%;width:${pos-50}%`:`left:${pos}%;width:${50-pos}%`;
+ return `<div class="g"><span class="band" style="left:${50-nb}%;width:${nb*2}%"></span><span class="fill" style="${fl}"></span><span class="mid"></span><span class="pin" style="left:${pos}%"></span></div><div class="gl"><span>−5%</span><span>${data.ma_period}-DMA</span><span>+5%</span></div>`}
+function chart(s){const c=s.spark,m=s.sparkma;if(!c||c.length<5)return"";
+ const all=c.concat((m||[]).filter(x=>x!=null)),lo=Math.min(...all),hi=Math.max(...all),W=300,H=84,px=i=>i/(c.length-1)*W,py=v=>H-4-(v-lo)/(hi-lo||1)*(H-8);
+ const ln=a=>a.map((v,i)=>v==null?null:`${px(i).toFixed(1)},${py(v).toFixed(1)}`).filter(Boolean).join(" ");
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Last 60 days, price and ${data.ma_period}-day average"><polyline points="${ln(m||[])}" fill="none" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="4 3"/><polyline points="${ln(c)}" fill="none" stroke="var(--c)" stroke-width="2"/></svg><div class="gl"><span>60 days ago</span><span>solid: price · dashed: ${data.ma_period}-DMA</span><span>today</span></div>`}
+function reading(s){const side=s.pct>=0?"above":"below";
+ let t=`Price is ${Math.abs(s.pct).toFixed(2)}% ${side} its ${data.ma_period}-day average`+(s.since!=null?`, and has been ${side} it for ${s.since} trading day${s.since==1?"":"s"}.`:".");
+ t+=s.type==="buy"?" It has just crossed above the average, which trend followers read as a possible buy.":s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
+ return t+" "+(WHY[s.candle]||"")}
+function row(s){const sc=s.score||0,o=opened.has(s.symbol),lab={buy:"Buy",sell:"Sell",near:"Approaching"}[s.type];
+ const cn=s.candle?`${NAMES[s.candle]||esc(s.candle)}<span class="star">${"★".repeat(sc)}${"☆".repeat(3-sc)}</span>`:"Candle data pending";
+ const pills=[s.rsi!=null?`RSI ${s.rsi}`:"",s.vol_x?`Volume ${s.vol_x}x`:"",s.above200===true?"Above 200-DMA":s.above200===false?"Below 200-DMA":"",s.from_hi!=null?`${s.from_hi}% from 52W high`:"",s.since!=null?`${s.since}d on this side`:""].filter(Boolean).map(x=>`<span>${x}</span>`).join("");
+ return `<article class="row ${s.type}"><button class="head" aria-expanded="${o}" onclick="tog('${esc(s.symbol)}')"><span class="l"><b>${esc(s.symbol)}</b><span class="tag">${lab}</span><span class="sub">${cn}</span></span><span class="r"><span class="px">₹${fmt(s.price)}</span><span class="dist">${sg(s.pct)}% vs ${data.ma_period}-DMA</span>${s.chg!=null?`<span class="chg">Today ${sg(s.chg)}%</span>`:""}</span></button><div class="gauge">${gauge(s)}</div><div class="pills">${pills}</div>
+ ${o?`<div class="more">${chart(s)}<div class="facts"><div>${data.ma_period}-DMA<b>₹${fmt(s.ma)}</b></div><div>Volume<b>${(s.volume/1e5).toFixed(1)} lakh</b></div><div>52W high<b>${s.hi52?"₹"+fmt(s.hi52):"n/a"}</b></div><div>52W low<b>${s.lo52?"₹"+fmt(s.lo52):"n/a"}</b></div></div>${reading(s)}<br><a target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(s.symbol)}">Open full chart on TradingView</a></div>`:""}</article>`}
+function view(){return data.signals.filter(pass).sort(SORTS[$("sort").value])}
 function render(){
- const when=new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
- $("meta").textContent=`${data.ma_period}-day average · updated ${when} IST`;
- $("tabs").innerHTML=TABS.map(([k,l])=>`<button role="tab" aria-selected="${k===tab}" onclick="tab='${k}';render()">${l} (${data.signals.filter(s=>s.type===k).length})</button>`).join("");
- const c=TABS.find(t=>t[0]===tab)[2],q=$("q").value.trim().toUpperCase();
- const rows=data.signals.filter(s=>s.type===tab&&s.symbol.includes(q));
- $("list").innerHTML=rows.length?rows.map(s=>`<a class="row" style="--c:${c}" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE:${s.symbol}"><b>${s.symbol}</b><span class="p">₹${s.price.toLocaleString("en-IN")}</span><small>${data.ma_period}-DMA ₹${s.ma.toLocaleString("en-IN")} · vol ${(s.volume/1e5).toFixed(1)}L</small><span class="pct" style="text-align:right">${s.pct>0?"+":""}${s.pct}%</span></a>`).join(""):`<div class="empty">No ${tab==="near"?"approaching":tab} signals right now.</div>`}
-$("q").oninput=render;
+ const stale=(Date.now()-new Date(data.updated))>864e5;
+ $("meta").className="meta"+(stale?" stale":"");
+ $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
+ $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");
+ $("candles").innerHTML=Object.entries(NAMES).map(([k,l])=>`<button class="chip" aria-pressed="${candles.has(k)}" onclick="candles.has('${k}')?candles.delete('${k}'):candles.add('${k}');render()">${l.replace(" candle","")}</button>`).join("");
+ $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};render()">${n?"★".repeat(n):"Any"}</button>`).join("");
+ const v=view(),tot=tab==="all"?data.signals.length:data.signals.filter(s=>s.type===tab).length;
+ $("count").textContent=`Showing ${Math.min(shown,v.length)} of ${v.length} matches (${tot} in this tab)`;
+ $("list").innerHTML=v.length?v.slice(0,shown).map(row).join("")+(v.length>shown?`<button class="btn" style="width:100%" onclick="shown+=50;render()">Show 50 more</button>`:""):`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Reset all.</div>`}
+function tog(sym){opened.has(sym)?opened.delete(sym):opened.add(sym);render()}
+function preset(n){document.querySelectorAll("#filters input,#filters select").forEach(e=>e.value="");minStars=0;candles=new Set();tab="all";shown=50;
+ if(n==="best"){minStars=2}if(n==="trend"){tab="buy";$("trend").value="up"}
+ if(n==="dip"){tab="near";$("trend").value="up";$("dmax").value=0}if(n==="over"){tab="near";$("rmax").value=40}
+ render()}
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
+function exportCsv(){const c=["symbol","type","price","ma","pct","chg","volume","vol_x","rsi","candle","score","above200","from_hi","since"],v=view();
+ dl("screener.csv",[c.join(",")].concat(v.map(s=>c.map(k=>s[k]??"").join(","))).join("\n"),"text/csv")}
+async function copyList(){const t=view().map(s=>"NSE:"+s.symbol).join(",");try{await navigator.clipboard.writeText(t);alert("Copied "+view().length+" symbols. In TradingView, open a watchlist and choose Import list, or paste.")}catch(e){prompt("Copy this list:",t)}}
+["q","sort","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
-load();setInterval(load,300000);
+load();setInterval(load,3e5);
 </script></body></html>
