@@ -67,10 +67,28 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 @media(min-width:900px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}#filters{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;display:block!important}#ft{display:none}}
 @media(max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th{position:sticky;top:0;background:var(--card);text-align:right;padding:10px 10px;color:var(--mute);font-weight:600;font-size:12px;white-space:nowrap;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}
+th.on{color:var(--ink)}
+td{padding:10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+tr.r{cursor:pointer}tr.r:hover td{background:var(--bg)}tr.r:hover td:first-child{background:var(--bg)}
+td b{font-weight:600;font-size:14.5px}
+.pos{color:var(--buy)}.neg{color:var(--sell)}
+td.s{font-weight:600}
+tr.dt td{white-space:normal;text-align:left;background:var(--bg);color:var(--mute);padding:14px}
+tr.dt td:first-child{position:static}
+.off{opacity:.4;pointer-events:none}
+.warn{background:var(--near-bg);color:var(--near);border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
+.warn b{color:var(--ink)}
+.tag.buy{background:var(--buy-bg);color:var(--buy)}.tag.sell{background:var(--sell-bg);color:var(--sell)}.tag.near{background:var(--near-bg);color:var(--near)}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
 <div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
+<div id="warn" class="warn" hidden></div>
 <details class="help"><summary>How to read this screen</summary>
 <p><b>The % under the price</b> is the distance from the stock's moving average. "−0.17% vs 44-DMA" means today's price is 0.17% below the average of its last 44 closing prices.</p>
 <p><b>Signals.</b> <b>Buy</b>: price just crossed above the average. <b>Sell</b>: it just crossed below. <b>Approaching</b>: within 1.5% of the average, a possible cross soon.</p>
@@ -81,20 +99,19 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <div class="wrap">
 <aside id="filters" hidden>
 <h2>Quick screens</h2><div class="chips">
-<button class="chip" onclick="preset('best')">Best setups</button><button class="chip" onclick="preset('trend')">Buys in an uptrend</button><button class="chip" onclick="preset('dip')">Dips in uptrends</button><button class="chip" onclick="preset('over')">Oversold near average</button><button class="chip" onclick="preset('reset')">Reset all</button></div>
-<h2>Candle</h2><div class="chips" id="candles"></div>
-<h2>Minimum stars</h2><div class="chips" id="stars"></div>
+<button class="chip" onclick="preset('best')">Best setups</button><button class="chip" onclick="preset('trend')">Buys in an uptrend</button><button class="chip" onclick="preset('dip')">Dips in uptrends</button><button class="chip" onclick="preset('over')">Oversold near average</button><button class="chip" onclick="preset('reset')">Clear all filters</button></div>
+<div data-need="candle"><h2>Candle</h2><div class="chips" id="candles"></div>
+<h2>Minimum stars</h2><div class="chips" id="stars"></div></div>
 <h2>Price (₹)</h2><div class="two"><input id="pmin" type="number" placeholder="Min"><input id="pmax" type="number" placeholder="Max"></div>
 <h2>Distance from average (%)</h2><div class="two"><input id="dmin" type="number" step="0.1" placeholder="Min, e.g. -1"><input id="dmax" type="number" step="0.1" placeholder="Max, e.g. 1"></div>
-<h2>RSI (14)</h2><div class="two"><input id="rmin" type="number" placeholder="Min"><input id="rmax" type="number" placeholder="Max"></div>
-<h2>Volume</h2><div class="two"><input id="vmin" type="number" placeholder="Min lakh shares"><select id="vx"><option value="">Any surge</option><option value="1.2">1.2x or more</option><option value="1.5">1.5x or more</option><option value="2">2x or more</option></select></div>
-<h2>Long-term trend</h2><select id="trend"><option value="">Any</option><option value="up">Above 200-DMA</option><option value="down">Below 200-DMA</option></select>
-<h2>Distance from 52-week high</h2><select id="hi"><option value="">Any</option><option value="5">Within 5%</option><option value="10">Within 10%</option><option value="20">Within 20%</option></select>
-<h2>Days on current side of average</h2><select id="since"><option value="">Any</option><option value="1">1 day (fresh)</option><option value="3">3 days or fewer</option><option value="5">5 days or fewer</option><option value="10">10 days or fewer</option></select>
+<div data-need="rsi"><h2>RSI (14)</h2><div class="two"><input id="rmin" type="number" placeholder="Min"><input id="rmax" type="number" placeholder="Max"></div></div>
+<h2>Volume (lakh shares)</h2><div class="two"><input id="vmin" type="number" placeholder="Min lakh"><select id="vx" data-need="vx"><option value="">Any surge</option><option value="1.2">1.2x or more</option><option value="1.5">1.5x or more</option><option value="2">2x or more</option></select></div>
+<div data-need="trend"><h2>Long-term trend</h2><select id="trend"><option value="">Any</option><option value="up">Above 200-DMA</option><option value="down">Below 200-DMA</option></select></div>
+<div data-need="hi"><h2>Distance from 52-week high</h2><select id="hi"><option value="">Any</option><option value="5">Within 5%</option><option value="10">Within 10%</option><option value="20">Within 20%</option></select></div>
+<div data-need="since"><h2>Days on current side of average</h2><select id="since"><option value="">Any</option><option value="1">1 day (fresh)</option><option value="3">3 days or fewer</option><option value="5">5 days or fewer</option><option value="10">10 days or fewer</option></select></div>
 </aside>
 <section>
-<div class="bar"><input id="q" type="search" placeholder="Search symbol" autocomplete="off" aria-label="Search symbol">
-<select id="sort" aria-label="Sort by"><option value="score">Strongest first</option><option value="close">Closest to average</option><option value="vol">Highest volume</option><option value="gain">Top gainers today</option><option value="lose">Top losers today</option><option value="rsi">RSI, low to high</option><option value="az">A to Z</option></select></div>
+<div class="bar"><input id="q" type="search" placeholder="Search symbol" autocomplete="off" aria-label="Search symbol"></div>
 <div class="bar"><div class="count" id="count" style="flex:1"></div><button class="btn" onclick="exportCsv()">Export CSV</button><button class="btn" onclick="copyList()">Copy for TradingView</button></div>
 <div id="list"></div>
 </section></div>
@@ -121,15 +138,30 @@ function saveUrl(){try{localStorage.setItem("dataUrl",$("url").value.trim())}cat
 async function load(){const u=rd("dataUrl")||"/signals.json";$("url").value=rd("dataUrl")||"";
  try{const r=await fetch(u+"?t="+Date.now());if(!r.ok)throw 0;data=await r.json();$("note").hidden=true}catch(e){data=SAMPLE;$("note").hidden=false}render()}
 function ago(iso){const m=Math.max(0,Math.round((Date.now()-new Date(iso))/6e4));return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"}
+const COLS=[["symbol","Symbol","Stock symbol"],["price","Price","Last price in rupees"],["chg","Day %","Change versus yesterday's close"],["pct","vs 44-DMA","Distance from the moving average"],["score","Candle","Latest candle and 0-3 star conviction"],["vol_x","Volume ×","Volume versus its 20-day average"],["rsi","RSI","Relative strength index, 14 days"],["above200","200-DMA","Above or below the 200-day average"],["since","Days","Trading days on the current side of the average"],["from_hi","From 52W high","Distance below the 52-week high"]];
+let sortKey="score",sortDir=-1;
+const NEED={candle:s=>s.candle,rsi:s=>s.rsi!=null,trend:s=>s.above200!=null,hi:s=>s.from_hi!=null,since:s=>s.since!=null,vx:s=>s.vol_x!=null};
+function has(k){return data.signals.some(NEED[k])}
 function pass(s){
  if(tab!=="all"&&s.type!==tab)return false;
  const q=$("q").value.trim().toUpperCase();if(q&&!s.symbol.toUpperCase().includes(q))return false;
  const ok=(v,lo,hi)=>!((lo!==null&&(v==null||v<lo))||(hi!==null&&(v==null||v>hi)));
  const tr=$("trend").value,hh=num("hi");
- return ok(s.price,num("pmin"),num("pmax"))&&ok(s.pct,num("dmin"),num("dmax"))&&ok(s.rsi,num("rmin"),num("rmax"))&&ok(s.volume/1e5,num("vmin"),null)&&ok(s.vol_x,num("vx"),null)
-  &&(s.score||0)>=minStars&&(!candles.size||candles.has(s.candle))&&(!tr||(tr==="up"?s.above200===true:s.above200===false))
-  &&ok(s.from_hi,hh===null?null:-hh,null)&&ok(s.since,null,num("since"));}
-const SORTS={score:(a,b)=>(b.score||0)-(a.score||0)||Math.abs(a.pct)-Math.abs(b.pct),close:(a,b)=>Math.abs(a.pct)-Math.abs(b.pct),vol:(a,b)=>b.volume-a.volume,gain:(a,b)=>(b.chg??-99)-(a.chg??-99),lose:(a,b)=>(a.chg??99)-(b.chg??99),rsi:(a,b)=>(a.rsi??999)-(b.rsi??999),az:(a,b)=>a.symbol.localeCompare(b.symbol)};
+ if(!ok(s.price,num("pmin"),num("pmax"))||!ok(s.pct,num("dmin"),num("dmax"))||!ok(s.volume/1e5,num("vmin"),null))return false;
+ if(has("rsi")&&!ok(s.rsi,num("rmin"),num("rmax")))return false;
+ if(has("vx")&&!ok(s.vol_x,num("vx"),null))return false;
+ if(has("candle")&&((s.score||0)<minStars||(candles.size&&!candles.has(s.candle))))return false;
+ if(has("trend")&&tr&&(tr==="up"?s.above200!==true:s.above200!==false))return false;
+ if(has("hi")&&!ok(s.from_hi,hh===null?null:-hh,null))return false;
+ if(has("since")&&!ok(s.since,null,num("since")))return false;
+ return true}
+function val(s,k){return k==="symbol"?s.symbol:k==="above200"?(s.above200==null?null:+s.above200):k==="score"?(s.candle?s.score||0:null):s[k]}
+function cmp(a,b){const x=val(a,sortKey),y=val(b,sortKey);
+ if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
+ const r=typeof x==="string"?x.localeCompare(y):x-y;
+ return r*sortDir||(sortKey==="score"?Math.abs(a.pct)-Math.abs(b.pct):0)}
+function view(){return data.signals.filter(pass).sort(cmp)}
+function sortBy(k){sortDir=sortKey===k?-sortDir:(k==="symbol"?1:-1);sortKey=k;render()}
 function gauge(s){const L=5,p=Math.max(-L,Math.min(L,s.pct)),pos=50+p/L*50,nb=(data.near_pct||1.5)/L*50,fl=p>=0?`left:50%;width:${pos-50}%`:`left:${pos}%;width:${50-pos}%`;
  return `<div class="g"><span class="band" style="left:${50-nb}%;width:${nb*2}%"></span><span class="fill" style="${fl}"></span><span class="mid"></span><span class="pin" style="left:${pos}%"></span></div><div class="gl"><span>−5%</span><span>${data.ma_period}-DMA</span><span>+5%</span></div>`}
 function chart(s){const c=s.spark,m=s.sparkma;if(!c||c.length<5)return"";
@@ -140,32 +172,38 @@ function reading(s){const side=s.pct>=0?"above":"below";
  let t=`Price is ${Math.abs(s.pct).toFixed(2)}% ${side} its ${data.ma_period}-day average`+(s.since!=null?`, and has been ${side} it for ${s.since} trading day${s.since==1?"":"s"}.`:".");
  t+=s.type==="buy"?" It has just crossed above the average, which trend followers read as a possible buy.":s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
  return t+" "+(WHY[s.candle]||"")}
-function row(s){const sc=s.score||0,o=opened.has(s.symbol),lab={buy:"Buy",sell:"Sell",near:"Approaching"}[s.type];
- const cn=s.candle?`${NAMES[s.candle]||esc(s.candle)}<span class="star">${"★".repeat(sc)}${"☆".repeat(3-sc)}</span>`:"Candle data pending";
- const pills=[s.rsi!=null?`RSI ${s.rsi}`:"",s.vol_x?`Volume ${s.vol_x}x`:"",s.above200===true?"Above 200-DMA":s.above200===false?"Below 200-DMA":"",s.from_hi!=null?`${s.from_hi}% from 52W high`:"",s.since!=null?`${s.since}d on this side`:""].filter(Boolean).map(x=>`<span>${x}</span>`).join("");
- return `<article class="row ${s.type}"><button class="head" aria-expanded="${o}" onclick="tog('${esc(s.symbol)}')"><span class="l"><b>${esc(s.symbol)}</b><span class="tag">${lab}</span><span class="sub">${cn}</span></span><span class="r"><span class="px">₹${fmt(s.price)}</span><span class="dist">${sg(s.pct)}% vs ${data.ma_period}-DMA</span>${s.chg!=null?`<span class="chg">Today ${sg(s.chg)}%</span>`:""}</span></button><div class="gauge">${gauge(s)}</div><div class="pills">${pills}</div>
- ${o?`<div class="more">${chart(s)}<div class="facts"><div>${data.ma_period}-DMA<b>₹${fmt(s.ma)}</b></div><div>Volume<b>${(s.volume/1e5).toFixed(1)} lakh</b></div><div>52W high<b>${s.hi52?"₹"+fmt(s.hi52):"n/a"}</b></div><div>52W low<b>${s.lo52?"₹"+fmt(s.lo52):"n/a"}</b></div></div>${reading(s)}<br><a target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(s.symbol)}">Open full chart on TradingView</a></div>`:""}</article>`}
-function view(){return data.signals.filter(pass).sort(SORTS[$("sort").value])}
+const SHORT={bullish:"Bullish",bearish:"Bearish",doji:"Doji",hammer:"Hammer",shooting_star:"Shooting star"};
+function tr(s){const sc=s.score||0,lab={buy:"Buy",sell:"Sell",near:"Near"}[s.type],o=opened.has(s.symbol),c={buy:"var(--buy)",sell:"var(--sell)",near:"var(--near)"}[s.type],cb={buy:"var(--buy-bg)",sell:"var(--sell-bg)",near:"var(--near-bg)"}[s.type];
+ const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
+ let h=`<tr class="r" onclick="tog('${esc(s.symbol)}')"><td><b>${esc(s.symbol)}</b> <span class="tag ${s.type}">${lab}</span></td><td>₹${fmt(s.price)}</td><td>${pc(s.chg)}</td><td class="s" style="color:${c}">${sg(s.pct)}%</td><td>${s.candle?`${SHORT[s.candle]||esc(s.candle)} <span class="star">${"★".repeat(sc)}${"☆".repeat(3-sc)}</span>`:"–"}</td><td>${s.vol_x!=null?s.vol_x+"×":"–"}</td><td>${s.rsi??"–"}</td><td>${s.above200==null?"–":s.above200?"Above":"Below"}</td><td>${s.since??"–"}</td><td>${s.from_hi!=null?s.from_hi+"%":"–"}</td></tr>`;
+ if(o)h+=`<tr class="dt"><td colspan="10" style="--c:${c};--cb:${cb}">${gauge(s)}<div style="height:12px"></div>${chart(s)}<div class="facts"><div>${data.ma_period}-DMA<b>₹${fmt(s.ma)}</b></div><div>Volume<b>${(s.volume/1e5).toFixed(1)} lakh</b></div><div>52W high<b>${s.hi52?"₹"+fmt(s.hi52):"n/a"}</b></div><div>52W low<b>${s.lo52?"₹"+fmt(s.lo52):"n/a"}</b></div></div>${reading(s)}<br><a target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(s.symbol)}">Open full chart on TradingView</a></td></tr>`;
+ return h}
+function active(){let n=0;["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since"].forEach(i=>{if($(i).value.trim()!=="")n++});return n+(minStars?1:0)+(candles.size?1:0)}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;
  $("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
+ const miss=["candle","rsi","trend","hi","since"].filter(k=>!has(k));
+ document.querySelectorAll("[data-need]").forEach(e=>e.classList.toggle("off",!has(e.dataset.need)));
+ $("warn").hidden=!miss.length||!data.signals.length;
+ $("warn").innerHTML=`<b>Candle, RSI and trend data are missing from your data file.</b> Your screener is still the old version, or has not run since you updated it. In GitHub, replace <b>screen.py</b> with the latest, then open <b>Actions → screener → Run workflow</b>, choose <b>run</b>, and wait for the green tick. Filters that need this data are greyed out until then.`;
  $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");
- $("candles").innerHTML=Object.entries(NAMES).map(([k,l])=>`<button class="chip" aria-pressed="${candles.has(k)}" onclick="candles.has('${k}')?candles.delete('${k}'):candles.add('${k}');render()">${l.replace(" candle","")}</button>`).join("");
- $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};render()">${n?"★".repeat(n):"Any"}</button>`).join("");
- const v=view(),tot=tab==="all"?data.signals.length:data.signals.filter(s=>s.type===tab).length;
- $("count").textContent=`Showing ${Math.min(shown,v.length)} of ${v.length} matches (${tot} in this tab)`;
- $("list").innerHTML=v.length?v.slice(0,shown).map(row).join("")+(v.length>shown?`<button class="btn" style="width:100%" onclick="shown+=50;render()">Show 50 more</button>`:""):`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Reset all.</div>`}
+ $("candles").innerHTML=Object.entries(NAMES).map(([k,l])=>`<button class="chip" aria-pressed="${candles.has(k)}" onclick="candles.has('${k}')?candles.delete('${k}'):candles.add('${k}');shown=50;render()">${l.replace(" candle","")}</button>`).join("");
+ $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};shown=50;render()">${n?"★".repeat(n):"Any"}</button>`).join("");
+ const v=view(),tot=tab==="all"?data.signals.length:data.signals.filter(s=>s.type===tab).length,a=active();
+ $("ft").textContent=a?`Filters (${a} active)`:"Filters";
+ $("count").textContent=`Showing ${Math.min(shown,v.length)} of ${v.length} matches (${tot} in this tab)`+(a?` · ${a} filter${a>1?"s":""} active`:"");
+ $("list").innerHTML=v.length?`<div class="tw"><table><thead><tr>${COLS.map(([k,l,t])=>`<th class="${k===sortKey?"on":""}" title="${t}" onclick="sortBy('${k}')">${l}${k===sortKey?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${v.slice(0,shown).map(tr).join("")}</tbody></table></div>${v.length>shown?`<button class="btn" style="width:100%;margin-top:8px" onclick="shown+=50;render()">Show 50 more</button>`:""}`:`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Clear all filters.</div>`}
 function tog(sym){opened.has(sym)?opened.delete(sym):opened.add(sym);render()}
-function preset(n){document.querySelectorAll("#filters input,#filters select").forEach(e=>e.value="");minStars=0;candles=new Set();tab="all";shown=50;
+function preset(n){document.querySelectorAll("#filters input,#filters select").forEach(e=>e.value="");$("q").value="";minStars=0;candles=new Set();tab="all";shown=50;
  if(n==="best"){minStars=2}if(n==="trend"){tab="buy";$("trend").value="up"}
  if(n==="dip"){tab="near";$("trend").value="up";$("dmax").value=0}if(n==="over"){tab="near";$("rmax").value=40}
  render()}
 function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
-function exportCsv(){const c=["symbol","type","price","ma","pct","chg","volume","vol_x","rsi","candle","score","above200","from_hi","since"],v=view();
+const SORTS={};function exportCsv(){const c=["symbol","type","price","ma","pct","chg","volume","vol_x","rsi","candle","score","above200","from_hi","since"],v=view();
  dl("screener.csv",[c.join(",")].concat(v.map(s=>c.map(k=>s[k]??"").join(","))).join("\n"),"text/csv")}
 async function copyList(){const t=view().map(s=>"NSE:"+s.symbol).join(",");try{await navigator.clipboard.writeText(t);alert("Copied "+view().length+" symbols. In TradingView, open a watchlist and choose Import list, or paste.")}catch(e){prompt("Copy this list:",t)}}
-["q","sort","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
+["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 load();setInterval(load,3e5);
 </script></body></html>
