@@ -22,8 +22,48 @@ header{display:flex;align-items:center;gap:10px}header svg{width:30px;height:30p
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}table{border-collapse:collapse;width:100%;min-width:900px;font-size:13.5px}th{position:sticky;top:0;background:var(--card);text-align:right;padding:10px;color:var(--mute);font-weight:600;font-size:12px;white-space:nowrap;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1}th.on{color:var(--ink)}td{padding:10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}tr.r{cursor:pointer}tr.r:hover td{background:var(--bg)}tr.r:hover td:first-child{background:var(--bg)}td b{font-weight:600;font-size:14.5px}.pos{color:var(--buy)}.neg{color:var(--sell)}td.s{font-weight:600}.tag{margin-left:6px;font-size:11.5px;padding:2px 7px;border-radius:99px;font-weight:600}.tag.buy{background:var(--buy-bg);color:var(--buy)}.tag.sell{background:var(--sell-bg);color:var(--sell)}.tag.near{background:var(--near-bg);color:var(--near)}.tag.ex{background:var(--blue-bg);color:var(--accent)}
 tr.dt td{white-space:normal;text-align:left;background:var(--bg);color:var(--mute);padding:14px}tr.dt td:first-child{position:static}.empty{text-align:center;color:var(--mute);padding:36px 12px}.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 12px;margin:12px 0}.facts b{display:block;color:var(--ink);font-weight:600}.chart{width:100%;height:84px;display:block;margin-bottom:2px}.gl{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:6px}.gauge{padding:4px 0 6px}.g{position:relative;height:6px;border-radius:3px;background:var(--line)}.g .band{position:absolute;top:0;bottom:0;background:var(--near-bg);border-radius:3px}.g .mid{position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink);opacity:.55}.g .fill{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:3px}.g .pin{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--accent);border:2px solid var(--card)}
 .port-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px}.stat small{display:block;color:var(--mute);font-size:12px}.stat b{display:block;font-size:20px;margin-top:2px}.poscard{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:9px;overflow:hidden}.poshead{display:flex;justify-content:space-between;gap:12px;padding:13px 14px 8px;align-items:flex-start}.posname b{font-size:17px}.posmeta{font-size:12.5px;color:var(--mute)}.action{font-weight:700;padding:5px 9px;border-radius:8px;white-space:nowrap}.action.hold{background:var(--buy-bg);color:var(--buy)}.action.watch{background:var(--near-bg);color:var(--near)}.action.sell{background:var(--sell-bg);color:var(--sell)}.action.target{background:var(--buy-bg);color:var(--buy)}.posgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:7px 14px 13px}.metric{background:var(--bg);border-radius:9px;padding:8px}.metric small{display:block;color:var(--mute);font-size:11px}.metric b{font-size:14px}.posfoot{border-top:1px solid var(--line);padding:9px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.posfoot .why{flex:1;color:var(--mute);font-size:12.5px;min-width:200px}.formcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}.formgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.formgrid label{font-size:12px;color:var(--mute)}.formgrid input,.formgrid select{margin-top:4px}.check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);margin-top:8px}.check input{width:auto}.subtle{color:var(--mute);font-size:12.5px}.danger{color:var(--sell)}footer{color:var(--mute);font-size:12px;margin-top:18px}details.set{margin-top:14px;font-size:13px;color:var(--mute)}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.off{opacity:.4;pointer-events:none}
-@media(min-width:900px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}.filters{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}.mobilefilter{display:none}}
-@media(max-width:800px){.posgrid{grid-template-columns:repeat(3,1fr)}.formgrid{grid-template-columns:repeat(2,1fr)}.port-summary{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}.posgrid{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.port-summary{grid-template-columns:repeat(2,1fr)}}
+/* Responsive layout: phone → tablet → desktop. The tablet breakpoint intentionally avoids the desktop sidebar so the stock table gets the full landscape width. */
+@media (min-width:600px) and (max-width:1199px){
+  main{max-width:none;padding:18px 18px 36px}
+  .wrap{display:block}
+  .filters{position:static;max-height:none;overflow:visible}
+  .filters[hidden]{display:none}
+  .mobilefilter{display:inline-block}
+  section{width:100%;min-width:0}
+  .tw{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:1040px}
+  th,td{padding:10px 11px}
+}
+@media (min-width:900px) and (max-width:1199px) and (orientation:landscape){
+  main{padding-left:20px;padding-right:20px}
+  .tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .port-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .posgrid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .formgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (min-width:1200px){
+  .wrap{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+  .filters{display:block!important;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+  .mobilefilter{display:none}
+}
+@media (max-width:800px){.posgrid{grid-template-columns:repeat(3,1fr)}.formgrid{grid-template-columns:repeat(2,1fr)}.port-summary{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:599px){
+  main{max-width:none;padding:14px 12px 30px}
+  .tw{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:1040px}
+  .posgrid{grid-template-columns:repeat(2,1fr)}
+  .formgrid{grid-template-columns:1fr}
+  .port-summary{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}}
+
+/* Keep stock identity visible while the wide data table is horizontally scrolled. */
+.tw th:first-child,.tw td:first-child{left:0;min-width:175px}
+.tw th:nth-child(2),.tw td:nth-child(2){position:sticky;left:175px;background:var(--card);z-index:1;min-width:82px}
+.tw tr.r:hover td:nth-child(2){background:var(--bg)}
+.tw thead th:nth-child(2){z-index:3}
+.tw thead th:first-child{z-index:4}
+@media (max-width:599px){.tw th:first-child,.tw td:first-child{min-width:150px}.tw th:nth-child(2),.tw td:nth-child(2){left:150px;min-width:78px}}
 </style>
 </head>
 <body><main>
