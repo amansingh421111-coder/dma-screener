@@ -1,1 +1,1303 @@
-{"updated":"2026-01-01T00:00:00Z","ma_period":44,"signals":[]}
+{
+ "updated": "2026-10-06T20:42:43.432445+00:00",
+ "ma_period": 44,
+ "ma_type": "SMA",
+ "signals": [
+  {
+   "symbol": "20MICRONS",
+   "price": 204.61,
+   "ma": 207.27,
+   "pct": -1.28,
+   "volume": 80913,
+   "type": "sell"
+  },
+  {
+   "symbol": "5PAISA",
+   "price": 360.9,
+   "ma": 347.87,
+   "pct": 3.74,
+   "volume": 2189848,
+   "type": "buy"
+  },
+  {
+   "symbol": "AAATECH",
+   "price": 95.44,
+   "ma": 93.34,
+   "pct": 2.25,
+   "volume": 196936,
+   "type": "buy"
+  },
+  {
+   "symbol": "ABSLAMC",
+   "price": 1028.55,
+   "ma": 1030.26,
+   "pct": -0.17,
+   "volume": 300672,
+   "type": "near"
+  },
+  {
+   "symbol": "ADANIGREEN",
+   "price": 1284.0,
+   "ma": 1303.07,
+   "pct": -1.46,
+   "volume": 1014292,
+   "type": "near"
+  },
+  {
+   "symbol": "ADSL",
+   "price": 105.51,
+   "ma": 106.78,
+   "pct": -1.19,
+   "volume": 165539,
+   "type": "near"
+  },
+  {
+   "symbol": "AETHER",
+   "price": 1661.0,
+   "ma": 1643.92,
+   "pct": 1.04,
+   "volume": 196127,
+   "type": "near"
+  },
+  {
+   "symbol": "AIIL",
+   "price": 551.6,
+   "ma": 548.59,
+   "pct": 0.55,
+   "volume": 146383,
+   "type": "buy"
+  },
+  {
+   "symbol": "AJMERA",
+   "price": 116.7,
+   "ma": 118.35,
+   "pct": -1.4,
+   "volume": 559485,
+   "type": "sell"
+  },
+  {
+   "symbol": "ALIVUS",
+   "price": 1373.7,
+   "ma": 1376.23,
+   "pct": -0.18,
+   "volume": 97234,
+   "type": "near"
+  },
+  {
+   "symbol": "ANUHPHR",
+   "price": 84.15,
+   "ma": 84.61,
+   "pct": -0.54,
+   "volume": 86676,
+   "type": "sell"
+  },
+  {
+   "symbol": "APLLTD",
+   "price": 831.25,
+   "ma": 826.98,
+   "pct": 0.52,
+   "volume": 282527,
+   "type": "buy"
+  },
+  {
+   "symbol": "APOLLO",
+   "price": 401.7,
+   "ma": 394.1,
+   "pct": 1.93,
+   "volume": 4584428,
+   "type": "buy"
+  },
+  {
+   "symbol": "ARFIN",
+   "price": 87.51,
+   "ma": 86.83,
+   "pct": 0.78,
+   "volume": 713062,
+   "type": "near"
+  },
+  {
+   "symbol": "ASAHIINDIA",
+   "price": 945.75,
+   "ma": 947.48,
+   "pct": -0.18,
+   "volume": 45021,
+   "type": "near"
+  },
+  {
+   "symbol": "AUROPHARMA",
+   "price": 1674.9,
+   "ma": 1663.17,
+   "pct": 0.71,
+   "volume": 958714,
+   "type": "near"
+  },
+  {
+   "symbol": "AURUM",
+   "price": 223.61,
+   "ma": 224.98,
+   "pct": -0.61,
+   "volume": 48055,
+   "type": "near"
+  },
+  {
+   "symbol": "AVL",
+   "price": 601.05,
+   "ma": 610.0,
+   "pct": -1.47,
+   "volume": 400252,
+   "type": "near"
+  },
+  {
+   "symbol": "AXISBANK",
+   "price": 1222.2,
+   "ma": 1240.74,
+   "pct": -1.49,
+   "volume": 7472163,
+   "type": "near"
+  },
+  {
+   "symbol": "BALRAMCHIN",
+   "price": 671.5,
+   "ma": 670.64,
+   "pct": 0.13,
+   "volume": 1055611,
+   "type": "buy"
+  },
+  {
+   "symbol": "BANDHANBNK",
+   "price": 168.27,
+   "ma": 173.85,
+   "pct": -3.21,
+   "volume": 18154959,
+   "type": "sell"
+  },
+  {
+   "symbol": "BANSALWIRE",
+   "price": 323.05,
+   "ma": 318.46,
+   "pct": 1.44,
+   "volume": 40679,
+   "type": "near"
+  },
+  {
+   "symbol": "BEML",
+   "price": 1970.4,
+   "ma": 1967.21,
+   "pct": 0.16,
+   "volume": 144626,
+   "type": "near"
+  },
+  {
+   "symbol": "BEPL",
+   "price": 124.77,
+   "ma": 125.63,
+   "pct": -0.69,
+   "volume": 695197,
+   "type": "near"
+  },
+  {
+   "symbol": "BHEL",
+   "price": 429.0,
+   "ma": 421.93,
+   "pct": 1.68,
+   "volume": 8225965,
+   "type": "buy"
+  },
+  {
+   "symbol": "BLACKBUCK",
+   "price": 599.4,
+   "ma": 595.51,
+   "pct": 0.65,
+   "volume": 362727,
+   "type": "near"
+  },
+  {
+   "symbol": "BLKASHYAP",
+   "price": 53.22,
+   "ma": 53.88,
+   "pct": -1.22,
+   "volume": 1836473,
+   "type": "near"
+  },
+  {
+   "symbol": "BLSE",
+   "price": 159.57,
+   "ma": 159.36,
+   "pct": 0.13,
+   "volume": 877650,
+   "type": "near"
+  },
+  {
+   "symbol": "BLUESTARCO",
+   "price": 1510.0,
+   "ma": 1511.71,
+   "pct": -0.11,
+   "volume": 367830,
+   "type": "near"
+  },
+  {
+   "symbol": "CARTRADE",
+   "price": 2935.4,
+   "ma": 2942.52,
+   "pct": -0.24,
+   "volume": 267054,
+   "type": "near"
+  },
+  {
+   "symbol": "CGCL",
+   "price": 247.06,
+   "ma": 249.85,
+   "pct": -1.12,
+   "volume": 1571868,
+   "type": "near"
+  },
+  {
+   "symbol": "CGPOWER",
+   "price": 882.3,
+   "ma": 885.91,
+   "pct": -0.41,
+   "volume": 1290292,
+   "type": "near"
+  },
+  {
+   "symbol": "CHENNPETRO",
+   "price": 1401.0,
+   "ma": 1405.4,
+   "pct": -0.31,
+   "volume": 1762387,
+   "type": "near"
+  },
+  {
+   "symbol": "CLEANMAX",
+   "price": 1303.3,
+   "ma": 1313.35,
+   "pct": -0.77,
+   "volume": 156077,
+   "type": "near"
+  },
+  {
+   "symbol": "CMLL",
+   "price": 507.2,
+   "ma": 515.13,
+   "pct": -1.54,
+   "volume": 192091,
+   "type": "sell"
+  },
+  {
+   "symbol": "CMRGREEN",
+   "price": 221.48,
+   "ma": 221.64,
+   "pct": -0.07,
+   "volume": 272408,
+   "type": "sell"
+  },
+  {
+   "symbol": "COFORGE",
+   "price": 1852.0,
+   "ma": 1844.53,
+   "pct": 0.4,
+   "volume": 3693526,
+   "type": "buy"
+  },
+  {
+   "symbol": "COHANCE",
+   "price": 446.8,
+   "ma": 449.15,
+   "pct": -0.52,
+   "volume": 413013,
+   "type": "sell"
+  },
+  {
+   "symbol": "CORDELIA",
+   "price": 100.83,
+   "ma": 99.86,
+   "pct": 0.97,
+   "volume": 668903,
+   "type": "near"
+  },
+  {
+   "symbol": "DALMIASUG",
+   "price": 430.15,
+   "ma": 432.28,
+   "pct": -0.49,
+   "volume": 1092162,
+   "type": "near"
+  },
+  {
+   "symbol": "DAMCAPITAL",
+   "price": 146.75,
+   "ma": 145.6,
+   "pct": 0.79,
+   "volume": 220836,
+   "type": "near"
+  },
+  {
+   "symbol": "DCMSHRIRAM",
+   "price": 1044.55,
+   "ma": 1007.1,
+   "pct": 3.72,
+   "volume": 971948,
+   "type": "buy"
+  },
+  {
+   "symbol": "DEEDEV",
+   "price": 636.95,
+   "ma": 648.64,
+   "pct": -1.8,
+   "volume": 203639,
+   "type": "sell"
+  },
+  {
+   "symbol": "DLF",
+   "price": 673.0,
+   "ma": 663.93,
+   "pct": 1.37,
+   "volume": 3470586,
+   "type": "buy"
+  },
+  {
+   "symbol": "ECLERX",
+   "price": 1884.3,
+   "ma": 1882.09,
+   "pct": 0.12,
+   "volume": 142484,
+   "type": "buy"
+  },
+  {
+   "symbol": "EIHOTEL",
+   "price": 298.3,
+   "ma": 298.54,
+   "pct": -0.08,
+   "volume": 145139,
+   "type": "near"
+  },
+  {
+   "symbol": "ELECTCAST",
+   "price": 75.26,
+   "ma": 75.8,
+   "pct": -0.71,
+   "volume": 3013318,
+   "type": "near"
+  },
+  {
+   "symbol": "ELLEN",
+   "price": 332.55,
+   "ma": 336.95,
+   "pct": -1.31,
+   "volume": 723867,
+   "type": "sell"
+  },
+  {
+   "symbol": "EMCURE",
+   "price": 1937.1,
+   "ma": 1930.46,
+   "pct": 0.34,
+   "volume": 67551,
+   "type": "near"
+  },
+  {
+   "symbol": "ENRIN",
+   "price": 3316.4,
+   "ma": 3300.42,
+   "pct": 0.48,
+   "volume": 616768,
+   "type": "near"
+  },
+  {
+   "symbol": "ESTER",
+   "price": 93.4,
+   "ma": 92.42,
+   "pct": 1.06,
+   "volume": 115591,
+   "type": "near"
+  },
+  {
+   "symbol": "ETERNAL",
+   "price": 320.8,
+   "ma": 323.51,
+   "pct": -0.84,
+   "volume": 31037275,
+   "type": "near"
+  },
+  {
+   "symbol": "FINKURVE",
+   "price": 68.51,
+   "ma": 70.32,
+   "pct": -2.58,
+   "volume": 12875,
+   "type": "sell"
+  },
+  {
+   "symbol": "GFLLIMITED",
+   "price": 54.89,
+   "ma": 54.72,
+   "pct": 0.32,
+   "volume": 50355,
+   "type": "near"
+  },
+  {
+   "symbol": "GHCLTEXTIL",
+   "price": 129.53,
+   "ma": 127.71,
+   "pct": 1.42,
+   "volume": 218382,
+   "type": "near"
+  },
+  {
+   "symbol": "GLAND",
+   "price": 2911.5,
+   "ma": 2869.63,
+   "pct": 1.46,
+   "volume": 248980,
+   "type": "near"
+  },
+  {
+   "symbol": "GNFC",
+   "price": 586.3,
+   "ma": 581.4,
+   "pct": 0.84,
+   "volume": 297893,
+   "type": "near"
+  },
+  {
+   "symbol": "GODIGIT",
+   "price": 256.05,
+   "ma": 257.4,
+   "pct": -0.53,
+   "volume": 228010,
+   "type": "near"
+  },
+  {
+   "symbol": "GOODLUCK",
+   "price": 482.0,
+   "ma": 487.76,
+   "pct": -1.18,
+   "volume": 467075,
+   "type": "sell"
+  },
+  {
+   "symbol": "GVPIL",
+   "price": 704.35,
+   "ma": 681.82,
+   "pct": 3.3,
+   "volume": 239782,
+   "type": "buy"
+  },
+  {
+   "symbol": "HDFCBANK",
+   "price": 704.8,
+   "ma": 720.25,
+   "pct": -2.15,
+   "volume": 66056690,
+   "type": "sell"
+  },
+  {
+   "symbol": "HDFCLIFE",
+   "price": 531.0,
+   "ma": 538.88,
+   "pct": -1.46,
+   "volume": 3381490,
+   "type": "near"
+  },
+  {
+   "symbol": "IDBI",
+   "price": 86.31,
+   "ma": 85.13,
+   "pct": 1.39,
+   "volume": 11796166,
+   "type": "near"
+  },
+  {
+   "symbol": "IKS",
+   "price": 1766.8,
+   "ma": 1784.41,
+   "pct": -0.99,
+   "volume": 119886,
+   "type": "near"
+  },
+  {
+   "symbol": "INDHOTEL",
+   "price": 725.0,
+   "ma": 725.5,
+   "pct": -0.07,
+   "volume": 3696656,
+   "type": "near"
+  },
+  {
+   "symbol": "INDOBORAX",
+   "price": 460.65,
+   "ma": 469.82,
+   "pct": -1.95,
+   "volume": 82751,
+   "type": "sell"
+  },
+  {
+   "symbol": "INDUSTOWER",
+   "price": 380.2,
+   "ma": 377.77,
+   "pct": 0.64,
+   "volume": 5862757,
+   "type": "buy"
+  },
+  {
+   "symbol": "INOXINDIA",
+   "price": 2089.1,
+   "ma": 2065.31,
+   "pct": 1.15,
+   "volume": 300602,
+   "type": "near"
+  },
+  {
+   "symbol": "IONEXCHANG",
+   "price": 401.75,
+   "ma": 400.95,
+   "pct": 0.2,
+   "volume": 203327,
+   "type": "near"
+  },
+  {
+   "symbol": "IRISDOREME",
+   "price": 59.69,
+   "ma": 59.58,
+   "pct": 0.19,
+   "volume": 439369,
+   "type": "near"
+  },
+  {
+   "symbol": "ITC",
+   "price": 268.9,
+   "ma": 268.13,
+   "pct": 0.29,
+   "volume": 49020716,
+   "type": "buy"
+  },
+  {
+   "symbol": "ITDC",
+   "price": 664.8,
+   "ma": 674.68,
+   "pct": -1.46,
+   "volume": 143155,
+   "type": "near"
+  },
+  {
+   "symbol": "JAGRAN",
+   "price": 61.33,
+   "ma": 62.13,
+   "pct": -1.28,
+   "volume": 134875,
+   "type": "near"
+  },
+  {
+   "symbol": "JAINREC",
+   "price": 290.45,
+   "ma": 291.06,
+   "pct": -0.21,
+   "volume": 699536,
+   "type": "near"
+  },
+  {
+   "symbol": "JGCHEM",
+   "price": 609.65,
+   "ma": 606.47,
+   "pct": 0.52,
+   "volume": 297878,
+   "type": "near"
+  },
+  {
+   "symbol": "JNKINDIA",
+   "price": 432.2,
+   "ma": 431.56,
+   "pct": 0.15,
+   "volume": 70571,
+   "type": "near"
+  },
+  {
+   "symbol": "JSL",
+   "price": 742.0,
+   "ma": 734.55,
+   "pct": 1.01,
+   "volume": 393852,
+   "type": "buy"
+  },
+  {
+   "symbol": "JTLIND",
+   "price": 84.98,
+   "ma": 84.16,
+   "pct": 0.98,
+   "volume": 1489386,
+   "type": "near"
+  },
+  {
+   "symbol": "KAJARIACER",
+   "price": 1214.4,
+   "ma": 1219.05,
+   "pct": -0.38,
+   "volume": 629499,
+   "type": "sell"
+  },
+  {
+   "symbol": "KAPSTON",
+   "price": 548.6,
+   "ma": 554.38,
+   "pct": -1.04,
+   "volume": 68742,
+   "type": "near"
+  },
+  {
+   "symbol": "KPIGREEN",
+   "price": 321.85,
+   "ma": 321.21,
+   "pct": 0.2,
+   "volume": 1547466,
+   "type": "near"
+  },
+  {
+   "symbol": "KPIL",
+   "price": 1378.8,
+   "ma": 1385.49,
+   "pct": -0.48,
+   "volume": 130981,
+   "type": "near"
+  },
+  {
+   "symbol": "KRISHANA",
+   "price": 185.83,
+   "ma": 187.03,
+   "pct": -0.64,
+   "volume": 1043482,
+   "type": "near"
+  },
+  {
+   "symbol": "KRISHNADEF",
+   "price": 1201.0,
+   "ma": 1062.68,
+   "pct": 13.02,
+   "volume": 1437610,
+   "type": "buy"
+  },
+  {
+   "symbol": "KRSNAA",
+   "price": 559.35,
+   "ma": 555.94,
+   "pct": 0.61,
+   "volume": 50372,
+   "type": "buy"
+  },
+  {
+   "symbol": "KSB",
+   "price": 803.95,
+   "ma": 805.06,
+   "pct": -0.14,
+   "volume": 168361,
+   "type": "sell"
+  },
+  {
+   "symbol": "KSL",
+   "price": 921.3,
+   "ma": 910.39,
+   "pct": 1.2,
+   "volume": 52793,
+   "type": "near"
+  },
+  {
+   "symbol": "KTKBANK",
+   "price": 326.75,
+   "ma": 324.01,
+   "pct": 0.84,
+   "volume": 1078432,
+   "type": "buy"
+  },
+  {
+   "symbol": "KUANTUM",
+   "price": 76.43,
+   "ma": 77.55,
+   "pct": -1.44,
+   "volume": 126357,
+   "type": "near"
+  },
+  {
+   "symbol": "KUSUMGAR",
+   "price": 602.0,
+   "ma": 593.54,
+   "pct": 1.42,
+   "volume": 509173,
+   "type": "buy"
+  },
+  {
+   "symbol": "LEMONTREE",
+   "price": 107.86,
+   "ma": 107.17,
+   "pct": 0.64,
+   "volume": 3295164,
+   "type": "near"
+  },
+  {
+   "symbol": "LUMAXTECH",
+   "price": 1967.6,
+   "ma": 1971.91,
+   "pct": -0.22,
+   "volume": 60434,
+   "type": "sell"
+  },
+  {
+   "symbol": "LXCHEM",
+   "price": 177.08,
+   "ma": 175.53,
+   "pct": 0.89,
+   "volume": 843634,
+   "type": "near"
+  },
+  {
+   "symbol": "MAHABANK",
+   "price": 80.9,
+   "ma": 81.9,
+   "pct": -1.22,
+   "volume": 13114830,
+   "type": "near"
+  },
+  {
+   "symbol": "MAHLOG",
+   "price": 406.75,
+   "ma": 404.65,
+   "pct": 0.52,
+   "volume": 140897,
+   "type": "near"
+  },
+  {
+   "symbol": "MBAPL",
+   "price": 163.66,
+   "ma": 163.68,
+   "pct": -0.01,
+   "volume": 719951,
+   "type": "sell"
+  },
+  {
+   "symbol": "MCX",
+   "price": 3181.7,
+   "ma": 3166.93,
+   "pct": 0.47,
+   "volume": 1386833,
+   "type": "near"
+  },
+  {
+   "symbol": "MOBIKWIK",
+   "price": 201.79,
+   "ma": 199.23,
+   "pct": 1.29,
+   "volume": 1321942,
+   "type": "buy"
+  },
+  {
+   "symbol": "MRPL",
+   "price": 172.43,
+   "ma": 171.45,
+   "pct": 0.57,
+   "volume": 13082595,
+   "type": "buy"
+  },
+  {
+   "symbol": "MSTCLTD",
+   "price": 693.75,
+   "ma": 698.82,
+   "pct": -0.73,
+   "volume": 201122,
+   "type": "sell"
+  },
+  {
+   "symbol": "MUFIN",
+   "price": 132.89,
+   "ma": 134.8,
+   "pct": -1.42,
+   "volume": 1067885,
+   "type": "near"
+  },
+  {
+   "symbol": "NAVA",
+   "price": 556.7,
+   "ma": 561.2,
+   "pct": -0.8,
+   "volume": 302296,
+   "type": "near"
+  },
+  {
+   "symbol": "NAVINFLUOR",
+   "price": 8272.0,
+   "ma": 8375.68,
+   "pct": -1.24,
+   "volume": 133656,
+   "type": "near"
+  },
+  {
+   "symbol": "NITINSPIN",
+   "price": 604.75,
+   "ma": 605.7,
+   "pct": -0.16,
+   "volume": 83708,
+   "type": "near"
+  },
+  {
+   "symbol": "NTPCGREEN",
+   "price": 90.09,
+   "ma": 90.64,
+   "pct": -0.61,
+   "volume": 1231775,
+   "type": "sell"
+  },
+  {
+   "symbol": "NUVAMA",
+   "price": 1820.8,
+   "ma": 1727.85,
+   "pct": 5.38,
+   "volume": 4036851,
+   "type": "buy"
+  },
+  {
+   "symbol": "NYKAA",
+   "price": 339.55,
+   "ma": 333.06,
+   "pct": 1.95,
+   "volume": 19341790,
+   "type": "buy"
+  },
+  {
+   "symbol": "PANAMAPET",
+   "price": 482.2,
+   "ma": 482.73,
+   "pct": -0.11,
+   "volume": 109018,
+   "type": "sell"
+  },
+  {
+   "symbol": "PARADEEP",
+   "price": 153.6,
+   "ma": 153.47,
+   "pct": 0.09,
+   "volume": 1604847,
+   "type": "buy"
+  },
+  {
+   "symbol": "PATANJALI",
+   "price": 355.7,
+   "ma": 357.73,
+   "pct": -0.57,
+   "volume": 7070094,
+   "type": "near"
+  },
+  {
+   "symbol": "PAYTM",
+   "price": 1684.0,
+   "ma": 1666.5,
+   "pct": 1.05,
+   "volume": 2267650,
+   "type": "buy"
+  },
+  {
+   "symbol": "PDMJEPAPER",
+   "price": 95.85,
+   "ma": 94.45,
+   "pct": 1.48,
+   "volume": 124848,
+   "type": "near"
+  },
+  {
+   "symbol": "PERSISTENT",
+   "price": 5530.0,
+   "ma": 5508.25,
+   "pct": 0.39,
+   "volume": 768988,
+   "type": "buy"
+  },
+  {
+   "symbol": "PETRONET",
+   "price": 290.0,
+   "ma": 286.63,
+   "pct": 1.18,
+   "volume": 2861154,
+   "type": "buy"
+  },
+  {
+   "symbol": "PHOENIXLTD",
+   "price": 1935.0,
+   "ma": 1916.95,
+   "pct": 0.94,
+   "volume": 430722,
+   "type": "near"
+  },
+  {
+   "symbol": "PLAZACABLE",
+   "price": 55.32,
+   "ma": 56.19,
+   "pct": -1.56,
+   "volume": 82221,
+   "type": "sell"
+  },
+  {
+   "symbol": "PNGSREVA",
+   "price": 535.3,
+   "ma": 530.19,
+   "pct": 0.96,
+   "volume": 481628,
+   "type": "buy"
+  },
+  {
+   "symbol": "PRIVISCL",
+   "price": 3442.2,
+   "ma": 3505.5,
+   "pct": -1.81,
+   "volume": 186750,
+   "type": "sell"
+  },
+  {
+   "symbol": "PVRINOX",
+   "price": 1231.4,
+   "ma": 1222.58,
+   "pct": 0.72,
+   "volume": 279083,
+   "type": "buy"
+  },
+  {
+   "symbol": "PWL",
+   "price": 131.1,
+   "ma": 125.81,
+   "pct": 4.2,
+   "volume": 28246518,
+   "type": "buy"
+  },
+  {
+   "symbol": "QUESS",
+   "price": 341.85,
+   "ma": 345.48,
+   "pct": -1.05,
+   "volume": 262863,
+   "type": "near"
+  },
+  {
+   "symbol": "RACLGEAR",
+   "price": 1550.4,
+   "ma": 1559.51,
+   "pct": -0.58,
+   "volume": 17316,
+   "type": "near"
+  },
+  {
+   "symbol": "RAIN",
+   "price": 208.02,
+   "ma": 210.99,
+   "pct": -1.41,
+   "volume": 1705460,
+   "type": "near"
+  },
+  {
+   "symbol": "RESPONIND",
+   "price": 158.17,
+   "ma": 160.97,
+   "pct": -1.74,
+   "volume": 150939,
+   "type": "sell"
+  },
+  {
+   "symbol": "RHIM",
+   "price": 372.75,
+   "ma": 381.01,
+   "pct": -2.17,
+   "volume": 289249,
+   "type": "sell"
+  },
+  {
+   "symbol": "RIR",
+   "price": 174.61,
+   "ma": 173.97,
+   "pct": 0.37,
+   "volume": 406622,
+   "type": "near"
+  },
+  {
+   "symbol": "RRKABEL",
+   "price": 2648.0,
+   "ma": 2639.73,
+   "pct": 0.31,
+   "volume": 635507,
+   "type": "buy"
+  },
+  {
+   "symbol": "RSYSTEMS",
+   "price": 249.9,
+   "ma": 248.61,
+   "pct": 0.52,
+   "volume": 2005620,
+   "type": "near"
+  },
+  {
+   "symbol": "RUSTOMJEE",
+   "price": 368.5,
+   "ma": 367.82,
+   "pct": 0.18,
+   "volume": 73016,
+   "type": "buy"
+  },
+  {
+   "symbol": "SAILIFE",
+   "price": 1511.3,
+   "ma": 1518.67,
+   "pct": -0.49,
+   "volume": 325814,
+   "type": "sell"
+  },
+  {
+   "symbol": "SAKAR",
+   "price": 1006.8,
+   "ma": 1012.8,
+   "pct": -0.59,
+   "volume": 204117,
+   "type": "sell"
+  },
+  {
+   "symbol": "SARDAEN",
+   "price": 501.0,
+   "ma": 507.11,
+   "pct": -1.2,
+   "volume": 207207,
+   "type": "near"
+  },
+  {
+   "symbol": "SATIN",
+   "price": 216.29,
+   "ma": 224.31,
+   "pct": -3.58,
+   "volume": 1194660,
+   "type": "sell"
+  },
+  {
+   "symbol": "SCI",
+   "price": 290.6,
+   "ma": 286.16,
+   "pct": 1.55,
+   "volume": 24814404,
+   "type": "buy"
+  },
+  {
+   "symbol": "SDBL",
+   "price": 73.21,
+   "ma": 72.53,
+   "pct": 0.94,
+   "volume": 717652,
+   "type": "near"
+  },
+  {
+   "symbol": "SGFIN",
+   "price": 677.95,
+   "ma": 658.71,
+   "pct": 2.92,
+   "volume": 3245313,
+   "type": "buy"
+  },
+  {
+   "symbol": "SHOPERSTOP",
+   "price": 395.5,
+   "ma": 401.97,
+   "pct": -1.61,
+   "volume": 40206,
+   "type": "sell"
+  },
+  {
+   "symbol": "SHRINGARMS",
+   "price": 219.36,
+   "ma": 220.64,
+   "pct": -0.58,
+   "volume": 290081,
+   "type": "sell"
+  },
+  {
+   "symbol": "SHYAMMETL",
+   "price": 1020.2,
+   "ma": 1047.34,
+   "pct": -2.59,
+   "volume": 527412,
+   "type": "sell"
+  },
+  {
+   "symbol": "SIGNPOST",
+   "price": 260.85,
+   "ma": 264.8,
+   "pct": -1.49,
+   "volume": 16214,
+   "type": "near"
+  },
+  {
+   "symbol": "SONACOMS",
+   "price": 797.0,
+   "ma": 805.11,
+   "pct": -1.01,
+   "volume": 2049996,
+   "type": "sell"
+  },
+  {
+   "symbol": "STAR",
+   "price": 1086.7,
+   "ma": 1080.61,
+   "pct": 0.56,
+   "volume": 108287,
+   "type": "near"
+  },
+  {
+   "symbol": "SURYAROSNI",
+   "price": 220.41,
+   "ma": 221.62,
+   "pct": -0.55,
+   "volume": 530488,
+   "type": "near"
+  },
+  {
+   "symbol": "TBOTEK",
+   "price": 1657.0,
+   "ma": 1677.14,
+   "pct": -1.2,
+   "volume": 52113,
+   "type": "near"
+  },
+  {
+   "symbol": "TCI",
+   "price": 878.75,
+   "ma": 880.27,
+   "pct": -0.17,
+   "volume": 71248,
+   "type": "near"
+  },
+  {
+   "symbol": "TECHNOE",
+   "price": 978.6,
+   "ma": 993.5,
+   "pct": -1.5,
+   "volume": 138238,
+   "type": "sell"
+  },
+  {
+   "symbol": "TEXMOPIPES",
+   "price": 50.37,
+   "ma": 50.84,
+   "pct": -0.92,
+   "volume": 276688,
+   "type": "sell"
+  },
+  {
+   "symbol": "TI",
+   "price": 540.35,
+   "ma": 548.09,
+   "pct": -1.41,
+   "volume": 282972,
+   "type": "near"
+  },
+  {
+   "symbol": "TMB",
+   "price": 886.25,
+   "ma": 886.89,
+   "pct": -0.07,
+   "volume": 420110,
+   "type": "near"
+  },
+  {
+   "symbol": "TNPL",
+   "price": 146.49,
+   "ma": 148.21,
+   "pct": -1.16,
+   "volume": 73341,
+   "type": "near"
+  },
+  {
+   "symbol": "TRUALT",
+   "price": 442.3,
+   "ma": 443.11,
+   "pct": -0.18,
+   "volume": 100918,
+   "type": "sell"
+  },
+  {
+   "symbol": "TVSSCS",
+   "price": 127.27,
+   "ma": 128.76,
+   "pct": -1.16,
+   "volume": 402736,
+   "type": "near"
+  },
+  {
+   "symbol": "UDS",
+   "price": 210.82,
+   "ma": 211.59,
+   "pct": -0.36,
+   "volume": 78015,
+   "type": "near"
+  },
+  {
+   "symbol": "UJJIVANSFB",
+   "price": 66.59,
+   "ma": 67.38,
+   "pct": -1.18,
+   "volume": 16279797,
+   "type": "near"
+  },
+  {
+   "symbol": "UNICHEMLAB",
+   "price": 531.45,
+   "ma": 537.32,
+   "pct": -1.09,
+   "volume": 116755,
+   "type": "near"
+  },
+  {
+   "symbol": "URBANCO",
+   "price": 159.59,
+   "ma": 160.32,
+   "pct": -0.46,
+   "volume": 2694786,
+   "type": "near"
+  },
+  {
+   "symbol": "USHAMART",
+   "price": 510.5,
+   "ma": 502.59,
+   "pct": 1.57,
+   "volume": 1068924,
+   "type": "buy"
+  },
+  {
+   "symbol": "UTTAMSUGAR",
+   "price": 294.7,
+   "ma": 281.46,
+   "pct": 4.7,
+   "volume": 362425,
+   "type": "buy"
+  },
+  {
+   "symbol": "VOEPL",
+   "price": 506.1,
+   "ma": 513.8,
+   "pct": -1.5,
+   "volume": 2133658,
+   "type": "near"
+  },
+  {
+   "symbol": "WCIL",
+   "price": 89.27,
+   "ma": 88.81,
+   "pct": 0.52,
+   "volume": 330348,
+   "type": "near"
+  },
+  {
+   "symbol": "WOCKPHARMA",
+   "price": 2063.5,
+   "ma": 2036.96,
+   "pct": 1.3,
+   "volume": 803153,
+   "type": "near"
+  },
+  {
+   "symbol": "ZYDUSLIFE",
+   "price": 1139.0,
+   "ma": 1145.5,
+   "pct": -0.57,
+   "volume": 1592973,
+   "type": "sell"
+  }
+ ]
+}
