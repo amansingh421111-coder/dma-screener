@@ -2,7 +2,7 @@
 import argparse, datetime as dt, io, json, logging, os, smtplib, sys, time
 from email.mime.text import MIMEText
 from pathlib import Path
-import pandas as pd, requests, yaml
+import numpy as np, pandas as pd, requests, yaml
 
 ROOT = Path(__file__).resolve().parent
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
@@ -29,6 +29,49 @@ def universe():
 def moving_avg(close, kind, n):
     return close.rolling(n).mean() if kind.upper() == "SMA" else close.ewm(span=n, adjust=False).mean()
 
+def candle_info(df):
+    """Name the latest candle and where it closed in its range (0=low, 1=high)."""
+    if not {"Open", "High", "Low"} <= set(df.columns): return None, 0.5
+    r = df.iloc[-1]
+    vals = [r[x] for x in ("Open", "High", "Low", "Close")]
+    if any(pd.isna(v) for v in vals): return None, 0.5
+    o, h, l, c = map(float, vals); rng = h - l
+    if rng <= 0: return "doji", 0.5
+    body, pos = abs(c - o), (c - l) / rng
+    lw, uw = min(o, c) - l, h - max(o, c)
+    if lw >= 2 * body and pos >= 0.6 and body > 0: name = "hammer"
+    elif uw >= 2 * body and pos <= 0.4 and body > 0: name = "shooting_star"
+    elif body / rng < 0.15: name = "doji"
+    else: name = "bullish" if c > o else "bearish"
+    return name, pos
+
+def conviction(direction, name, pos, vol_x):
+    """0-3 points: candle agrees with expected move, close near the extreme, volume surge."""
+    if name is None: return 0
+    pts = 0
+    if direction > 0: pts += name in ("bullish", "hammer"); pts += pos >= 0.67
+    else: pts += name in ("bearish", "shooting_star"); pts += pos <= 0.33
+    return int(pts + (vol_x >= 1.5))
+
+def rsi14(close):
+    d = close.diff()
+    up = d.clip(lower=0).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+    dn = (-d.clip(upper=0)).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+    return round(float(100 - 100 / (1 + up / dn)), 1) if dn > 0 else 100.0
+
+def extras(close, m, c0, c1):
+    """Extra screening fields: day change, RSI, 200-DMA trend, 52W position, days on side, mini-chart data."""
+    m200 = close.rolling(200).mean().iloc[-1]
+    hi, lo = float(close.tail(252).max()), float(close.tail(252).min())
+    cur = bool(close.iloc[-1] > m.iloc[-1])
+    idx = np.where(m.notna().values & ((close > m).values != cur))[0]
+    return dict(chg=round(float((c0 / c1 - 1) * 100), 2), rsi=rsi14(close),
+                above200=bool(c0 > m200) if pd.notna(m200) else None,
+                hi52=round(hi, 2), lo52=round(lo, 2), from_hi=round(float((c0 / hi - 1) * 100), 1),
+                since=int(len(close) - 1 - idx[-1]) if idx.size else None,
+                spark=[round(float(x), 2) for x in close.tail(60)],
+                sparkma=[None if pd.isna(x) else round(float(x), 2) for x in m.tail(60)])
+
 def classify(sym, df, c):
     """Return a signal dict (buy/sell/near) or None. Pure function, easy to test."""
     df = df.dropna(subset=["Close"])
@@ -44,10 +87,16 @@ def classify(sym, df, c):
     elif c1 >= m1 and c0 < m0: kind = "sell"
     elif abs(pct) <= c["near_pct"]: kind = "near"
     else: return None
+    name, pos = candle_info(df)
+    prev_vol = df["Volume"].iloc[-21:-1].mean()
+    vol_x = float(df["Volume"].iloc[-1] / prev_vol) if prev_vol > 0 else 0.0
+    direction = 1 if kind == "buy" else -1 if kind == "sell" else (1 if pct < 0 else -1)
     return dict(symbol=sym, price=round(float(c0), 2), ma=round(float(m0), 2),
-                pct=round(float(pct), 2), volume=int(df["Volume"].iloc[-1]), type=kind)
+                pct=round(float(pct), 2), volume=int(df["Volume"].iloc[-1]), type=kind,
+                candle=name, score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1),
+                **extras(close, m, c0, c1))
 
-def fetch(syms, batch=150, period="8mo"):
+def fetch(syms, batch=150, period="1y"):
     import yfinance as yf
     out = {}
     for i in range(0, len(syms), batch):
@@ -62,7 +111,7 @@ def fetch(syms, batch=150, period="8mo"):
                 log.warning("batch %d retry %d: %s", i, attempt, e); time.sleep(5 * (attempt + 1))
         if d is None or d.empty: continue
         for t in chunk:
-            try: out[t[:-3]] = d[t][["Close", "Volume"]]
+            try: out[t[:-3]] = d[t][["Open", "High", "Low", "Close", "Volume"]]
             except KeyError: pass
         time.sleep(1)
     return out
@@ -70,11 +119,11 @@ def fetch(syms, batch=150, period="8mo"):
 def format_msg(sigs, title, cap):
     lines = [title]
     for kind, label in (("buy", "🟢 BUY signals"), ("sell", "🔴 SELL signals"), ("near", "🟡 Approaching")):
-        g = sorted([s for s in sigs if s["type"] == kind], key=lambda s: abs(s["pct"]))
+        g = sorted([s for s in sigs if s["type"] == kind], key=lambda s: (-s.get("score", 0), abs(s["pct"])))
         if not g: continue
         lines.append(f"\n{label} ({len(g)})")
         for s in g[:cap]:
-            lines.append(f"{s['symbol']}  ₹{s['price']}  MA ₹{s['ma']}  {s['pct']:+}%  "
+            lines.append(f"{s['symbol']}  ₹{s['price']}  MA ₹{s['ma']}  {s['pct']:+}%  {s.get('candle') or ''} {'★' * s.get('score', 0)}{'☆' * (3 - s.get('score', 0))}  "
                          f"https://www.tradingview.com/chart/?symbol=NSE:{s['symbol']}")
     lines.append("\nResearch alert only, not financial advice.")
     return "\n".join(lines)[:4000]
