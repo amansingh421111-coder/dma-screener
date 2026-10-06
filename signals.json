@@ -1,10 +1,12 @@
 {
- "updated": "2026-10-06T21:48:10.078539+00:00",
+ "updated": "2026-10-06T22:15:08.450405+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
+ "universe_exchange": "NSE",
  "signals": [
   {
    "symbol": "20MICRONS",
+   "exchange": "NSE",
    "price": 204.61,
    "ma": 207.27,
    "pct": -1.28,
@@ -147,6 +149,7 @@
   },
   {
    "symbol": "5PAISA",
+   "exchange": "NSE",
    "price": 360.9,
    "ma": 347.87,
    "pct": 3.74,
@@ -289,6 +292,7 @@
   },
   {
    "symbol": "AAATECH",
+   "exchange": "NSE",
    "price": 95.44,
    "ma": 93.34,
    "pct": 2.25,
@@ -431,6 +435,7 @@
   },
   {
    "symbol": "ABSLAMC",
+   "exchange": "NSE",
    "price": 1028.55,
    "ma": 1030.26,
    "pct": -0.17,
@@ -573,6 +578,7 @@
   },
   {
    "symbol": "ADANIGREEN",
+   "exchange": "NSE",
    "price": 1284.0,
    "ma": 1303.07,
    "pct": -1.46,
@@ -715,6 +721,7 @@
   },
   {
    "symbol": "ADSL",
+   "exchange": "NSE",
    "price": 105.51,
    "ma": 106.78,
    "pct": -1.19,
@@ -857,6 +864,7 @@
   },
   {
    "symbol": "AETHER",
+   "exchange": "NSE",
    "price": 1661.0,
    "ma": 1643.92,
    "pct": 1.04,
@@ -999,6 +1007,7 @@
   },
   {
    "symbol": "AIIL",
+   "exchange": "NSE",
    "price": 551.6,
    "ma": 548.59,
    "pct": 0.55,
@@ -1141,6 +1150,7 @@
   },
   {
    "symbol": "AJMERA",
+   "exchange": "NSE",
    "price": 116.7,
    "ma": 118.35,
    "pct": -1.4,
@@ -1283,6 +1293,7 @@
   },
   {
    "symbol": "ALIVUS",
+   "exchange": "NSE",
    "price": 1373.7,
    "ma": 1376.23,
    "pct": -0.18,
@@ -1425,6 +1436,7 @@
   },
   {
    "symbol": "ANUHPHR",
+   "exchange": "NSE",
    "price": 84.15,
    "ma": 84.61,
    "pct": -0.54,
@@ -1567,6 +1579,7 @@
   },
   {
    "symbol": "APLLTD",
+   "exchange": "NSE",
    "price": 831.25,
    "ma": 826.98,
    "pct": 0.52,
@@ -1709,6 +1722,7 @@
   },
   {
    "symbol": "APOLLO",
+   "exchange": "NSE",
    "price": 401.7,
    "ma": 394.1,
    "pct": 1.93,
@@ -1851,6 +1865,7 @@
   },
   {
    "symbol": "ARFIN",
+   "exchange": "NSE",
    "price": 87.51,
    "ma": 86.83,
    "pct": 0.78,
@@ -1993,6 +2008,7 @@
   },
   {
    "symbol": "ASAHIINDIA",
+   "exchange": "NSE",
    "price": 945.75,
    "ma": 947.48,
    "pct": -0.18,
@@ -2135,6 +2151,7 @@
   },
   {
    "symbol": "AUROPHARMA",
+   "exchange": "NSE",
    "price": 1674.9,
    "ma": 1663.17,
    "pct": 0.71,
@@ -2277,6 +2294,7 @@
   },
   {
    "symbol": "AURUM",
+   "exchange": "NSE",
    "price": 223.61,
    "ma": 224.98,
    "pct": -0.61,
@@ -2419,6 +2437,7 @@
   },
   {
    "symbol": "AVL",
+   "exchange": "NSE",
    "price": 601.05,
    "ma": 610.0,
    "pct": -1.47,
@@ -2561,6 +2580,7 @@
   },
   {
    "symbol": "AXISBANK",
+   "exchange": "NSE",
    "price": 1222.2,
    "ma": 1240.74,
    "pct": -1.49,
@@ -2703,6 +2723,7 @@
   },
   {
    "symbol": "BALRAMCHIN",
+   "exchange": "NSE",
    "price": 671.5,
    "ma": 670.64,
    "pct": 0.13,
@@ -2845,6 +2866,7 @@
   },
   {
    "symbol": "BANDHANBNK",
+   "exchange": "NSE",
    "price": 168.27,
    "ma": 173.85,
    "pct": -3.21,
@@ -2987,6 +3009,7 @@
   },
   {
    "symbol": "BANSALWIRE",
+   "exchange": "NSE",
    "price": 323.05,
    "ma": 318.46,
    "pct": 1.44,
@@ -3129,6 +3152,7 @@
   },
   {
    "symbol": "BEML",
+   "exchange": "NSE",
    "price": 1970.4,
    "ma": 1967.21,
    "pct": 0.16,
@@ -3271,6 +3295,7 @@
   },
   {
    "symbol": "BEPL",
+   "exchange": "NSE",
    "price": 124.77,
    "ma": 125.63,
    "pct": -0.69,
@@ -3413,6 +3438,7 @@
   },
   {
    "symbol": "BHEL",
+   "exchange": "NSE",
    "price": 429.0,
    "ma": 421.93,
    "pct": 1.68,
@@ -3555,6 +3581,7 @@
   },
   {
    "symbol": "BLACKBUCK",
+   "exchange": "NSE",
    "price": 599.4,
    "ma": 595.51,
    "pct": 0.65,
@@ -3697,6 +3724,7 @@
   },
   {
    "symbol": "BLKASHYAP",
+   "exchange": "NSE",
    "price": 53.22,
    "ma": 53.88,
    "pct": -1.22,
@@ -3839,6 +3867,7 @@
   },
   {
    "symbol": "BLSE",
+   "exchange": "NSE",
    "price": 159.57,
    "ma": 159.36,
    "pct": 0.13,
@@ -3981,6 +4010,7 @@
   },
   {
    "symbol": "BLUESTARCO",
+   "exchange": "NSE",
    "price": 1510.0,
    "ma": 1511.71,
    "pct": -0.11,
@@ -4123,6 +4153,7 @@
   },
   {
    "symbol": "CARTRADE",
+   "exchange": "NSE",
    "price": 2935.4,
    "ma": 2942.52,
    "pct": -0.24,
@@ -4265,6 +4296,7 @@
   },
   {
    "symbol": "CGCL",
+   "exchange": "NSE",
    "price": 247.06,
    "ma": 249.85,
    "pct": -1.12,
@@ -4407,6 +4439,7 @@
   },
   {
    "symbol": "CGPOWER",
+   "exchange": "NSE",
    "price": 882.3,
    "ma": 885.91,
    "pct": -0.41,
@@ -4549,6 +4582,7 @@
   },
   {
    "symbol": "CHENNPETRO",
+   "exchange": "NSE",
    "price": 1401.0,
    "ma": 1405.4,
    "pct": -0.31,
@@ -4691,6 +4725,7 @@
   },
   {
    "symbol": "CLEANMAX",
+   "exchange": "NSE",
    "price": 1303.3,
    "ma": 1313.35,
    "pct": -0.77,
@@ -4833,6 +4868,7 @@
   },
   {
    "symbol": "CMLL",
+   "exchange": "NSE",
    "price": 507.2,
    "ma": 515.13,
    "pct": -1.54,
@@ -4957,6 +4993,7 @@
   },
   {
    "symbol": "CMRGREEN",
+   "exchange": "NSE",
    "price": 221.48,
    "ma": 221.64,
    "pct": -0.07,
@@ -5099,6 +5136,7 @@
   },
   {
    "symbol": "COFORGE",
+   "exchange": "NSE",
    "price": 1852.0,
    "ma": 1844.53,
    "pct": 0.4,
@@ -5241,6 +5279,7 @@
   },
   {
    "symbol": "COHANCE",
+   "exchange": "NSE",
    "price": 446.8,
    "ma": 449.15,
    "pct": -0.52,
@@ -5383,6 +5422,7 @@
   },
   {
    "symbol": "CORDELIA",
+   "exchange": "NSE",
    "price": 100.83,
    "ma": 99.86,
    "pct": 0.97,
@@ -5525,6 +5565,7 @@
   },
   {
    "symbol": "DALMIASUG",
+   "exchange": "NSE",
    "price": 430.15,
    "ma": 432.28,
    "pct": -0.49,
@@ -5667,6 +5708,7 @@
   },
   {
    "symbol": "DAMCAPITAL",
+   "exchange": "NSE",
    "price": 146.75,
    "ma": 145.6,
    "pct": 0.79,
@@ -5809,6 +5851,7 @@
   },
   {
    "symbol": "DCMSHRIRAM",
+   "exchange": "NSE",
    "price": 1044.55,
    "ma": 1007.1,
    "pct": 3.72,
@@ -5951,6 +5994,7 @@
   },
   {
    "symbol": "DEEDEV",
+   "exchange": "NSE",
    "price": 636.95,
    "ma": 648.64,
    "pct": -1.8,
@@ -6093,6 +6137,7 @@
   },
   {
    "symbol": "DLF",
+   "exchange": "NSE",
    "price": 673.0,
    "ma": 663.93,
    "pct": 1.37,
@@ -6235,6 +6280,7 @@
   },
   {
    "symbol": "ECLERX",
+   "exchange": "NSE",
    "price": 1884.3,
    "ma": 1882.09,
    "pct": 0.12,
@@ -6377,6 +6423,7 @@
   },
   {
    "symbol": "EIHOTEL",
+   "exchange": "NSE",
    "price": 298.3,
    "ma": 298.54,
    "pct": -0.08,
@@ -6519,6 +6566,7 @@
   },
   {
    "symbol": "ELECTCAST",
+   "exchange": "NSE",
    "price": 75.26,
    "ma": 75.8,
    "pct": -0.71,
@@ -6661,6 +6709,7 @@
   },
   {
    "symbol": "ELLEN",
+   "exchange": "NSE",
    "price": 332.55,
    "ma": 336.95,
    "pct": -1.31,
@@ -6803,6 +6852,7 @@
   },
   {
    "symbol": "EMCURE",
+   "exchange": "NSE",
    "price": 1937.1,
    "ma": 1930.46,
    "pct": 0.34,
@@ -6945,6 +6995,7 @@
   },
   {
    "symbol": "ENRIN",
+   "exchange": "NSE",
    "price": 3316.4,
    "ma": 3300.42,
    "pct": 0.48,
@@ -7087,6 +7138,7 @@
   },
   {
    "symbol": "ESTER",
+   "exchange": "NSE",
    "price": 93.4,
    "ma": 92.42,
    "pct": 1.06,
@@ -7229,6 +7281,7 @@
   },
   {
    "symbol": "ETERNAL",
+   "exchange": "NSE",
    "price": 320.8,
    "ma": 323.51,
    "pct": -0.84,
@@ -7371,6 +7424,7 @@
   },
   {
    "symbol": "FINKURVE",
+   "exchange": "NSE",
    "price": 68.51,
    "ma": 70.32,
    "pct": -2.58,
@@ -7513,6 +7567,7 @@
   },
   {
    "symbol": "GFLLIMITED",
+   "exchange": "NSE",
    "price": 54.89,
    "ma": 54.72,
    "pct": 0.32,
@@ -7655,6 +7710,7 @@
   },
   {
    "symbol": "GHCLTEXTIL",
+   "exchange": "NSE",
    "price": 129.53,
    "ma": 127.71,
    "pct": 1.42,
@@ -7797,6 +7853,7 @@
   },
   {
    "symbol": "GLAND",
+   "exchange": "NSE",
    "price": 2911.5,
    "ma": 2869.63,
    "pct": 1.46,
@@ -7939,6 +7996,7 @@
   },
   {
    "symbol": "GNFC",
+   "exchange": "NSE",
    "price": 586.3,
    "ma": 581.4,
    "pct": 0.84,
@@ -8081,6 +8139,7 @@
   },
   {
    "symbol": "GODIGIT",
+   "exchange": "NSE",
    "price": 256.05,
    "ma": 257.4,
    "pct": -0.53,
@@ -8223,6 +8282,7 @@
   },
   {
    "symbol": "GOODLUCK",
+   "exchange": "NSE",
    "price": 482.0,
    "ma": 487.76,
    "pct": -1.18,
@@ -8365,6 +8425,7 @@
   },
   {
    "symbol": "GVPIL",
+   "exchange": "NSE",
    "price": 704.35,
    "ma": 681.82,
    "pct": 3.3,
@@ -8507,6 +8568,7 @@
   },
   {
    "symbol": "HDFCBANK",
+   "exchange": "NSE",
    "price": 704.8,
    "ma": 720.25,
    "pct": -2.15,
@@ -8649,6 +8711,7 @@
   },
   {
    "symbol": "HDFCLIFE",
+   "exchange": "NSE",
    "price": 531.0,
    "ma": 538.88,
    "pct": -1.46,
@@ -8791,6 +8854,7 @@
   },
   {
    "symbol": "IDBI",
+   "exchange": "NSE",
    "price": 86.31,
    "ma": 85.13,
    "pct": 1.39,
@@ -8933,6 +8997,7 @@
   },
   {
    "symbol": "IKS",
+   "exchange": "NSE",
    "price": 1766.8,
    "ma": 1784.41,
    "pct": -0.99,
@@ -9075,6 +9140,7 @@
   },
   {
    "symbol": "INDHOTEL",
+   "exchange": "NSE",
    "price": 725.0,
    "ma": 725.5,
    "pct": -0.07,
@@ -9217,6 +9283,7 @@
   },
   {
    "symbol": "INDOBORAX",
+   "exchange": "NSE",
    "price": 460.65,
    "ma": 469.82,
    "pct": -1.95,
@@ -9359,6 +9426,7 @@
   },
   {
    "symbol": "INDUSTOWER",
+   "exchange": "NSE",
    "price": 380.2,
    "ma": 377.77,
    "pct": 0.64,
@@ -9501,6 +9569,7 @@
   },
   {
    "symbol": "INOXINDIA",
+   "exchange": "NSE",
    "price": 2089.1,
    "ma": 2065.31,
    "pct": 1.15,
@@ -9643,6 +9712,7 @@
   },
   {
    "symbol": "IONEXCHANG",
+   "exchange": "NSE",
    "price": 401.75,
    "ma": 400.95,
    "pct": 0.2,
@@ -9785,6 +9855,7 @@
   },
   {
    "symbol": "IRISDOREME",
+   "exchange": "NSE",
    "price": 59.69,
    "ma": 59.58,
    "pct": 0.19,
@@ -9927,6 +9998,7 @@
   },
   {
    "symbol": "ITC",
+   "exchange": "NSE",
    "price": 268.9,
    "ma": 268.13,
    "pct": 0.29,
@@ -10069,6 +10141,7 @@
   },
   {
    "symbol": "ITDC",
+   "exchange": "NSE",
    "price": 664.8,
    "ma": 674.68,
    "pct": -1.46,
@@ -10211,6 +10284,7 @@
   },
   {
    "symbol": "JAGRAN",
+   "exchange": "NSE",
    "price": 61.33,
    "ma": 62.13,
    "pct": -1.28,
@@ -10353,6 +10427,7 @@
   },
   {
    "symbol": "JAINREC",
+   "exchange": "NSE",
    "price": 290.45,
    "ma": 291.06,
    "pct": -0.21,
@@ -10495,6 +10570,7 @@
   },
   {
    "symbol": "JGCHEM",
+   "exchange": "NSE",
    "price": 609.65,
    "ma": 606.47,
    "pct": 0.52,
@@ -10637,6 +10713,7 @@
   },
   {
    "symbol": "JNKINDIA",
+   "exchange": "NSE",
    "price": 432.2,
    "ma": 431.56,
    "pct": 0.15,
@@ -10779,6 +10856,7 @@
   },
   {
    "symbol": "JSL",
+   "exchange": "NSE",
    "price": 742.0,
    "ma": 734.55,
    "pct": 1.01,
@@ -10921,6 +10999,7 @@
   },
   {
    "symbol": "JTLIND",
+   "exchange": "NSE",
    "price": 84.98,
    "ma": 84.16,
    "pct": 0.98,
@@ -11063,6 +11142,7 @@
   },
   {
    "symbol": "KAJARIACER",
+   "exchange": "NSE",
    "price": 1214.4,
    "ma": 1219.05,
    "pct": -0.38,
@@ -11205,6 +11285,7 @@
   },
   {
    "symbol": "KAPSTON",
+   "exchange": "NSE",
    "price": 548.6,
    "ma": 554.38,
    "pct": -1.04,
@@ -11347,6 +11428,7 @@
   },
   {
    "symbol": "KPIGREEN",
+   "exchange": "NSE",
    "price": 321.85,
    "ma": 321.21,
    "pct": 0.2,
@@ -11489,6 +11571,7 @@
   },
   {
    "symbol": "KPIL",
+   "exchange": "NSE",
    "price": 1378.8,
    "ma": 1385.49,
    "pct": -0.48,
@@ -11631,6 +11714,7 @@
   },
   {
    "symbol": "KRISHANA",
+   "exchange": "NSE",
    "price": 185.83,
    "ma": 187.03,
    "pct": -0.64,
@@ -11773,6 +11857,7 @@
   },
   {
    "symbol": "KRISHNADEF",
+   "exchange": "NSE",
    "price": 1201.0,
    "ma": 1062.68,
    "pct": 13.02,
@@ -11915,6 +12000,7 @@
   },
   {
    "symbol": "KRSNAA",
+   "exchange": "NSE",
    "price": 559.35,
    "ma": 555.94,
    "pct": 0.61,
@@ -12057,6 +12143,7 @@
   },
   {
    "symbol": "KSB",
+   "exchange": "NSE",
    "price": 803.95,
    "ma": 805.06,
    "pct": -0.14,
@@ -12199,6 +12286,7 @@
   },
   {
    "symbol": "KSL",
+   "exchange": "NSE",
    "price": 921.3,
    "ma": 910.39,
    "pct": 1.2,
@@ -12341,6 +12429,7 @@
   },
   {
    "symbol": "KTKBANK",
+   "exchange": "NSE",
    "price": 326.75,
    "ma": 324.01,
    "pct": 0.84,
@@ -12483,6 +12572,7 @@
   },
   {
    "symbol": "KUANTUM",
+   "exchange": "NSE",
    "price": 76.43,
    "ma": 77.55,
    "pct": -1.44,
@@ -12625,6 +12715,7 @@
   },
   {
    "symbol": "KUSUMGAR",
+   "exchange": "NSE",
    "price": 602.0,
    "ma": 593.54,
    "pct": 1.42,
@@ -12763,6 +12854,7 @@
   },
   {
    "symbol": "LEMONTREE",
+   "exchange": "NSE",
    "price": 107.86,
    "ma": 107.17,
    "pct": 0.64,
@@ -12905,6 +12997,7 @@
   },
   {
    "symbol": "LUMAXTECH",
+   "exchange": "NSE",
    "price": 1967.6,
    "ma": 1971.91,
    "pct": -0.22,
@@ -13047,6 +13140,7 @@
   },
   {
    "symbol": "LXCHEM",
+   "exchange": "NSE",
    "price": 177.08,
    "ma": 175.53,
    "pct": 0.89,
@@ -13189,6 +13283,7 @@
   },
   {
    "symbol": "MAHABANK",
+   "exchange": "NSE",
    "price": 80.9,
    "ma": 81.9,
    "pct": -1.22,
@@ -13331,6 +13426,7 @@
   },
   {
    "symbol": "MAHLOG",
+   "exchange": "NSE",
    "price": 406.75,
    "ma": 404.65,
    "pct": 0.52,
@@ -13473,6 +13569,7 @@
   },
   {
    "symbol": "MBAPL",
+   "exchange": "NSE",
    "price": 163.66,
    "ma": 163.68,
    "pct": -0.01,
@@ -13615,6 +13712,7 @@
   },
   {
    "symbol": "MCX",
+   "exchange": "NSE",
    "price": 3181.7,
    "ma": 3166.93,
    "pct": 0.47,
@@ -13757,6 +13855,7 @@
   },
   {
    "symbol": "MOBIKWIK",
+   "exchange": "NSE",
    "price": 201.79,
    "ma": 199.23,
    "pct": 1.29,
@@ -13899,6 +13998,7 @@
   },
   {
    "symbol": "MRPL",
+   "exchange": "NSE",
    "price": 172.43,
    "ma": 171.45,
    "pct": 0.57,
@@ -14041,6 +14141,7 @@
   },
   {
    "symbol": "MSTCLTD",
+   "exchange": "NSE",
    "price": 693.75,
    "ma": 698.82,
    "pct": -0.73,
@@ -14183,6 +14284,7 @@
   },
   {
    "symbol": "MUFIN",
+   "exchange": "NSE",
    "price": 132.89,
    "ma": 134.8,
    "pct": -1.42,
@@ -14325,6 +14427,7 @@
   },
   {
    "symbol": "NAVA",
+   "exchange": "NSE",
    "price": 556.7,
    "ma": 561.2,
    "pct": -0.8,
@@ -14467,6 +14570,7 @@
   },
   {
    "symbol": "NAVINFLUOR",
+   "exchange": "NSE",
    "price": 8272.0,
    "ma": 8375.68,
    "pct": -1.24,
@@ -14609,6 +14713,7 @@
   },
   {
    "symbol": "NITINSPIN",
+   "exchange": "NSE",
    "price": 604.75,
    "ma": 605.7,
    "pct": -0.16,
@@ -14751,6 +14856,7 @@
   },
   {
    "symbol": "NTPCGREEN",
+   "exchange": "NSE",
    "price": 90.09,
    "ma": 90.64,
    "pct": -0.61,
@@ -14893,6 +14999,7 @@
   },
   {
    "symbol": "NUVAMA",
+   "exchange": "NSE",
    "price": 1820.8,
    "ma": 1727.85,
    "pct": 5.38,
@@ -15035,6 +15142,7 @@
   },
   {
    "symbol": "NYKAA",
+   "exchange": "NSE",
    "price": 339.55,
    "ma": 333.06,
    "pct": 1.95,
@@ -15177,6 +15285,7 @@
   },
   {
    "symbol": "PANAMAPET",
+   "exchange": "NSE",
    "price": 482.2,
    "ma": 482.73,
    "pct": -0.11,
@@ -15319,6 +15428,7 @@
   },
   {
    "symbol": "PARADEEP",
+   "exchange": "NSE",
    "price": 153.6,
    "ma": 153.47,
    "pct": 0.09,
@@ -15461,6 +15571,7 @@
   },
   {
    "symbol": "PATANJALI",
+   "exchange": "NSE",
    "price": 355.7,
    "ma": 357.73,
    "pct": -0.57,
@@ -15603,6 +15714,7 @@
   },
   {
    "symbol": "PAYTM",
+   "exchange": "NSE",
    "price": 1684.0,
    "ma": 1666.5,
    "pct": 1.05,
@@ -15745,6 +15857,7 @@
   },
   {
    "symbol": "PDMJEPAPER",
+   "exchange": "NSE",
    "price": 95.85,
    "ma": 94.45,
    "pct": 1.48,
@@ -15887,6 +16000,7 @@
   },
   {
    "symbol": "PERSISTENT",
+   "exchange": "NSE",
    "price": 5530.0,
    "ma": 5508.25,
    "pct": 0.39,
@@ -16029,6 +16143,7 @@
   },
   {
    "symbol": "PETRONET",
+   "exchange": "NSE",
    "price": 290.0,
    "ma": 286.63,
    "pct": 1.18,
@@ -16171,6 +16286,7 @@
   },
   {
    "symbol": "PHOENIXLTD",
+   "exchange": "NSE",
    "price": 1935.0,
    "ma": 1916.95,
    "pct": 0.94,
@@ -16313,6 +16429,7 @@
   },
   {
    "symbol": "PLAZACABLE",
+   "exchange": "NSE",
    "price": 55.32,
    "ma": 56.19,
    "pct": -1.56,
@@ -16455,6 +16572,7 @@
   },
   {
    "symbol": "PNGSREVA",
+   "exchange": "NSE",
    "price": 535.3,
    "ma": 530.19,
    "pct": 0.96,
@@ -16597,6 +16715,7 @@
   },
   {
    "symbol": "PRIVISCL",
+   "exchange": "NSE",
    "price": 3442.2,
    "ma": 3505.5,
    "pct": -1.81,
@@ -16739,6 +16858,7 @@
   },
   {
    "symbol": "PVRINOX",
+   "exchange": "NSE",
    "price": 1231.4,
    "ma": 1222.58,
    "pct": 0.72,
@@ -16881,6 +17001,7 @@
   },
   {
    "symbol": "PWL",
+   "exchange": "NSE",
    "price": 131.1,
    "ma": 125.81,
    "pct": 4.2,
@@ -17023,6 +17144,7 @@
   },
   {
    "symbol": "QUESS",
+   "exchange": "NSE",
    "price": 341.85,
    "ma": 345.48,
    "pct": -1.05,
@@ -17165,6 +17287,7 @@
   },
   {
    "symbol": "RACLGEAR",
+   "exchange": "NSE",
    "price": 1550.4,
    "ma": 1559.51,
    "pct": -0.58,
@@ -17307,6 +17430,7 @@
   },
   {
    "symbol": "RAIN",
+   "exchange": "NSE",
    "price": 208.02,
    "ma": 210.99,
    "pct": -1.41,
@@ -17449,6 +17573,7 @@
   },
   {
    "symbol": "RESPONIND",
+   "exchange": "NSE",
    "price": 158.17,
    "ma": 160.97,
    "pct": -1.74,
@@ -17591,6 +17716,7 @@
   },
   {
    "symbol": "RHIM",
+   "exchange": "NSE",
    "price": 372.75,
    "ma": 381.01,
    "pct": -2.17,
@@ -17733,6 +17859,7 @@
   },
   {
    "symbol": "RIR",
+   "exchange": "NSE",
    "price": 174.61,
    "ma": 173.97,
    "pct": 0.37,
@@ -17871,6 +17998,7 @@
   },
   {
    "symbol": "RRKABEL",
+   "exchange": "NSE",
    "price": 2648.0,
    "ma": 2639.73,
    "pct": 0.31,
@@ -18013,6 +18141,7 @@
   },
   {
    "symbol": "RSYSTEMS",
+   "exchange": "NSE",
    "price": 249.9,
    "ma": 248.61,
    "pct": 0.52,
@@ -18155,6 +18284,7 @@
   },
   {
    "symbol": "RUSTOMJEE",
+   "exchange": "NSE",
    "price": 368.5,
    "ma": 367.82,
    "pct": 0.18,
@@ -18297,6 +18427,7 @@
   },
   {
    "symbol": "SAILIFE",
+   "exchange": "NSE",
    "price": 1511.3,
    "ma": 1518.67,
    "pct": -0.49,
@@ -18439,6 +18570,7 @@
   },
   {
    "symbol": "SAKAR",
+   "exchange": "NSE",
    "price": 1006.8,
    "ma": 1012.8,
    "pct": -0.59,
@@ -18581,6 +18713,7 @@
   },
   {
    "symbol": "SARDAEN",
+   "exchange": "NSE",
    "price": 501.0,
    "ma": 507.11,
    "pct": -1.2,
@@ -18723,6 +18856,7 @@
   },
   {
    "symbol": "SATIN",
+   "exchange": "NSE",
    "price": 216.29,
    "ma": 224.31,
    "pct": -3.58,
@@ -18865,6 +18999,7 @@
   },
   {
    "symbol": "SCI",
+   "exchange": "NSE",
    "price": 290.6,
    "ma": 286.16,
    "pct": 1.55,
@@ -19007,6 +19142,7 @@
   },
   {
    "symbol": "SDBL",
+   "exchange": "NSE",
    "price": 73.21,
    "ma": 72.53,
    "pct": 0.94,
@@ -19149,6 +19285,7 @@
   },
   {
    "symbol": "SGFIN",
+   "exchange": "NSE",
    "price": 677.95,
    "ma": 658.71,
    "pct": 2.92,
@@ -19291,6 +19428,7 @@
   },
   {
    "symbol": "SHOPERSTOP",
+   "exchange": "NSE",
    "price": 395.5,
    "ma": 401.97,
    "pct": -1.61,
@@ -19433,6 +19571,7 @@
   },
   {
    "symbol": "SHRINGARMS",
+   "exchange": "NSE",
    "price": 219.36,
    "ma": 220.64,
    "pct": -0.58,
@@ -19575,6 +19714,7 @@
   },
   {
    "symbol": "SHYAMMETL",
+   "exchange": "NSE",
    "price": 1020.2,
    "ma": 1047.34,
    "pct": -2.59,
@@ -19717,6 +19857,7 @@
   },
   {
    "symbol": "SIGNPOST",
+   "exchange": "NSE",
    "price": 260.85,
    "ma": 264.8,
    "pct": -1.49,
@@ -19859,6 +20000,7 @@
   },
   {
    "symbol": "SONACOMS",
+   "exchange": "NSE",
    "price": 797.0,
    "ma": 805.11,
    "pct": -1.01,
@@ -20001,6 +20143,7 @@
   },
   {
    "symbol": "STAR",
+   "exchange": "NSE",
    "price": 1086.7,
    "ma": 1080.61,
    "pct": 0.56,
@@ -20143,6 +20286,7 @@
   },
   {
    "symbol": "SURYAROSNI",
+   "exchange": "NSE",
    "price": 220.41,
    "ma": 221.62,
    "pct": -0.55,
@@ -20285,6 +20429,7 @@
   },
   {
    "symbol": "TBOTEK",
+   "exchange": "NSE",
    "price": 1657.0,
    "ma": 1677.14,
    "pct": -1.2,
@@ -20427,6 +20572,7 @@
   },
   {
    "symbol": "TCI",
+   "exchange": "NSE",
    "price": 878.75,
    "ma": 880.27,
    "pct": -0.17,
@@ -20569,6 +20715,7 @@
   },
   {
    "symbol": "TECHNOE",
+   "exchange": "NSE",
    "price": 978.6,
    "ma": 993.5,
    "pct": -1.5,
@@ -20711,6 +20858,7 @@
   },
   {
    "symbol": "TEXMOPIPES",
+   "exchange": "NSE",
    "price": 50.37,
    "ma": 50.84,
    "pct": -0.92,
@@ -20853,6 +21001,7 @@
   },
   {
    "symbol": "TI",
+   "exchange": "NSE",
    "price": 540.35,
    "ma": 548.09,
    "pct": -1.41,
@@ -20995,6 +21144,7 @@
   },
   {
    "symbol": "TMB",
+   "exchange": "NSE",
    "price": 886.25,
    "ma": 886.89,
    "pct": -0.07,
@@ -21137,6 +21287,7 @@
   },
   {
    "symbol": "TNPL",
+   "exchange": "NSE",
    "price": 146.49,
    "ma": 148.21,
    "pct": -1.16,
@@ -21279,6 +21430,7 @@
   },
   {
    "symbol": "TRUALT",
+   "exchange": "NSE",
    "price": 442.3,
    "ma": 443.11,
    "pct": -0.18,
@@ -21421,6 +21573,7 @@
   },
   {
    "symbol": "TVSSCS",
+   "exchange": "NSE",
    "price": 127.27,
    "ma": 128.76,
    "pct": -1.16,
@@ -21563,6 +21716,7 @@
   },
   {
    "symbol": "UDS",
+   "exchange": "NSE",
    "price": 210.82,
    "ma": 211.59,
    "pct": -0.36,
@@ -21705,6 +21859,7 @@
   },
   {
    "symbol": "UJJIVANSFB",
+   "exchange": "NSE",
    "price": 66.59,
    "ma": 67.38,
    "pct": -1.18,
@@ -21847,6 +22002,7 @@
   },
   {
    "symbol": "UNICHEMLAB",
+   "exchange": "NSE",
    "price": 531.45,
    "ma": 537.32,
    "pct": -1.09,
@@ -21989,6 +22145,7 @@
   },
   {
    "symbol": "URBANCO",
+   "exchange": "NSE",
    "price": 159.59,
    "ma": 160.32,
    "pct": -0.46,
@@ -22131,6 +22288,7 @@
   },
   {
    "symbol": "USHAMART",
+   "exchange": "NSE",
    "price": 510.5,
    "ma": 502.59,
    "pct": 1.57,
@@ -22273,6 +22431,7 @@
   },
   {
    "symbol": "UTTAMSUGAR",
+   "exchange": "NSE",
    "price": 294.7,
    "ma": 281.46,
    "pct": 4.7,
@@ -22415,6 +22574,7 @@
   },
   {
    "symbol": "VOEPL",
+   "exchange": "NSE",
    "price": 506.1,
    "ma": 513.8,
    "pct": -1.5,
@@ -22557,6 +22717,7 @@
   },
   {
    "symbol": "WCIL",
+   "exchange": "NSE",
    "price": 89.27,
    "ma": 88.81,
    "pct": 0.52,
@@ -22699,6 +22860,7 @@
   },
   {
    "symbol": "WOCKPHARMA",
+   "exchange": "NSE",
    "price": 2063.5,
    "ma": 2036.96,
    "pct": 1.3,
@@ -22841,6 +23003,7 @@
   },
   {
    "symbol": "ZYDUSLIFE",
+   "exchange": "NSE",
    "price": 1139.0,
    "ma": 1145.5,
    "pct": -0.57,
