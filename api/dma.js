@@ -15,6 +15,7 @@ const HEX32 = /^[a-f0-9]{32}$/;
 
 module.exports = async (req, res) => {
   try {
+    if (req.query.a === "health" && (!URL_ || !TOK)) return send(res, { storage: false, bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null });
     if (!URL_ || !TOK) return send(res, { error: "Storage is not connected to this project yet." }, 503);
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
     const a = req.query.a;
@@ -40,6 +41,27 @@ module.exports = async (req, res) => {
         }
       }
       return send(res, { ok: true });
+    }
+
+    // Diagnostics (no secrets returned) and one-tap webhook registration
+    if (a === "health" || a === "setup") {
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      const out = { storage: true, bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null };
+      if (E.BOT_TOKEN) {
+        try {
+          if (a === "setup") {
+            const r = await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/setWebhook`, { method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ url: `https://${host}/api/dma`, allowed_updates: ["message"] }) });
+            out.setWebhook = await r.json();
+          }
+          const w = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getWebhookInfo`)).json();
+          out.webhook_url = w.result && w.result.url; out.webhook_error = w.result && w.result.last_error_message || null;
+          const me = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getMe`)).json();
+          out.bot_ok = !!me.ok; out.bot_real_username = me.ok ? me.result.username : null;
+          out.username_matches = me.ok && String(E.BOT_USERNAME || "").replace("@", "").toLowerCase() === String(me.result.username).toLowerCase();
+        } catch (e) { out.telegram_error = String(e.message || e); }
+      }
+      return send(res, out);
     }
 
     const uid = String(req.headers["x-uid"] || "");

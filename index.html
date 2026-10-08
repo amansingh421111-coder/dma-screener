@@ -272,7 +272,7 @@ async function copyList(){const t=view().map(s=>ex(s)+":"+s.symbol).join(",");tr
 let POS=[];try{POS=JSON.parse(rd("dma_positions")||"[]")}catch(e){}
 function newUid(){const a=new Uint8Array(16);crypto.getRandomValues(a);return[...a].map(b=>b.toString(16).padStart(2,"0")).join("")}
 let UID=rd("dma_uid");if(!/^[a-f0-9]{32}$/.test(UID||"")){UID=newUid();wr("dma_uid",UID)}
-let TS=+rd("dma_pos_ts")||0,CLOUD={ok:null,connected:false,link:null,err:""},pushT=null,pollT=null,POLL=3000;
+let TS=+rd("dma_pos_ts")||0,CLOUD={ok:null,connected:false,link:null,err:"",diag:""},pushT=null,pollT=null,POLL=3000;
 async function api(a,body,method){const r=await fetch("/api/dma?a="+a,{method:method||(body?"POST":"GET"),headers:{"x-uid":UID,"content-type":"application/json"},body:body?JSON.stringify(body):undefined});
  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||("HTTP "+r.status)),{code:r.status});return j}
 const stamp=()=>{TS=Date.now();wr("dma_pos_ts",String(TS))};
@@ -285,8 +285,11 @@ async function initSync(){
   CLOUD.connected=(await api("status",null,"GET")).connected}
  catch(e){CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}
  render()}
-async function connectTg(){const w=window.open("","_blank");
- try{const j=await api("link",{});CLOUD.link=j.url;if(w)w.location.href=j.url;pollTg(Date.now())}catch(e){if(w)w.close();CLOUD.err=e.message;alert("Could not start the connection: "+e.message)}render()}
+async function connectTg(){CLOUD.err="";CLOUD.diag="";CLOUD.link=null;render();
+ try{const j=await api("link",{});CLOUD.link=j.url;pollTg(Date.now());render();try{window.open(j.url,"_blank")}catch(e){}}
+ catch(e){CLOUD.err=e.message;try{const d=await (await fetch("/api/dma?a=health")).json();
+   CLOUD.diag=!d.storage?"Storage is not connected to this Vercel project.":!d.bot_token?"BOT_TOKEN is missing in Vercel, or the project was not redeployed after adding it.":!d.bot_username?"BOT_USERNAME is missing in Vercel.":d.bot_ok===false?"Telegram rejected BOT_TOKEN. Re-copy it from BotFather.":d.username_matches===false?`BOT_USERNAME does not match the real bot name (${d.bot_real_username}).`:!d.webhook_url?"The bot webhook is not set. Open /api/dma?a=setup once.":d.webhook_error?"Telegram could not reach the site: "+d.webhook_error:""}catch(x){}}
+ render()}
 function pollTg(t0){clearTimeout(pollT);pollT=setTimeout(async()=>{try{if((await api("status",null,"GET")).connected){CLOUD.connected=true;CLOUD.link=null;render();return}}catch(e){}
  if(Date.now()-t0<18e4)pollTg(t0);else{CLOUD.link=null;render()}},POLL)}
 async function disconnectTg(){try{await api("unlink",{});CLOUD.connected=false}catch(e){alert("Could not disconnect: "+e.message)}render()}
@@ -298,7 +301,7 @@ function renderTg(){const c=$("tgcard");
  if(CLOUD.ok===null){c.innerHTML=`<b>Telegram alerts</b><div class="sub">Checking…</div>`;return}
  if(CLOUD.ok===false){c.innerHTML=`<b>Telegram alerts</b><div class="sub">The alerts server is not set up yet (${esc(CLOUD.err)}). Positions are saved on this device only. Finish the Telegram setup steps, then reload.</div>`;return}
  c.innerHTML=CLOUD.connected?`<div class="tgrow"><div><b>✅ Telegram connected</b><div class="sub">You'll get stop-loss, target and 44-DMA alerts on Telegram. Positions save online automatically.</div></div><button class="btn sm danger" onclick="disconnectTg()">Disconnect</button></div>`
- :`<div class="tgrow"><div><b>Get alerts on Telegram</b><div class="sub">Tap Connect, then press Start in Telegram. That's it.</div>${CLOUD.link?`<div class="sub">Telegram didn't open? <a href="${esc(CLOUD.link)}" target="_blank" rel="noopener">Open Telegram</a></div>`:""}</div><button class="btn pri" onclick="connectTg()">Connect Telegram</button></div>`}
+ :`<div class="tgrow"><div><b>Get alerts on Telegram</b><div class="sub">Tap Connect, then press Start in Telegram. That's it.</div>${CLOUD.link?`<div class="sub"><a class="btn pri" style="display:inline-block;margin-top:6px" href="${esc(CLOUD.link)}" target="_blank" rel="noopener">Open Telegram and press Start</a></div>`:""}${CLOUD.err?`<div class="sub" style="color:#f87171">Could not connect: ${esc(CLOUD.err)}${CLOUD.diag?" — "+esc(CLOUD.diag):""}</div>`:""}</div><button class="btn pri" onclick="connectTg()">Connect Telegram</button></div>`}
 function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||(data.quotes||{})[p.exchange+":"+p.symbol]||null}
 function status(p,q){if(!q)return["No price yet","",0];const px=q.price,n=data.near_pct||1.5;
  if(p.sl&&px<=p.sl)return["Stop loss hit","sell",4];if(p.target&&px>=p.target)return["Target reached","buy",3];
