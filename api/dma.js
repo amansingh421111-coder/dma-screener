@@ -213,7 +213,10 @@ module.exports = async (req, res) => {
       const list = body.positions;
       if (!Array.isArray(list) || list.length > 200) return send(res, { error: "Invalid positions." }, 400);
       const clean = list.filter((p) => p && typeof p.symbol === "string").map((p) => ({
+        id: String(p.id || "").replace(/[^a-z0-9]/gi, "").slice(0, 24),
         symbol: p.symbol.slice(0, 24).toUpperCase(), exchange: p.exchange === "BSE" ? "BSE" : "NSE",
+        sellDate: /^\d{4}-\d{2}-\d{2}$/.test(String(p.sellDate || "")) ? String(p.sellDate) : "",
+        sellPrice: +p.sellPrice > 0 ? +p.sellPrice : null,
         qty: +p.qty || 0, buy: +p.buy || 0, sl: p.sl == null ? null : +p.sl, target: p.target == null ? null : +p.target,
         date: String(p.date || "").slice(0, 10), thesis: String(p.thesis || "").slice(0, 120),
         alertMa: p.alertMa !== false, alertSl: p.alertSl !== false, alertTg: p.alertTg !== false }));

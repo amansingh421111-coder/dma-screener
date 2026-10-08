@@ -205,12 +205,14 @@ def mcap_cat(cr, c):
     return "Large" if cr >= c["mcap_large_cr"] else "Mid" if cr >= c["mcap_mid_cr"] else "Small" if cr >= c["mcap_small_cr"] else "Micro"
 
 # ---- positions (positions.json exported from the website) ----
+def is_open(p): return not (p.get("sellDate") and (p.get("sellPrice") or 0) > 0)
+
 def load_positions():
     f = ROOT / "positions.json"
     if not f.exists(): return []
     try:
         d = json.loads(f.read_text()); d = d["positions"] if isinstance(d, dict) else d
-        return [p for p in d if p.get("symbol")]
+        return [p for p in d if p.get("symbol") and is_open(p)]
     except Exception as e:
         log.warning("positions.json unreadable: %s", e); return []
 
@@ -221,7 +223,7 @@ def redis(cmd):
     r = requests.post(url, headers={"Authorization": f"Bearer {tok}"}, json=cmd, timeout=20)
     r.raise_for_status(); return r.json().get("result")
 
-CLOUD = {"redis": False, "users": 0, "connected": 0, "error": None}
+CLOUD = {"redis": False, "users": 0, "connected": 0, "error": None, "token_set": bool(os.getenv("TELEGRAM_TOKEN")), "send": None}
 
 def cloud_users():
     """Everyone who connected Telegram on the website: [{uid, chat, positions}]."""
@@ -233,7 +235,7 @@ def cloud_users():
             chat, raw = redis(["GET", f"chat:{uid}"]), redis(["GET", f"pos:{uid}"])
             if not chat or not raw: continue
             d = json.loads(raw); d = d["positions"] if isinstance(d, dict) else d
-            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol")]))
+            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol") and is_open(p)]))
         CLOUD["users"] = len(uids); CLOUD["connected"] = len(out)
         return out
     except Exception as e:
@@ -242,10 +244,20 @@ def cloud_users():
 
 def send_telegram(chat, text):
     tok = os.getenv("TELEGRAM_TOKEN")
-    if not tok: log.warning("TELEGRAM_TOKEN missing; cannot message %s", chat); return False
-    r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
-                      data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
-    log.info("telegram user alert %s", r.status_code); return r.ok
+    if not tok:
+        log.warning("TELEGRAM_TOKEN missing; cannot message %s", chat)
+        CLOUD["send"] = {"ok": False, "status": None, "error": "TELEGRAM_TOKEN secret is missing"}; return False
+    try:
+        r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
+                          data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
+        err = None
+        if not r.ok:
+            try: err = r.json().get("description")
+            except Exception: err = r.text[:120]
+        CLOUD["send"] = {"ok": r.ok, "status": r.status_code, "error": err}
+        log.info("telegram user alert %s %s", r.status_code, err or ""); return r.ok
+    except Exception as e:
+        CLOUD["send"] = {"ok": False, "status": None, "error": str(e)[:120]}; return False
 
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
 def pos_yahoo(p): return p["symbol"] + (".BO" if p.get("exchange") == "BSE" else ".NS")
@@ -267,7 +279,10 @@ def position_quotes(pos, c):
 
 def position_events(pos, quotes, c):
     ev = []
+    seen = set()
     for p in pos:
+        if not is_open(p) or pos_key(p) in seen: continue
+        seen.add(pos_key(p))
         q = quotes.get(pos_key(p))
         if not q: continue
         px, k, s = q["price"], pos_key(p), p["symbol"]
@@ -358,7 +373,7 @@ def main():
     if not scan_bse:
         sigs += [s for s in old.get("signals", []) if s.get("exchange") == "BSE"]
     pos, users = load_positions(), cloud_users()
-    allpos = {pos_key(p): p for p in pos + [p for u in users for p in u["positions"]]}
+    allpos = {pos_key(p): p for p in pos + [p for u in users for p in u["positions"]] if is_open(p)}
     quotes = position_quotes(list(allpos.values()), c)
     (ROOT / "signals.json").write_text(json.dumps(
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
@@ -384,6 +399,10 @@ def main():
         if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(t for _, t in uev) + "\n\nResearch alert only, not financial advice."):
             st["pos_sent"] += [f"{u['uid']}:{k}" for k, _ in uev]; ev += uev
     (ROOT / "state.json").write_text(json.dumps(st))
+    try:
+        sj = json.loads((ROOT / "signals.json").read_text()); sj["cloud"] = CLOUD
+        (ROOT / "signals.json").write_text(json.dumps(sj, indent=1))
+    except Exception as e: log.warning("could not record alert status: %s", e)
     log.info("%d symbols, %d signals, %d new, %d position alerts", len(data), len(sigs), len(new), len(ev))
 
 if __name__ == "__main__":

@@ -97,6 +97,24 @@ tr.dt td:first-child{position:static}
 .pb em{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);border:2px solid var(--card)}
 .tgrow{display:flex;justify-content:space-between;align-items:center;gap:12px}.tgrow .btn{flex:none}
 .act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+input[type=date]{display:block;min-width:0;max-width:100%;line-height:1.2;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
+.dw{position:relative}.dw span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute);pointer-events:none;display:none}
+.dw.empty span{display:block}.dw.empty input{color:transparent}
+.fh{margin:18px 0 8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);border-top:1px solid var(--line);padding-top:12px}
+.fh.first{border:0;padding-top:0;margin-top:2px}
+.lk{border:0;background:none;color:var(--accent);font:inherit;font-size:12px;font-weight:600;cursor:pointer;margin-left:8px;padding:0}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg2 button{border:0;background:var(--card);color:var(--ink);font:inherit;font-size:14px;padding:0 16px;height:42px;cursor:pointer}
+.seg2 button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}
+.bar select.always{display:block;width:auto;flex:none}
+.pt{min-width:1220px}.pt th{cursor:default}.pt td small{display:block;font-size:11.5px;color:var(--mute)}
+.pt td.ac{white-space:nowrap}.pt td.ac .btn{margin-left:4px}
+.fcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin:12px 0 4px}
+.fcs span{display:block;font-size:11.5px;color:var(--mute)}.fcs b{font-size:14px;font-weight:600}
+.pcards{display:none}
+.tot td{font-weight:600;background:var(--bg)}
+@media(max-width:760px){.ptable{display:none}.pcards{display:block}}
 footer{color:var(--mute);font-size:12px;margin-top:18px}
 details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 @media(min-width:900px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}#filters{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;display:block!important}#ft{display:none}}
@@ -158,19 +176,30 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <p class="sub">Delete account removes your positions and Telegram link. Enter your current password above first.</p></details></div>
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
-<div class="bar"><button class="btn pri" onclick="openForm()">＋ Add position</button><span style="flex:1"></span><button class="btn" onclick="exportPos()">Export</button><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
+<div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Export</button><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
 <div class="fm" id="pform" hidden>
 <h3 id="ptitle">Add position</h3>
+<div class="fh first">Trade</div>
 <div class="fg">
 <div><label for="psym">Symbol</label><input id="psym" list="syms" placeholder="e.g. RELIANCE" autocapitalize="characters" autocomplete="off"><datalist id="syms"></datalist></div>
 <div><label for="pex">Exchange</label><select id="pex"><option>NSE</option><option>BSE</option></select></div>
 <div><label for="pqty">Quantity</label><input id="pqty" type="number" inputmode="numeric" placeholder="100"></div>
 <div><label for="pbuy">Buy price (₹)</label><input id="pbuy" type="number" inputmode="decimal" placeholder="2500"></div>
+<div><label for="pdate">Buy date <button type="button" class="lk" onclick="setDate('pdate',todayStr())">Today</button></label><div class="dw" id="dw1"><input id="pdate" type="date"><span>Select date</span></div></div>
+<div><label for="pth">Note</label><input id="pth" placeholder="44-DMA bullish cross" maxlength="120"></div>
+</div>
+<div class="fh">Risk levels</div>
+<div class="fg">
 <div><label for="psl">Stop loss (₹)</label><input id="psl" type="number" inputmode="decimal" placeholder="2350"><div class="qf" id="slq"></div></div>
 <div><label for="ptg">Target (₹)</label><input id="ptg" type="number" inputmode="decimal" placeholder="2900"><div class="qf" id="tgq"></div></div>
-<div><label for="pdate">Buy date</label><input id="pdate" type="date"></div>
-<div><label for="pth">Note</label><input id="pth" placeholder="44-DMA bullish cross"></div>
 </div>
+<div class="fh">Exit (fill in when you sell)</div>
+<div class="fg">
+<div><label for="psd">Sell date <button type="button" class="lk" onclick="setDate('psd',todayStr())">Today</button><button type="button" class="lk" onclick="setDate('psd','')">Clear</button></label><div class="dw" id="dw2"><input id="psd" type="date"><span>Select date</span></div></div>
+<div><label for="psp">Sell price (₹)</label><input id="psp" type="number" inputmode="decimal" placeholder="Price you sold at"></div>
+</div>
+<div class="sub" style="margin-top:6px">Leave both empty while you still hold it. Entering both moves it to Closed and stops its alerts.</div>
+<div class="fh">Alerts</div>
 <div class="ck"><input type="checkbox" id="a1" checked><label for="a1">Alert if it falls below or nears the 44-DMA</label></div>
 <div class="ck"><input type="checkbox" id="a2" checked><label for="a2">Alert at stop loss</label></div>
 <div class="ck"><input type="checkbox" id="a3" checked><label for="a3">Alert at target</label></div>
@@ -299,7 +328,7 @@ async function initAuth(){
  render()}
 async function initSync(){
  try{const s=await api("positions",null,"GET");CLOUD.ok=true;
-  if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS))}
+  if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;fixIds();wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS))}
   else if(TS>s.ts||(!s.ts&&POS.length)){if(!TS)stamp();await push()}
   CLOUD.connected=(await api("status",null,"GET")).connected}
  catch(e){if(e.code===401)ME=null;else{CLOUD.ok=false;CLOUD.err=e.message}}
@@ -345,51 +374,120 @@ function renderTg(){const c=$("tgcard");
  if(CLOUD.ok===false){c.innerHTML=`<b>Telegram alerts</b><div class="sub">The alerts server is not set up yet (${esc(CLOUD.err)}). Positions are saved on this device only. Finish the Telegram setup steps, then reload.</div>`;return}
  c.innerHTML=CLOUD.connected?`<div class="tgrow"><div><b>✅ Telegram connected</b><div class="sub">You'll get stop-loss, target and 44-DMA alerts on Telegram. Positions save online automatically.</div></div><button class="btn sm danger" onclick="disconnectTg()">Disconnect</button></div>`
  :`<div class="tgrow"><div><b>Get alerts on Telegram</b><div class="sub">Tap Connect, then press Start in Telegram. That's it.</div>${CLOUD.link?`<div class="sub"><a class="btn pri" style="display:inline-block;margin-top:6px" href="${esc(CLOUD.link)}" target="_blank" rel="noopener">Open Telegram and press Start</a></div>`:""}${CLOUD.err?`<div class="sub" style="color:#f87171">Could not connect: ${esc(CLOUD.err)}${CLOUD.diag?" — "+esc(CLOUD.diag):""}</div>`:""}</div><button class="btn pri" onclick="connectTg()">Connect Telegram</button></div>`}
+const uidn=()=>{const a=new Uint8Array(8);crypto.getRandomValues(a);return[...a].map(b=>b.toString(16).padStart(2,"0")).join("")};
+const fixIds=()=>{POS.forEach(p=>{if(!p.id)p.id=uidn()})};
+const todayStr=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const isClosed=p=>!!(p.sellDate&&+p.sellPrice>0);
+const openPos=()=>POS.filter(p=>!isClosed(p));
+let PVIEW="open",PSORT="attention";
 function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||(data.quotes||{})[p.exchange+":"+p.symbol]||null}
 function status(p,q){if(!q)return["No price yet","",0];const px=q.price,n=data.near_pct||1.5;
  if(p.sl&&px<=p.sl)return["Stop loss hit","sell",4];if(p.target&&px>=p.target)return["Target reached","buy",3];
  if(q.pct!=null&&q.pct<0)return["Below "+data.ma_period+"-DMA","sell",2];if(q.pct!=null&&q.pct<=n)return["Near "+data.ma_period+"-DMA","near",1];return["On track","buy",0]}
-function openForm(p){editing=p?p.exchange+":"+p.symbol:null;$("ptitle").textContent=p?"Edit position":"Add position";
- const set=(i,v)=>$(i).value=v??"";p=p||{exchange:"NSE",alertMa:true,alertSl:true,alertTg:true};
- set("psym",p.symbol);set("pex",p.exchange);set("pqty",p.qty);set("pbuy",p.buy);set("psl",p.sl);set("ptg",p.target);set("pdate",p.date);set("pth",p.thesis);
- $("a1").checked=p.alertMa!==false;$("a2").checked=p.alertSl!==false;$("a3").checked=p.alertTg!==false;$("pmsg").textContent="";$("pform").hidden=false;quickFill();$("pform").scrollIntoView({behavior:"smooth",block:"start"})}
+const dd=(a,b)=>{if(!a)return null;const n=Math.round((new Date((b||todayStr())+"T00:00:00")-new Date(a+"T00:00:00"))/864e5);return isNaN(n)||n<0?null:n};
+const held=n=>n==null?"–":n<1?"Today":n===1?"1 day":n<60?n+" days":n<730?Math.round(n/30.4)+" months":(n/365).toFixed(1)+" years";
+const fdate=d=>d?new Date(d+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"–";
+const mny=v=>(v>=0?"+":"−")+"₹"+fmt(Math.abs(v));
+const pcl=v=>v>=0?"pos":"neg";
+function calc(p){const q=quote(p);
+ if(isClosed(p)){const cost=p.buy*p.qty,pl=(p.sellPrice-p.buy)*p.qty;return{q,cl:true,px:p.sellPrice,value:p.sellPrice*p.qty,cost,pl,pct:(p.sellPrice/p.buy-1)*100,days:dd(p.date,p.sellDate)}}
+ const px=q?q.price:null,cost=p.buy*p.qty;
+ return{q,cl:false,px,value:px!=null?px*p.qty:cost,cost,pl:px!=null?(px-p.buy)*p.qty:null,pct:px!=null?(px/p.buy-1)*100:null,days:dd(p.date),st:status(p,q),
+  day:q&&q.chg!=null&&px!=null?p.qty*(px-px/(1+q.chg/100)):null}}
+function setDate(id,v){$(id).value=v;dwSync()}
+function dwSync(){[["pdate","dw1"],["psd","dw2"]].forEach(([i,w])=>$(w).classList.toggle("empty",!$(i).value))}
+["pdate","psd"].forEach(i=>["input","change"].forEach(ev=>$(i).addEventListener(ev,dwSync)));
+function openForm(p){editing=p&&p.id?p.id:null;$("ptitle").textContent=p&&p.id?(isClosed(p)?"Edit closed trade":"Edit position"):"Add position";
+ const set=(i,v)=>$(i).value=v??"";p=p||{exchange:"NSE",date:todayStr(),alertMa:true,alertSl:true,alertTg:true};
+ set("psym",p.symbol);set("pex",p.exchange);set("pqty",p.qty);set("pbuy",p.buy);set("psl",p.sl);set("ptg",p.target);set("pdate",p.date);set("pth",p.thesis);set("psd",p.sellDate);set("psp",p.sellPrice);
+ $("a1").checked=p.alertMa!==false;$("a2").checked=p.alertSl!==false;$("a3").checked=p.alertTg!==false;$("pmsg").textContent="";$("pform").hidden=false;quickFill();dwSync();$("pform").scrollIntoView({behavior:"smooth",block:"start"})}
 function closeForm(){$("pform").hidden=true;editing=null}
-function quickFill(){const mk=(id,t,arr,sign)=>$(id).innerHTML=arr.map(x=>`<button class="chip" onclick="fillPct('${t}',${sign*x})">${sign<0?"−":"+"}${x}%</button>`).join("");mk("slq","psl",[5,8,10],-1);mk("tgq","ptg",[10,15,20],1)}
+function quickFill(){const mk=(id,t,arr,sign)=>$(id).innerHTML=arr.map(x=>`<button type="button" class="chip" onclick="fillPct('${t}',${sign*x})">${sign<0?"−":"+"}${x}%</button>`).join("");mk("slq","psl",[5,8,10],-1);mk("tgq","ptg",[10,15,20],1)}
 function fillPct(t,p){const b=num("pbuy");if(!b){$("pmsg").textContent="Enter the buy price first.";return}$(t).value=(b*(1+p/100)).toFixed(2);$("pmsg").textContent=""}
-function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,buy:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),date:new Date().toISOString().slice(0,10),qty:"",thesis:"From screener",alertMa:true,alertSl:true,alertTg:true};go("pos");if(!ME){PENDING=draft;return}openForm(draft)}
-function savePosition(){const sym=$("psym").value.trim().toUpperCase(),e=$("pex").value,q=num("pqty"),b=num("pbuy"),sl=num("psl"),tg=num("ptg"),m=t=>{$("pmsg").textContent=t};
+function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,buy:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),date:todayStr(),qty:"",thesis:"From screener",alertMa:true,alertSl:true,alertTg:true};go("pos");if(!ME){PENDING=draft;return}openForm(draft)}
+function savePosition(){const sym=$("psym").value.trim().toUpperCase(),e=$("pex").value,q=num("pqty"),b=num("pbuy"),sl=num("psl"),tg=num("ptg"),sd=$("psd").value,sp=num("psp"),bd=$("pdate").value,m=t=>{$("pmsg").textContent=t};
  if(!sym)return m("Enter a symbol.");if(!q||q<=0)return m("Enter a quantity above zero.");if(!b||b<=0)return m("Enter the buy price.");
- if(sl!==null&&sl>=b)return m("Stop loss must be below the buy price.");if(tg!==null&&tg<=b)return m("Target must be above the buy price.");
- const p={symbol:sym,exchange:e,qty:q,buy:b,sl,target:tg,date:$("pdate").value,thesis:$("pth").value.trim(),alertMa:$("a1").checked,alertSl:$("a2").checked,alertTg:$("a3").checked};
- const i=POS.findIndex(x=>x.exchange+":"+x.symbol===(editing||e+":"+sym));i>=0?POS[i]=p:POS.push(p);savePos();closeForm();render()}
-function delPos(k){const p=POS.find(x=>x.exchange+":"+x.symbol===k);if(p&&confirm("Delete "+p.symbol+"?")){POS=POS.filter(x=>x!==p);savePos();render()}}
-function editPos(k){openForm(POS.find(x=>x.exchange+":"+x.symbol===k))}
+ if(sl!==null&&sl>=b&&!sd)return m("Stop loss must be below the buy price.");if(tg!==null&&tg<=b&&!sd)return m("Target must be above the buy price.");
+ if(!!sd!==(sp!==null&&sp>0))return m("To record a sale, enter both the sell date and the sell price. Clear both if you still hold it.");
+ if(sd&&sd>todayStr())return m("The sell date cannot be in the future.");if(sd&&bd&&sd<bd)return m("The sell date is before the buy date.");
+ const old=editing?POS.find(x=>x.id===editing):null;
+ const p={id:old?old.id:uidn(),symbol:sym,exchange:e,qty:q,buy:b,sl,target:tg,date:bd,thesis:$("pth").value.trim(),sellDate:sd||"",sellPrice:sd?sp:null,alertMa:$("a1").checked,alertSl:$("a2").checked,alertTg:$("a3").checked};
+ if(old)POS[POS.indexOf(old)]=p;else POS.push(p);if(sd)PVIEW="closed";else if(PVIEW==="closed"&&!old)PVIEW="open";savePos();closeForm();render()}
+function delPos(id){const p=POS.find(x=>x.id===id);if(p&&confirm("Delete "+p.symbol+" permanently?")){POS=POS.filter(x=>x!==p);savePos();render()}}
+function editPos(id){const p=POS.find(x=>x.id===id);if(p)openForm(p)}
+function sellPos(id){const p=POS.find(x=>x.id===id);if(!p)return;const q=quote(p);openForm(Object.assign({},p,{sellDate:todayStr(),sellPrice:q?q.price:""}));$("pmsg").textContent="Check the sell price, then Save to move this to Closed."}
+function reopenPos(id){const p=POS.find(x=>x.id===id);if(p&&confirm("Reopen "+p.symbol+"? It goes back to Open and alerts resume.")){p.sellDate="";p.sellPrice=null;PVIEW="open";savePos();render()}}
 function exportPos(){dl("positions.json",JSON.stringify({positions:POS},null,1),"application/json")}
 $("pimp").addEventListener("change",async e=>{try{const d=JSON.parse(await e.target.files[0].text()),a=Array.isArray(d)?d:d.positions;
- a.filter(p=>p.symbol&&p.qty&&p.buy).forEach(p=>{p.exchange=p.exchange||"NSE";const i=POS.findIndex(x=>x.exchange+":"+x.symbol===p.exchange+":"+p.symbol);i>=0?POS[i]=p:POS.push(p)});savePos();render()}catch(x){alert("That file is not a valid positions export.")}e.target.value=""});
+ a.filter(p=>p.symbol&&p.qty&&p.buy).forEach(p=>{p.exchange=p.exchange||"NSE";const k=x=>[x.exchange,x.symbol,x.buy,x.date,x.qty,x.sellDate||""].join("|");const i=POS.findIndex(x=>(p.id&&x.id===p.id)||k(x)===k(p));if(i>=0)POS[i]=Object.assign(p,{id:POS[i].id});else POS.push(p)});fixIds();savePos();render()}catch(x){alert("That file is not a valid positions export.")}e.target.value=""});
+const SORTS_P=[["attention","Needs attention first"],["best","Best return first"],["worst","Worst return first"],["value","Largest first"],["recent","Most recent first"],["sym","A to Z"]];
+$("psort").innerHTML=SORTS_P.map(([k,t])=>`<option value="${k}">${t}</option>`).join("");
+$("psort").addEventListener("change",e=>{PSORT=e.target.value;render()});
+function sortRows(rows,closed){const by={attention:(a,b)=>closed?new Date(b.p.sellDate)-new Date(a.p.sellDate):((b.c.st?b.c.st[2]:0)-(a.c.st?a.c.st[2]:0)||(a.c.pct??0)-(b.c.pct??0)),
+ best:(a,b)=>(b.c.pct??-1e9)-(a.c.pct??-1e9),worst:(a,b)=>(a.c.pct??1e9)-(b.c.pct??1e9),value:(a,b)=>b.c.value-a.c.value,
+ recent:(a,b)=>new Date(closed?b.p.sellDate:b.p.date||0)-new Date(closed?a.p.sellDate:a.p.date||0),sym:(a,b)=>a.p.symbol.localeCompare(b.p.symbol)};
+ return rows.sort(by[PSORT]||by.attention)}
+function pbar(p,px){const lo=p.sl||p.buy*.9,hi=p.target||p.buy*1.2,at=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
+ return `<div class="pb"><i style="left:${at(p.buy)}%" title="Buy"></i>${px!=null?`<em style="left:${at(px)}%"></em>`:""}</div><div class="gl"><span>Stop ${p.sl?inr(p.sl):"not set"}</span><span>Buy ${inr(p.buy)}</span><span>Target ${p.target?inr(p.target):"not set"}</span></div>`}
+const acts=(p,closed)=>closed?`<button class="btn sm" onclick="editPos('${p.id}')">Edit</button><button class="btn sm" onclick="reopenPos('${p.id}')">Reopen</button><button class="btn sm danger" onclick="delPos('${p.id}')">Delete</button>`
+ :`<button class="btn sm" onclick="editPos('${p.id}')">Edit</button><button class="btn sm" onclick="sellPos('${p.id}')">Sell</button><a class="btn sm" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(p.exchange+":"+p.symbol)}">Chart</a><button class="btn sm danger" onclick="delPos('${p.id}')">Delete</button>`;
+const plTxt=(c,dash)=>c.pl==null?dash:`<span class="${pcl(c.pl)}">${mny(c.pl)}</span>`;
+const pcTxt=(c,dash)=>c.pct==null?dash:`<span class="${pcl(c.pct)}">${sg(+c.pct.toFixed(2))}%</span>`;
+function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%":"–",nm=q&&q.name?`<small>${esc(q.name)}</small>`:"";
+ return `<tr><td><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span>${nm}</td><td>${p.qty}</td><td>${inr(p.buy)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b>":"–"}</td>
+ <td>${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td>${inr(c.value)}</td><td>${plTxt(c,"–")}</td><td>${pcTxt(c,"–")}</td><td>${w}</td>
+ <td>${p.sl?inr(p.sl)+(c.px!=null?`<small>${((c.px/p.sl-1)*100).toFixed(1)}% away</small>`:""):"–"}</td><td>${p.target?inr(p.target)+(c.px!=null?`<small>${((p.target/c.px-1)*100).toFixed(1)}% to go</small>`:""):"–"}</td>
+ <td>${q&&q.pct!=null?`<span class="${pcl(q.pct)}">${sg(q.pct)}%</span>`:"–"}</td><td>${held(c.days)}${p.date?`<small>${fdate(p.date)}</small>`:""}</td><td><span class="tag ${st[1]}" style="margin:0">${st[0]}</span></td><td class="ac">${acts(p,false)}</td></tr>`}
+function openCard(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1):"0";
+ return `<article class="pc"><div class="ph"><div><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span>${p.thesis?`<div class="sub">${esc(p.thesis)}</div>`:""}</div>
+ <div style="text-align:right"><b>${c.px!=null?inr(c.px):"–"}</b>${c.pl!=null?`<div class="${pcl(c.pl)}" style="font-weight:600">${mny(c.pl)} (${sg(+c.pct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
+ <div class="fcs"><div><span>Quantity</span><b>${p.qty}</b></div><div><span>Avg buy</span><b>${inr(p.buy)}</b></div><div><span>Value</span><b>${inr(c.value)}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Bought</span><b>${fdate(p.date)}</b></div><div><span>Held</span><b>${held(c.days)}</b></div></div>
+ ${pbar(p,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${c.px!=null&&p.sl?`<span>${((c.px/p.sl-1)*100).toFixed(1)}% above stop</span>`:""}${c.px!=null&&p.target?`<span>${((p.target/c.px-1)*100).toFixed(1)}% to target</span>`:""}</div>
+ <div class="act">${acts(p,false)}</div></article>`}
+function closedRow(p,c){return `<tr><td><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span></td><td>${p.qty}</td><td>${inr(p.buy)}<small>${fdate(p.date)}</small></td><td>${inr(p.sellPrice)}<small>${fdate(p.sellDate)}</small></td><td>${held(c.days)}</td><td>${inr(c.cost)}</td><td>${plTxt(c,"–")}</td><td>${pcTxt(c,"–")}</td><td class="ac">${acts(p,true)}</td></tr>`}
+function closedCard(p,c){return `<article class="pc"><div class="ph"><div><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span><span class="tag ${c.pl>=0?"buy":"sell"}">${c.pl>=0?"Profit":"Loss"}</span>${p.thesis?`<div class="sub">${esc(p.thesis)}</div>`:""}</div>
+ <div style="text-align:right"><b class="${pcl(c.pl)}">${mny(c.pl)}</b><div class="${pcl(c.pl)}" style="font-weight:600">${sg(+c.pct.toFixed(2))}%</div></div></div>
+ <div class="fcs"><div><span>Quantity</span><b>${p.qty}</b></div><div><span>Bought</span><b>${inr(p.buy)}</b><span>${fdate(p.date)}</span></div><div><span>Sold</span><b>${inr(p.sellPrice)}</b><span>${fdate(p.sellDate)}</span></div><div><span>Held</span><b>${held(c.days)}</b></div></div>
+ <div class="act">${acts(p,true)}</div></article>`}
 function renderPos(){
  $("authcard").hidden=!!ME;$("posapp").hidden=!ME;
  if(!ME){renderAuth();return}
- $("who").textContent=ME;
- renderTg();
- let inv=0,val=0,priced=0;POS.forEach(p=>{inv+=p.qty*p.buy;const q=quote(p);if(q){val+=p.qty*q.price;priced++}else val+=p.qty*p.buy});
- const pl=val-inv,pp=inv?pl/inv*100:0;
- $("psum").innerHTML=`<div class="sc"><span>Open positions</span><b>${POS.length}</b><small>${priced} with a price</small></div><div class="sc"><span>Invested</span><b>${inr(inv)}</b></div><div class="sc"><span>Current value</span><b>${inr(val)}</b></div><div class="sc"><span>Unrealised P&amp;L</span><b class="${pl>=0?"pos":"neg"}">${pl>=0?"+":""}${inr(pl)}</b><small class="${pl>=0?"pos":"neg"}">${sg(+pp.toFixed(2))}%</small></div>`;
- const rows=POS.map(p=>({p,q:quote(p)})).sort((a,b)=>status(b.p,b.q)[2]-status(a.p,a.q)[2]);
- $("plist").innerHTML=rows.length?rows.map(({p,q})=>{const k=p.exchange+":"+p.symbol,st=status(p,q),px=q?q.price:null,plv=px!=null?(px-p.buy)*p.qty:null,pct=px!=null?(px/p.buy-1)*100:null;
-  const lo=p.sl||p.buy*.9,hi=p.target||p.buy*1.2,at=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));
-  return `<article class="pc"><div class="ph"><div><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span><div class="sub">${p.qty} shares at ${inr(p.buy)}${p.date?" · "+esc(p.date):""}${p.thesis?" · "+esc(p.thesis):""}</div></div>
-  <div style="text-align:right"><b>${px!=null?inr(px):"–"}</b>${plv!=null?`<div class="${plv>=0?"pos":"neg"}" style="font-weight:600">${plv>=0?"+":""}${inr(plv)} (${sg(+pct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
-  <div class="pb"><i style="left:${at(p.buy)}%" title="Buy"></i>${px!=null?`<em style="left:${at(px)}%"></em>`:""}</div>
-  <div class="gl"><span>Stop ${p.sl?inr(p.sl):"not set"}</span><span>Buy ${inr(p.buy)}</span><span>Target ${p.target?inr(p.target):"not set"}</span></div>
-  <div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${px!=null&&p.sl?`<span>${((px/p.sl-1)*100).toFixed(1)}% above stop</span>`:""}${px!=null&&p.target?`<span>${((p.target/px-1)*100).toFixed(1)}% to target</span>`:""}<span>Alerts: ${[p.alertMa&&"DMA",p.alertSl&&"stop",p.alertTg&&"target"].filter(Boolean).join(", ")||"off"}</span></div>
-  <div class="act"><button class="btn sm" onclick="editPos('${esc(k)}')">Edit</button><a class="btn sm" target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(p.exchange+":"+p.symbol)}">Chart</a><button class="btn sm danger" onclick="delPos('${esc(k)}')">Delete</button></div></article>`}).join(""):`<div class="empty">No positions yet.<br>Tap <b>＋ Add position</b>, or open any stock in the screener and tap <b>Add to My Positions</b>.</div>`;
- const un=POS.filter(p=>!quote(p)).length,al=POS.some(p=>p.alertMa||p.alertSl||p.alertTg);
- let n="";if(un&&CLOUD.ok)n+=`${un} position${un>1?"s have":" has"} no price yet. It appears after the next screener run (hourly for BSE). `;
- if(al&&CLOUD.ok&&!CLOUD.connected)n+=`<b>Alerts are on, but Telegram is not connected.</b> Tap Connect Telegram above.`;
- if(al&&CLOUD.ok&&CLOUD.connected&&data&&data.cloud){if(data.cloud.redis===false)n+=`<b>Alerts will not send yet:</b> the screener on GitHub has no UPSTASH_URL / UPSTASH_TOKEN secrets. Add them under Settings → Secrets and variables → Actions, then run the screener. `;else if(data.cloud.error)n+=`<b>Alerts store error on the last run:</b> ${esc(data.cloud.error)} `;else if(!data.cloud.connected)n+=`The last screener run did not see your Telegram link. Run the screener once more. `}
+ $("who").textContent=ME;renderTg();
+ const open=openPos(),closed=POS.filter(isClosed);
+ const oc=open.map(p=>({p,c:calc(p)})),cc=closed.map(p=>({p,c:calc(p)}));
+ let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0;oc.forEach(({p,c})=>{inv+=c.cost;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
+ const un=val-inv,unp=inv?un/inv*100:0;
+ let re=0,rc=0,wins=0;cc.forEach(({c})=>{re+=c.pl;rc+=c.cost;if(c.pl>0)wins++});
+ $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}${dayBase?` · Today <span class="${pcl(day)}">${mny(day)}</span>`:""}</small></div>
+ <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${open.length?mny(un):"₹0"}</b><small>${open.length?sg(+unp.toFixed(2))+"% on "+open.length+" open":"No open positions"}</small></div>
+ <div class="sc"><span>Realised P&amp;L</span><b class="${pcl(re)}">${closed.length?mny(re):"₹0"}</b><small>${closed.length?closed.length+" closed · "+Math.round(wins/closed.length*100)+"% winners":"No closed trades yet"}</small></div>
+ <div class="sc"><span>Open positions</span><b>${open.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" with a price"}</small></div>`;
+ $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Open (${open.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${closed.length})</button>`;
+ $("psort").value=PSORT;
+ let out="";
+ if(PVIEW==="open"){const rows=sortRows(oc,false);
+  if(!rows.length)out=`<div class="empty">No open positions.<br>Add a purchase with ＋ Add position, or tap Track on any stock in the Screener.</div>`;
+  else out=`<div class="ptable"><div class="tw"><table class="pt"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg buy</th><th>LTP</th><th>Day</th><th>Value</th><th>P&amp;L</th><th>P&amp;L %</th><th>Weight</th><th>Stop loss</th><th>Target</th><th>vs ${data.ma_period}-DMA</th><th>Held</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>openRow(p,c,val)).join("")}
+  <tr class="tot"><td>Total</td><td></td><td></td><td></td><td>${dayBase?`<span class="${pcl(day)}">${mny(day)}</span>`:""}</td><td>${inr(val)}</td><td><span class="${pcl(un)}">${mny(un)}</span></td><td><span class="${pcl(unp)}">${sg(+unp.toFixed(2))}%</span></td><td>100%</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div>
+  <div class="pcards">${rows.map(({p,c})=>openCard(p,c,val)).join("")}</div>`}
+ else{const rows=sortRows(cc,true);
+  if(!rows.length)out=`<div class="empty">No closed trades yet.<br>When you sell, tap Sell on a position (or edit it and add the sell date and price). It moves here with its profit or loss.</div>`;
+  else out=`<div class="ptable"><div class="tw"><table class="pt" style="min-width:900px"><thead><tr><th>Symbol</th><th>Qty</th><th>Bought</th><th>Sold</th><th>Held</th><th>Cost</th><th>P&amp;L</th><th>P&amp;L %</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>closedRow(p,c)).join("")}
+  <tr class="tot"><td>Total</td><td></td><td></td><td></td><td></td><td>${inr(rc)}</td><td><span class="${pcl(re)}">${mny(re)}</span></td><td><span class="${pcl(re)}">${rc?sg(+(re/rc*100).toFixed(2))+"%":""}</span></td><td></td></tr></tbody></table></div></div>
+  <div class="pcards">${rows.map(({p,c})=>closedCard(p,c)).join("")}</div>`}
+ $("plist").innerHTML=out;
+ const unq=open.filter(p=>!quote(p)).length,al=open.some(p=>p.alertMa||p.alertSl||p.alertTg);
+ let n="";if(unq&&CLOUD.ok)n+=`${unq} position${unq>1?"s have":" has"} no price yet. It appears after the next screener run (hourly for BSE). `;
+ if(al&&CLOUD.ok&&!CLOUD.connected)n+=`<b>Alerts are on, but Telegram is not connected.</b> Tap Connect Telegram above. `;
+ if(al&&CLOUD.ok&&CLOUD.connected&&data&&data.cloud){const cl=data.cloud;
+  if(cl.redis===false)n+=`<b>Alerts will not send yet:</b> the screener on GitHub has no UPSTASH_URL / UPSTASH_TOKEN secrets. Add them under Settings → Secrets and variables → Actions, then run the screener. `;
+  else if(cl.error)n+=`<b>Alerts store error on the last run:</b> ${esc(cl.error)} `;
+  else if(cl.token_set===false)n+=`<b>Alerts will not send yet:</b> the GitHub secret TELEGRAM_TOKEN is missing. Add your bot token under Settings → Secrets and variables → Actions, then run the screener. `;
+  else if(cl.send&&cl.send.ok===false)n+=`<b>Telegram refused the alert:</b> ${esc(cl.send.error||"unknown error")}. ${/unauthor/i.test(cl.send.error||"")?"The TELEGRAM_TOKEN secret in GitHub is not a valid bot token.":"The TELEGRAM_TOKEN secret in GitHub must be the token of the same bot you pressed Start on."} `;
+  else if(!cl.connected)n+=`The last screener run did not see your Telegram link. Run the screener once more. `}
  if(al&&CLOUD.ok===false)n+=`<b>To get alerts without the server:</b> tap Export, then upload <b>positions.json</b> to your GitHub repo.`;
- $("psync").hidden=!POS.length||!n;$("psync").innerHTML=n}
+ $("psync").hidden=!open.length||!n;$("psync").innerHTML=n}
+fixIds();
 
 /* ---------- navigation & render ---------- */
 let view_="screen";
@@ -398,7 +496,7 @@ function route(){view_=location.hash==="#positions"?"pos":"screen";render()}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
- $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${POS.length}</span>`:""}</button>`;
+ $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";
  if(view_==="screen")renderScreen();else renderPos()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
