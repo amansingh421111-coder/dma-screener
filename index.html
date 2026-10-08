@@ -225,7 +225,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.3</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.4</span></footer>
 
 </main>
 <script>
@@ -294,10 +294,10 @@ function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.vo
  const vol=v>=1e7?(v/1e7).toFixed(2)+" Cr":v>=1e5?(v/1e5).toFixed(1)+" lakh":Number(v).toLocaleString("en-IN");
  const st=(l,x,c)=>`<div class="st"><span>${l}</span><b${c?` class="${c}"`:""}>${x}</b></div>`;
  return `<div class="dg"><div class="dl"><div class="dh"><b>${esc(s.name||s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span></div>${chart(s)}${rng(s)}</div>
- <div class="dr"><div class="stg">${st("Price",inr(s.price))}${st("Today",s.chg==null?"–":sg(s.chg)+"%",s.chg>0?"pos":s.chg<0?"neg":"")}${st(data.ma_period+"-DMA",inr(s.ma))}${st("Vs average",sg(s.pct)+"%",s.pct>0?"pos":"neg")}${st("Market cap",cr(s.mcap)+(s.mcap_cat?" · "+s.mcap_cat:""))}${st("Volume",vol)}${st("Volume vs avg",s.vol_x!=null?s.vol_x+"×":"–")}${st("RSI (14)",s.rsi??"–")}${st("200-DMA",s.above200==null?"–":s.above200?"Above":"Below")}${st("Days "+(s.pct>=0?"above":"below"),s.since??"–")}</div>
+ <div class="dr"><div class="stg">${st("Price",inr(s.price))}${st("Today",s.chg==null?"–":sg(s.chg)+"%",s.chg>0?"pos":s.chg<0?"neg":"")}${s.open!=null?st("Open",inr(s.open)):""}${s.prev_close!=null?st("Previous close",inr(s.prev_close)):""}${s.low!=null&&s.high!=null?st("Day range",inr(s.low)+" – "+inr(s.high)):""}${st(data.ma_period+"-DMA",inr(s.ma))}${st("Vs average",sg(s.pct)+"%",s.pct>0?"pos":"neg")}${st("Market cap",cr(s.mcap)+(s.mcap_cat?" · "+s.mcap_cat:""))}${st("Volume",vol)}${s.value_cr!=null?st("Value traded","₹"+Number(s.value_cr).toLocaleString("en-IN",{maximumFractionDigits:1})+" Cr"):""}${s.deliv_pct!=null?st("Delivery",s.deliv_pct.toFixed(1)+"%"):""}${s.trades!=null?st("Trades",Number(s.trades).toLocaleString("en-IN")):""}${st("Volume vs avg",s.vol_x!=null?s.vol_x+"×":"–")}${st("RSI (14)",s.rsi??"–")}${st("200-DMA",s.above200==null?"–":s.above200?"Above":"Below")}${st("Days "+(s.pct>=0?"above":"below"),s.since??"–")}</div>
  <div class="why"><b>What this means</b>${esc(reading(s))}</div>
  <div class="acts"><button class="btn sm pri" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" data-px="${s.price}" onclick="event.stopPropagation();track(this)">＋ Add to My Positions</button><a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tv)}">Open full chart ↗</a></div>
- <p class="src">Prices: Yahoo Finance (about 15 minutes delayed). Listings and filters: NSE and BSE official files. Research alert only, not investment advice.</p></div></div>`}
+ <p class="src">Closing prices, volume, value and delivery % come from the official NSE and BSE end-of-day files; prices during market hours are Yahoo Finance (about 15 minutes delayed). Research alert only, not investment advice.</p></div></div>`}
 const LAB={buy:"Buy",sell:"Sell",near:"Near"},COL={buy:"var(--buy)",sell:"var(--sell)",near:"var(--near)"},COLB={buy:"var(--buy-bg)",sell:"var(--sell-bg)",near:"var(--near-bg)"};
 const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
 const stars=s=>s.candle?`${SHORT[s.candle]||esc(s.candle)} <span class="star">${"★".repeat(s.score||0)}${"☆".repeat(3-(s.score||0))}</span>`:"–";

@@ -123,15 +123,44 @@ def load_bhav():
     """Official end-of-day prices from NSE and BSE (the exchanges' own files)."""
     def nse_parse(df):
         df = df[df["SERIES"].str.strip() == "EQ"]
-        return {r["SYMBOL"].strip(): tuple(_num(r[k]) for k in ("OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE", "CLOSE_PRICE", "TTL_TRD_QNTY")) for r in df.to_dict("records")}
+        g = lambda r, k: _num(r.get(k))
+        return {r["SYMBOL"].strip(): (g(r, "OPEN_PRICE"), g(r, "HIGH_PRICE"), g(r, "LOW_PRICE"), g(r, "CLOSE_PRICE"), g(r, "TTL_TRD_QNTY"),
+                                      g(r, "PREV_CLOSE"), (g(r, "TURNOVER_LACS") / 100 if g(r, "TURNOVER_LACS") is not None else None), g(r, "DELIV_PER"), g(r, "NO_OF_TRADES"))
+                for r in df.to_dict("records")}
     def bse_parse(df):
-        return {str(r["FinInstrmId"]).strip(): tuple(_num(r[k]) for k in ("OpnPric", "HghPric", "LwPric", "ClsPric", "TtlTradgVol")) for r in df.to_dict("records")}
+        g = lambda r, k: _num(r.get(k))
+        return {str(r["FinInstrmId"]).strip(): (g(r, "OpnPric"), g(r, "HghPric"), g(r, "LwPric"), g(r, "ClsPric"), g(r, "TtlTradgVol"),
+                                                g(r, "PrvsClsgPric"), (g(r, "TtlTrfVal") / 1e7 if g(r, "TtlTrfVal") is not None else None), None, g(r, "NoOfTrades"))
+                for r in df.to_dict("records")}
     for ex, url, hd, fn in (("NSE", NSE_BHAV, BH_H, nse_parse),
                             ("BSE", BSE_BHAV, dict(BH_H, Referer="https://www.bseindia.com/"), bse_parse)):
         if ex in BHAV: continue
         try:
             m, day = _latest_bhav(url, hd, fn); BHAV[ex] = (day, m)
         except Exception as e: log.warning("%s official prices unavailable (%s)", ex, str(e)[:100])
+
+NSE_52W = "https://nsearchives.nseindia.com/content/CM_52_wk_High_low_{d:%d%m%Y}.csv"
+HL52 = {}
+def load_52w():
+    """NSE's own 52-week high/low file (adjusted for splits/bonuses). Quietly skipped if unavailable."""
+    if HL52: return
+    day = dt.date.today()
+    for _ in range(8):
+        if day.weekday() < 5:
+            try:
+                r = requests.get(NSE_52W.format(d=day), headers=BH_H, timeout=40); r.raise_for_status()
+                lines = r.text.splitlines(); h = next(i for i, l in enumerate(lines) if "SYMBOL" in l.upper())
+                df = pd.read_csv(io.StringIO("\n".join(lines[h:])), dtype=str).fillna(""); df.columns = [c.strip().upper() for c in df.columns]
+                hi = next(c for c in df.columns if "HIGH" in c and "DATE" not in c and "52" in c and "ADJ" in c) if any("ADJ" in c for c in df.columns) else next(c for c in df.columns if "HIGH" in c and "DATE" not in c and "52" in c)
+                lo = hi.replace("HIGH", "LOW")
+                ser = "SERIES" if "SERIES" in df.columns else None
+                for r_ in df.to_dict("records"):
+                    if ser and r_[ser].strip() != "EQ": continue
+                    a, b = _num(r_[hi]), _num(r_[lo])
+                    if a and b: HL52[r_["SYMBOL"].strip()] = (a, b)
+                if len(HL52) > 300: log.info("official 52-week file %s: %d stocks", day, len(HL52)); return
+            except Exception as e: log.warning("52-week file %s: %s", day, str(e)[:80])
+        day -= dt.timedelta(days=1)
 
 RECON = {"checked": 0, "mismatch": 0, "added": 0, "date": {}}
 
@@ -230,6 +259,10 @@ WHY = {}; CUR = ["NSE"]
 def _no(r):
     k = f"{CUR[0]}:{r}"; WHY[k] = WHY.get(k, 0) + 1
 
+def day_fields(df):
+    r = df.iloc[-1]; f = lambda x: None if pd.isna(x) else round(float(x), 2)
+    return dict(open=f(r["Open"]), high=f(r["High"]), low=f(r["Low"]), prev_close=f(df["Close"].iloc[-2]) if len(df) > 1 else None)
+
 def classify(sym, df, c):
     """Return a signal dict (buy/sell/near) or None. Pure function, easy to test."""
     df = df.dropna(subset=["Close"])
@@ -249,7 +282,7 @@ def classify(sym, df, c):
     direction = 1 if kind == "buy" else -1 if kind == "sell" else (1 if pct < 0 else -1)
     return dict(symbol=sym, price=round(float(c0), 2), ma=round(float(m0), 2), pct=round(float(pct), 2),
                 volume=int(df["Volume"].iloc[-1]), type=kind, candle=name,
-                score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1), **extras(close, m, c0, c1))
+                score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1), **day_fields(df), **extras(close, m, c0, c1))
 
 def fetch(tickers, batch=100, period="1y", workers=3, budget=780):
     """Download daily OHLCV for Yahoo tickers in parallel batches. Returns {ticker: DataFrame}."""
@@ -496,6 +529,14 @@ def main():
     mc = get_mcaps([dict(key=k, yahoo=y) for k, y in yh.items()])
     for s in sigs:
         cr = mc.get(f"{s['exchange']}:{s['symbol']}"); s["mcap"] = cr; s["mcap_cat"] = mcap_cat(cr, c)
+    load_52w()
+    for s in sigs:
+        b = BHAV.get(s["exchange"]); key = s["symbol"] if s["exchange"] == "NSE" else yh[f"{s['exchange']}:{s['symbol']}"].split(".")[0]
+        v = b[1].get(key) if b else None
+        if v and str(b[0]) == str(latest):          # official day figures only when the price bar is that same day
+            s["value_cr"] = None if v[6] is None else round(v[6], 2); s["deliv_pct"] = v[7]; s["trades"] = None if v[8] is None else int(v[8])
+            if v[5]: s["prev_close"] = round(v[5], 2); s["chg"] = round((s["price"] / v[5] - 1) * 100, 2)
+        if s["exchange"] == "NSE" and s["symbol"] in HL52: s["hi52"], s["lo52"] = HL52[s["symbol"]]; s["from_hi"] = round((s["price"] / s["hi52"] - 1) * 100, 1)
     if not scan_bse:
         sigs += [s for s in old.get("signals", []) if s.get("exchange") == "BSE"]
     pos, users = load_positions(), cloud_users()
