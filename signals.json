@@ -1,10 +1,10 @@
 {
- "updated": "2026-10-08T21:20:22.853981+00:00",
+ "updated": "2026-10-08T21:34:12.853236+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 1.5,
  "universe": "NSE + BSE",
- "bse_updated": "2026-10-08T21:20:22.854018+00:00",
+ "bse_updated": "2026-10-08T21:34:12.853256+00:00",
  "bse_error": null,
  "signals": [
   {
