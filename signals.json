@@ -1,15 +1,21 @@
 {
- "updated": "2026-10-08T22:01:05.064130+00:00",
+ "updated": "2026-10-08T22:23:57.739446+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 1.5,
  "universe": "NSE + BSE",
- "bse_updated": "2026-10-08T22:01:05.064141+00:00",
+ "bse_updated": "2026-10-08T22:23:57.739460+00:00",
  "cloud": {
   "redis": true,
   "users": 2,
   "connected": 1,
-  "error": null
+  "error": null,
+  "token_set": true,
+  "send": {
+   "ok": false,
+   "status": 404,
+   "error": "Not Found"
+  }
  },
  "bse_stats": {
   "listed": 1882,
@@ -24988,8 +24994,8 @@
  "quotes": {
   "NSE:UTLSOLAR": {
    "price": 431.75,
-   "ma": 430.65,
-   "pct": 0.26,
+   "ma": 429.36,
+   "pct": 0.56,
    "chg": 3.08
   }
  }
