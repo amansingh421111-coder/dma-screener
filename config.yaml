@@ -1,6 +1,7 @@
 ma_type: SMA        # SMA or EMA
 ma_period: 44       # change to 20, 50, 200...
-near_pct: 1.5       # "approaching" = within this % of the average
+near_pct: 2         # "approaching" = below the average, within this % of it
+buy_max_pct: 5      # "buy" = at or above the average, up to this % above it
 min_price: 50
 min_avg_volume: 100000
 max_near_alerts: 25 # cap per alert message

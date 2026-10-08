@@ -144,7 +144,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <section id="vScreen">
 <details class="help"><summary>How to read this screen</summary>
 <p><b>vs 44-DMA</b> is how far the price is from its 44-day moving average. "−0.17%" means 0.17% below the average of the last 44 closes.</p>
-<p><b>Signals.</b> Buy: price just crossed above the average. Sell: just crossed below. Approaching: within 1.5% of the average.</p>
+<p><b>Signals.</b> Buy: price is at or above the average, up to 5% above it. Approaching: price is below the average but within 2% of it. Sell: price just crossed below the average.</p>
 <p><b>Stars (0-3):</b> the candle agrees with the expected move, it closed near the day's high (buys) or low (sells), and volume is at least 1.5x its 20-day average. <b>Market cap</b> is in rupees crore (Large, Mid, Small, Micro are approximate buckets). <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>Days</b> is how long price has been on its current side of the average.</p></details>
 <div class="tiles" id="tiles"></div>
 <details class="help" id="scaninfo" hidden></details>
@@ -226,7 +226,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.5</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.6</span></footer>
 
 </main>
 <script>
@@ -289,7 +289,7 @@ function rng(s){if(!s.hi52||!s.lo52||s.hi52<=s.lo52)return"";const p=Math.max(0,
  return `<div class="rg"><div class="rb"><span style="left:${p}%"></span></div><div class="gl"><span>${inr(s.lo52)}</span><span>52-week range</span><span>${inr(s.hi52)}</span></div></div>`}
 function reading(s){const side=s.pct>=0?"above":"below";
  let t=`Price is ${Math.abs(s.pct).toFixed(2)}% ${side} its ${data.ma_period}-day average`+(s.since!=null?`, and has been ${side} it for ${s.since} trading day${s.since==1?"":"s"}.`:".");
- t+=s.type==="buy"?" It has just crossed above the average, which trend followers read as a possible buy.":s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
+ t+=s.type==="buy"?(s.since===1?" It has just crossed above the average, which trend followers read as a possible buy.":" It is in the buy zone, at or above the average and within "+(data.buy_max_pct||5)+"% of it."):s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
  return t+" "+(WHY[s.candle]||"")}
 function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.volume;
  const vol=v>=1e7?(v/1e7).toFixed(2)+" Cr":v>=1e5?(v/1e5).toFixed(1)+" lakh":Number(v).toLocaleString("en-IN");

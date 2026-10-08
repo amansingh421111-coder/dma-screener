@@ -11,7 +11,7 @@ log = logging.getLogger("dma")
 UA = {"User-Agent": "Mozilla/5.0"}
 NSE_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
 BSE_URL = "https://api.bseindia.com/BseIndiaAPI/api/ListofScripData/w?Group=&Atea=&Scripcode=&segment=Equity&status=Active"
-DEFAULTS = dict(ma_type="SMA", ma_period=44, near_pct=1.5, min_price=50, min_avg_volume=100000,
+DEFAULTS = dict(ma_type="SMA", ma_period=44, near_pct=2, buy_max_pct=5, min_price=50, min_avg_volume=100000,
                 max_near_alerts=25, include_bse=True, bse_min_avg_volume=25000,
                 bse_groups=["A", "B", "T", "X", "XT"], mcap_large_cr=100000, mcap_mid_cr=30000, mcap_small_cr=5000)
 
@@ -275,9 +275,10 @@ def classify(sym, df, c):
     if c0 < c["min_price"]: _no("low_price"); return None
     if df["Volume"].tail(20).mean() < c["min_avg_volume"]: _no("low_volume"); return None
     pct = (c0 / m0 - 1) * 100
-    if c1 <= m1 and c0 > m0: kind = "buy"
-    elif c1 >= m1 and c0 < m0: kind = "sell"
-    elif abs(pct) <= c["near_pct"]: kind = "near"
+    # buy: at or above the average, up to buy_max_pct above it. sell: just crossed below. near: below the average, within near_pct of it.
+    if c1 >= m1 and c0 < m0: kind = "sell"
+    elif 0 <= pct <= c["buy_max_pct"]: kind = "buy"
+    elif -c["near_pct"] <= pct < 0: kind = "near"
     else: _no("not_near_average"); return None
     name, pos = candle_info(df)
     prev_vol = df["Volume"].iloc[-21:-1].mean()
@@ -556,7 +557,7 @@ def main():
     quotes = position_quotes(list(allpos.values()), c)
     (ROOT / "signals.json").write_text(json.dumps(
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
-         "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
+         "near_pct": c["near_pct"], "buy_max_pct": c["buy_max_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
          "cloud": CLOUD, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
