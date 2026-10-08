@@ -42,7 +42,7 @@ def nse_universe():
         for k in ("name", "isin"):
             if k not in out: out[k] = ""
     return [dict(symbol=s, name=n, isin=i, exchange="NSE", yahoo=s + ".NS")
-            for s, n, i in zip(out.symbol, out.name, out.isin)]
+            for s, n, i in zip(out["symbol"], out["name"], out["isin"])]
 
 def bse_universe(skip_isins, groups):
     """BSE-only stocks (those not already listed on NSE, matched by ISIN). Yahoo uses scrip code + .BO"""
