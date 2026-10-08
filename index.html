@@ -134,6 +134,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 @media(max-width:760px){.dg{grid-template-columns:1fr}}
 .dt2{position:relative}.dt2 input[type=text]{padding-right:46px}.cal{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:17px;overflow:hidden;margin:0}.cal:hover{background:var(--line)}.nat{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 .dw.empty input{color:inherit}
+.seg3{display:flex;gap:6px;margin:0 0 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;width:fit-content;max-width:100%}.seg3 button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer}.seg3 button b{margin-left:6px;font-size:12px;opacity:.8}.seg3 button.on{background:var(--accent);color:#fff}.tile.all b{color:var(--ink)}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
@@ -144,8 +145,9 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <section id="vScreen">
 <details class="help"><summary>How to read this screen</summary>
 <p><b>vs 44-DMA</b> is how far the price is from its 44-day moving average. "−0.17%" means 0.17% below the average of the last 44 closes.</p>
-<p><b>Signals.</b> Buy: price is at or above the average, up to 5% above it. Approaching: price is below the average but within 2% of it. Sell: price just crossed below the average.</p>
+<p><b>Two views.</b> <b>Crossed today</b> = stocks whose price crossed the average on the latest trading day (buy: crossed above, sell: crossed below). <b>In range</b> = stocks sitting near the average whether or not they crossed today. <b>Signals.</b> Buy: price is at or above the average, up to 5% above it. Approaching: price is below the average but within 2% of it. Sell: price just crossed below the average.</p>
 <p><b>Stars (0-3):</b> the candle agrees with the expected move, it closed near the day's high (buys) or low (sells), and volume is at least 1.5x its 20-day average. <b>Market cap</b> is in rupees crore (Large, Mid, Small, Micro are approximate buckets). <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>Days</b> is how long price has been on its current side of the average.</p></details>
+<div class="seg3" id="secs" role="group" aria-label="Signal type"></div>
 <div class="tiles" id="tiles"></div>
 <details class="help" id="scaninfo" hidden></details>
 <button class="btn" id="ft" onclick="$('filters').hidden=!$('filters').hidden" style="margin-bottom:10px">Filters</button>
@@ -226,7 +228,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.6</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.7</span></footer>
 
 </main>
 <script>
@@ -234,7 +236,10 @@ const $=id=>document.getElementById(id);
 const NAMES={bullish:"Bullish candle",bearish:"Bearish candle",doji:"Doji, undecided",hammer:"Hammer",shooting_star:"Shooting star"};
 const SHORT={bullish:"Bullish",bearish:"Bearish",doji:"Doji",hammer:"Hammer",shooting_star:"Shooting star"};
 const WHY={bullish:"Closed above its open: buyers led the day.",bearish:"Closed below its open: sellers led the day.",hammer:"Long lower shadow, closed near the high: buyers pushed back.",shooting_star:"Long upper shadow, closed near the low: sellers pushed back.",doji:"Open and close nearly equal: no clear winner."};
-const TABS=[["buy","Buy"],["sell","Sell"],["near","Approaching"],["all","All signals"]];
+const fresh=s=>s.fresh??(s.type==="sell"||(s.type==="buy"&&s.since===1));
+const SECS={cross:["Crossed today",s=>fresh(s),[["buy","Buy"],["sell","Sell"],["all","All crossed"]]],range:["In range",s=>s.type==="buy"||s.type==="near",[["buy","Buy zone"],["near","Approaching"],["all","All in range"]]]};
+let sec="cross";const inSec=s=>SECS[sec][1](s),TABS_=()=>SECS[sec][2];
+function setSec(k){sec=k;tab="buy";shown=50;render()}
 const sp=Array.from({length:60},(_,i)=>100+Math.sin(i/7)*6+i*.1),sm=sp.map((v,i)=>100+Math.sin((i-6)/7)*4+i*.1);
 const SAMPLE={updated:new Date().toISOString(),ma_period:44,universe:"Sample",signals:[
 {symbol:"RELIANCE",exchange:"NSE",name:"Reliance Industries",mcap:1960000,mcap_cat:"Large",price:2910.5,ma:2875.2,pct:1.2,chg:1.4,volume:5200000,type:"buy",candle:"bullish",score:3,vol_x:2.1,rsi:61,above200:true,from_hi:-3.2,hi52:3006,lo52:2220,since:1,spark:sp,sparkma:sm},
@@ -256,7 +261,7 @@ function ago(iso){const m=Math.max(0,Math.round((Date.now()-new Date(iso))/6e4))
 const NEED={candle:s=>s.candle,rsi:s=>s.rsi!=null,trend:s=>s.above200!=null,hi:s=>s.from_hi!=null,since:s=>s.since!=null,vx:s=>s.vol_x!=null,mcap:s=>s.mcap!=null};
 const has=k=>data.signals.some(NEED[k]);
 function pass(s){
- if(tab!=="all"&&s.type!==tab)return false;
+ if(!inSec(s)||(tab!=="all"&&s.type!==tab))return false;
  const q=$("q").value.trim().toUpperCase();if(q&&!(s.symbol.toUpperCase().includes(q)||(s.name||"").toUpperCase().includes(q)))return false;
  if(exch.size&&!exch.has(ex(s)))return false;
  const ok=(v,lo,hi)=>!((lo!==null&&(v==null||v<lo))||(hi!==null&&(v==null||v>hi)));
@@ -319,7 +324,8 @@ function renderScreen(){
  if(data.signals.length&&!data.signals.some(s=>ex(s)==="BSE")&&data.universe!=="Sample")msgs.push(data.bse_error?`BSE stocks could not be loaded on the last run (${esc(data.bse_error)}). NSE stocks are unaffected.`:(data.bse_stats?`No BSE stocks matched on the last run: ${data.bse_stats.listed} listed, ${data.bse_stats.priced} had price data, ${data.bse_stats.signals} passed the filters.${data.bse_stats.rejected?" Rejected: "+Object.entries(data.bse_stats.rejected).map(([k,v])=>v+" "+k.replace(/_/g," ")).join(", ")+".":""}`:`No BSE stocks in the data yet. They appear after the next screener run (BSE is scanned hourly).`));
  $("warn").hidden=!msgs.length;$("warn").innerHTML=msgs.join("<br>");
  document.querySelectorAll("[data-need]").forEach(e=>e.classList.toggle("off",!has(e.dataset.need)));
- $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");
+ {const L=data.signals.filter(inSec);$("secs").innerHTML=Object.entries(SECS).map(([k,v])=>`<button class="${k===sec?"on":""}" aria-pressed="${k===sec}" onclick="setSec('${k}')">${v[0]} <b>${data.signals.filter(v[1]).length}</b></button>`).join("");
+ $("tiles").innerHTML=TABS_().map(([k,l])=>`<button class="tile ${k==="all"?"all":k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?L.length:L.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("")}
  {const sc=data.scan,el=$("scaninfo");if(sc){const N=x=>Number(x||0).toLocaleString("en-IN"),L={low_price:"price below ₹"+(data.min_price||50),low_volume:"too little trading volume",no_trade_latest_day:"did not trade on the latest day",short_history:"under 46 days of price history",not_near_average:"not within the signal range of the average"};
  const row=(ex,x)=>{if(!x||!x.listed)return"";const d=Object.entries(Object.assign({},x.dropped_before_download,x.rejected_after_download)).filter(([,v])=>v).map(([k,v])=>`<li>${N(v)} · ${L[k]||k.replace(/_/g," ")}</li>`).join("");return `<p><b>${ex}</b>: ${N(x.listed)} listed stocks checked, ${N(x.signals)} signals.</p><ul>${d}</ul>`};
  el.hidden=false;el.innerHTML=`<summary>What was scanned (every listed stock, then filtered)</summary>${row("NSE",sc.NSE)}${row("BSE",sc.BSE)}<p class="sub">BSE counts only stocks not already on NSE. Filters: minimum price, minimum average volume, and at least 46 days of history. Change them in config.yaml.</p>`}else el.hidden=true}
@@ -328,15 +334,15 @@ function renderScreen(){
  $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};shown=50;render()">${n?"★".repeat(n):"Any"}</button>`).join("");
  const so=$("sort");if(!so.options.length)so.innerHTML=SORTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
  const sv=`${sortKey}|${sortDir}`;if([...so.options].some(o=>o.value===sv))so.value=sv;
- const v=view(),tot=tab==="all"?data.signals.length:data.signals.filter(s=>s.type===tab).length,a=active();
+ const v=view(),tot=data.signals.filter(s=>inSec(s)&&(tab==="all"||s.type===tab)).length,a=active();
  $("ft").textContent=a?`Filters (${a} active)`:"Filters";
  $("count").textContent=`Showing ${Math.min(shown,v.length)} of ${v.length} matches`+(a?` · ${a} filter${a>1?"s":""} active`:"");
  const more=v.length>shown?`<button class="btn" style="width:100%;margin-top:8px" onclick="shown+=50;render()">Show 50 more</button>`:"";
  $("list").innerHTML=!v.length?`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Clear all filters.</div>`:mobile()?v.slice(0,shown).map(card).join("")+more:`<div class="tw"><table><thead><tr>${COLS.map(([k,l,t])=>`<th class="${k===sortKey?"on":""}" title="${t}" onclick="sortBy('${k}')">${l}${k===sortKey?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${v.slice(0,shown).map(tr).join("")}</tbody></table></div>${more}`}
 function tog(k){opened.has(k)?opened.delete(k):opened.add(k);render()}
 function preset(n){document.querySelectorAll("#filters input,#filters select").forEach(e=>e.value="");$("q").value="";minStars=0;candles=new Set();exch=new Set();caps=new Set();tab="all";shown=50;
- if(n==="best")minStars=2;if(n==="trend"){tab="buy";$("trend").value="up"}if(n==="large"){tab="buy";caps=new Set(["Large"])}
- if(n==="dip"){tab="near";$("trend").value="up";$("dmax").value=0}if(n==="over"){tab="near";$("rmax").value=40}render()}
+ if(n==="best"){minStars=2;sec="range"}if(n==="trend"){sec="range";tab="buy";$("trend").value="up"}if(n==="large"){sec="range";tab="buy";caps=new Set(["Large"])}
+ if(n==="dip"){sec="range";tab="near";$("trend").value="up";$("dmax").value=0}if(n==="over"){sec="range";tab="near";$("rmax").value=40}render()}
 function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
 function exportCsv(){const c=["symbol","exchange","name","type","price","ma","pct","chg","mcap","mcap_cat","volume","vol_x","rsi","candle","score","above200","from_hi","since"];
  dl("screener.csv",[c.join(",")].concat(view().map(s=>c.map(k=>JSON.stringify(k==="exchange"?ex(s):s[k]??"")).join(","))).join("\n"),"text/csv")}
