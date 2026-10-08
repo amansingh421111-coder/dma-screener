@@ -147,6 +147,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <p><b>Signals.</b> Buy: price just crossed above the average. Sell: just crossed below. Approaching: within 1.5% of the average.</p>
 <p><b>Stars (0-3):</b> the candle agrees with the expected move, it closed near the day's high (buys) or low (sells), and volume is at least 1.5x its 20-day average. <b>Market cap</b> is in rupees crore (Large, Mid, Small, Micro are approximate buckets). <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>Days</b> is how long price has been on its current side of the average.</p></details>
 <div class="tiles" id="tiles"></div>
+<details class="help" id="scaninfo" hidden></details>
 <button class="btn" id="ft" onclick="$('filters').hidden=!$('filters').hidden" style="margin-bottom:10px">Filters</button>
 <div class="wrap">
 <aside id="filters" hidden>
@@ -225,7 +226,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.4</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.5</span></footer>
 
 </main>
 <script>
@@ -319,6 +320,9 @@ function renderScreen(){
  $("warn").hidden=!msgs.length;$("warn").innerHTML=msgs.join("<br>");
  document.querySelectorAll("[data-need]").forEach(e=>e.classList.toggle("off",!has(e.dataset.need)));
  $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");
+ {const sc=data.scan,el=$("scaninfo");if(sc){const N=x=>Number(x||0).toLocaleString("en-IN"),L={low_price:"price below ₹"+(data.min_price||50),low_volume:"too little trading volume",no_trade_latest_day:"did not trade on the latest day",short_history:"under 46 days of price history",not_near_average:"not within the signal range of the average"};
+ const row=(ex,x)=>{if(!x||!x.listed)return"";const d=Object.entries(Object.assign({},x.dropped_before_download,x.rejected_after_download)).filter(([,v])=>v).map(([k,v])=>`<li>${N(v)} · ${L[k]||k.replace(/_/g," ")}</li>`).join("");return `<p><b>${ex}</b>: ${N(x.listed)} listed stocks checked, ${N(x.signals)} signals.</p><ul>${d}</ul>`};
+ el.hidden=false;el.innerHTML=`<summary>What was scanned (every listed stock, then filtered)</summary>${row("NSE",sc.NSE)}${row("BSE",sc.BSE)}<p class="sub">BSE counts only stocks not already on NSE. Filters: minimum price, minimum average volume, and at least 46 days of history. Change them in config.yaml.</p>`}else el.hidden=true}
  chipset("exch",[["NSE","NSE"],["BSE","BSE"]],exch);chipset("caps",[["Large","Large"],["Mid","Mid"],["Small","Small"],["Micro","Micro"]],caps);
  chipset("candles",Object.entries(NAMES).map(([k,l])=>[k,l.replace(" candle","")]),candles);
  $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};shown=50;render()">${n?"★".repeat(n):"Any"}</button>`).join("");

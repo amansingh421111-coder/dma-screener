@@ -198,18 +198,21 @@ def prefilter(items, c):
     Fewer tickers to download = much faster runs. Any failure leaves the list untouched."""
     load_bhav()
     keep, info = [], {k: str(v[0]) for k, v in BHAV.items()}
+    drop = {}; listed = {}
+    def dr(ex, why): d = drop.setdefault(ex, {}); d[why] = d.get(why, 0) + 1
     for u in items:
+        listed[u["exchange"]] = listed.get(u["exchange"], 0) + 1
         b = BHAV.get(u["exchange"])
         if b is None: keep.append(u); continue
         key = u["symbol"] if u["exchange"] == "NSE" else u["yahoo"].split(".")[0]
         v = b[1].get(key)
-        if v is None: continue                      # did not trade on the latest day
+        if v is None: dr(u["exchange"], "no_trade_latest_day"); continue
         px, vol = v[3], v[4]
         mv = c["bse_min_avg_volume"] if u["exchange"] == "BSE" else c["min_avg_volume"]
-        if px is not None and px < c["min_price"] * 0.97: continue
-        if vol is not None and vol < mv * 0.15: continue
+        if px is not None and px < c["min_price"] * 0.97: dr(u["exchange"], "low_price"); continue
+        if vol is not None and vol < mv * 0.15: dr(u["exchange"], "low_volume"); continue
         keep.append(u)
-    PRE.update(info=info, before=len(items), after=len(keep))
+    PRE.update(info=info, before=len(items), after=len(keep), listed=listed, dropped=drop)
     log.info("prefilter %s: %d -> %d tickers", info, len(items), len(keep))
     return keep
 
@@ -546,7 +549,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
-         "cloud": CLOUD, "fetch_secs": fetch_secs, "price_date": str(latest), "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
+         "cloud": CLOUD, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
