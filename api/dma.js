@@ -2,9 +2,11 @@
 // One serverless function that handles: Telegram connect, Telegram webhook, saving positions.
 const crypto = require("crypto");
 const E = Object.assign({}, process.env);
-// accept lowercase names too (e.g. bot_token) in case variables were saved in lowercase
-for (const k of ["BOT_TOKEN", "BOT_USERNAME"]) if (!E[k] && process.env[k.toLowerCase()]) E[k] = process.env[k.toLowerCase()].trim();
-for (const k of ["BOT_TOKEN", "BOT_USERNAME"]) if (E[k]) E[k] = E[k].trim();
+// match bot settings regardless of capitalization (Bot_token, bot_token, BOT_TOKEN ...)
+for (const k of ["BOT_TOKEN", "BOT_USERNAME"]) {
+  const name = Object.keys(process.env).find((n) => n.toUpperCase() === k);
+  if (name && process.env[name]) E[k] = process.env[name].trim();
+}
 const URL_ = E.KV_REST_API_URL || E.UPSTASH_REDIS_REST_URL;
 const TOK = E.KV_REST_API_TOKEN || E.UPSTASH_REDIS_REST_TOKEN;
 const redis = async (cmd) => {
