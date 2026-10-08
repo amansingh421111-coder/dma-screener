@@ -135,6 +135,50 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 .dt2{position:relative}.dt2 input[type=text]{padding-right:46px}.cal{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:17px;overflow:hidden;margin:0}.cal:hover{background:var(--line)}.nat{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 .dw.empty input{color:inherit}
 .seg3{display:flex;gap:6px;margin:0 0 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;width:fit-content;max-width:100%}.seg3 button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer}.seg3 button b{margin-left:6px;font-size:12px;opacity:.8}.seg3 button.on{background:var(--accent);color:#fff}.tile.all b{color:var(--ink)}
+
+/* ---- refined, professional look ---- */
+:root{--bg:#f4f6f9;--card:#fff;--ink:#101828;--mute:#667085;--line:#e4e7ec;--buy:#067647;--sell:#b42318;--near:#b54708;--buy-bg:#ecfdf3;--sell-bg:#fef3f2;--near-bg:#fffaeb;--accent:#2563eb;--sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0a0e17;--card:#111827;--ink:#eef2f7;--mute:#98a2b3;--line:#1f2a3d;--buy:#32d583;--sell:#f97066;--near:#fdb022;--buy-bg:#0c2a20;--sell-bg:#2d1517;--near-bg:#2b2110;--accent:#5b8def;--sh:0 1px 2px rgba(0,0,0,.4)}}
+body{font-size:14.5px;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+main{max-width:1240px;padding:18px 20px 40px}
+header{padding:2px 0 4px}header svg{width:34px;height:34px;border-radius:9px;box-shadow:var(--sh)}
+h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.meta{font-size:12.5px;margin:2px 0 14px}.live{box-shadow:0 0 0 3px color-mix(in srgb,var(--buy) 22%,transparent)}
+.nav{gap:0;border-bottom:1px solid var(--line);padding:0;margin-bottom:16px;background:var(--bg)}
+.seg{flex:none;max-width:none;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--mute);padding:12px 20px;font-weight:600;font-size:14.5px;margin-bottom:-1px}
+.seg[aria-pressed=true]{background:none;color:var(--ink);border-bottom-color:var(--accent)}
+.badge{background:var(--line);color:var(--ink);font-size:11.5px;font-weight:600}
+.seg3{background:var(--card);box-shadow:var(--sh);border-radius:10px;padding:3px;margin-bottom:12px}.seg3 button{border-radius:8px;padding:8px 16px;font-size:13.5px}
+.tiles{gap:12px;margin-bottom:16px}
+.tile{position:relative;overflow:hidden;border-radius:10px;padding:14px 16px 12px;box-shadow:var(--sh);background:var(--card)}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+.tile b{font-size:28px;font-weight:700;letter-spacing:-.02em}.tile span{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.tile[aria-pressed=true]{background:var(--cb);box-shadow:0 0 0 1px var(--c) inset}
+.help,#filters,.fm,.pc,.sc,.card,.tw{border-radius:10px;box-shadow:var(--sh)}
+#filters{padding:16px}#filters h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+.chip{border-radius:8px;padding:6px 12px;background:var(--card);font-weight:500}.chip[aria-pressed=true]{font-weight:600}
+input,select,textarea{border-radius:8px;background:var(--card);height:40px}input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);border-color:var(--accent)}
+.btn{border-radius:8px;font-weight:500;box-shadow:var(--sh)}.btn.pri{box-shadow:none}
+table{font-size:13.5px}
+th{background:color-mix(in srgb,var(--bg) 60%,var(--card));font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:11px 12px;border-bottom:1px solid var(--line)}
+th.on{color:var(--accent)}th:hover{color:var(--ink)}
+td{padding:12px;border-bottom:1px solid var(--line)}tr.r:hover td{background:color-mix(in srgb,var(--accent) 6%,var(--card))}
+tbody tr:last-child td{border-bottom:0}
+th:first-child,td:first-child{background:var(--card)}
+td b{font-size:14px;letter-spacing:.01em}td .nm{margin-top:1px}
+.tag{border-radius:5px;padding:2px 7px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;margin-left:8px}
+.tag.ex{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.star{font-size:12px}
+tr.dt td{background:color-mix(in srgb,var(--bg) 70%,var(--card));padding:18px 20px}
+.card{border-left-width:3px}
+.st{background:var(--card)}.stg{border-radius:8px}
+.why{border-radius:6px}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;line-height:1.6;color:var(--mute)}
+.count{font-size:12.5px}
+@media(min-width:900px){.wrap{grid-template-columns:280px minmax(0,1fr)}}
+.wrap>*{min-width:0}
+.tiles{grid-template-columns:repeat(3,1fr)}.tile span{letter-spacing:.04em;font-size:11px}
+@media(max-width:760px){main{padding:12px 12px 32px}.tiles{gap:8px}.tile b{font-size:24px}.seg{padding:11px 14px}}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
@@ -228,7 +272,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.7</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.8</span></footer>
 
 </main>
 <script>
@@ -275,11 +319,12 @@ function pass(s){
  if(has("hi")&&!ok(s.from_hi,hh===null?null:-hh,null))return false;
  if(has("since")&&!ok(s.since,null,num("since")))return false;
  return true}
-const COLS=[["symbol","Symbol","Stock symbol and company"],["exchange","Exch","NSE or BSE"],["price","Price","Last price in rupees"],["chg","Day %","Change versus yesterday's close"],["pct","vs 44-DMA","Distance from the moving average"],["mcap","Mkt cap","Market capitalisation in rupees crore"],["score","Candle","Latest candle and 0-3 star conviction"],["vol_x","Vol ×","Volume versus its 20-day average"],["rsi","RSI","Relative strength index, 14 days"],["above200","200-DMA","Above or below the 200-day average"],["since","Days","Trading days on the current side of the average"],["from_hi","From 52W high","Distance below the 52-week high"]];
-const SORTS=[["score|-1","Strongest first"],["abs|1","Closest to average"],["mcap|-1","Market cap, high to low"],["vol_x|-1","Volume surge"],["chg|-1","Top gainers today"],["chg|1","Top losers today"],["rsi|1","RSI, low to high"],["symbol|1","A to Z"]];
-function val(s,k){return k==="symbol"?s.symbol:k==="exchange"?ex(s):k==="abs"?Math.abs(s.pct):k==="above200"?(s.above200==null?null:+s.above200):k==="score"?(s.candle?s.score||0:null):s[k]}
+const COLS=[["symbol","Symbol","Stock symbol and company"],["exchange","Exch","NSE or BSE"],["price","Price","Last price in rupees"],["chg","Day %","Change versus yesterday's close"],["pct","vs 44-DMA","Distance from the moving average"],["mcap","Mkt cap","Market capitalisation in rupees crore"],["candle","Candle","Latest candle pattern (click to group by pattern, then stars)"],["score","Rating","0-3 star conviction"],["vol_x","Vol ×","Volume versus its 20-day average"],["rsi","RSI","Relative strength index, 14 days"],["above200","200-DMA","Above or below the 200-day average"],["since","Days","Trading days on the current side of the average"],["from_hi","From 52W high","Distance below the 52-week high"]];
+const SORTS=[["score|-1","Highest rating first"],["candle|-1","Candle: bullish first"],["candle|1","Candle: bearish first"],["abs|1","Closest to average"],["mcap|-1","Market cap, high to low"],["vol_x|-1","Volume surge"],["chg|-1","Top gainers today"],["chg|1","Top losers today"],["rsi|1","RSI, low to high"],["symbol|1","A to Z"]];
+function val(s,k){return k==="symbol"?s.symbol:k==="exchange"?ex(s):k==="abs"?Math.abs(s.pct):k==="above200"?(s.above200==null?null:+s.above200):k==="score"?(s.candle?s.score||0:null):k==="candle"?(s.candle?({bullish:5,hammer:4,doji:3,shooting_star:2,bearish:1}[s.candle]||0):null):s[k]}
 function cmp(a,b){const x=val(a,sortKey),y=val(b,sortKey);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
- const r=typeof x==="string"?x.localeCompare(y):x-y;return r*sortDir||(sortKey==="score"?Math.abs(a.pct)-Math.abs(b.pct):0)}
+ const r=(typeof x==="string"?x.localeCompare(y):x-y)*sortDir;if(r)return r;
+ return ((val(b,"score")||0)-(val(a,"score")||0))||(Math.abs(a.pct)-Math.abs(b.pct))||a.symbol.localeCompare(b.symbol)}
 const view=()=>data.signals.filter(pass).sort(cmp);
 function sortBy(k){sortDir=sortKey===k?-sortDir:(k==="symbol"||k==="exchange"?1:-1);sortKey=k;render()}
 function gauge(s){const L=5,p=Math.max(-L,Math.min(L,s.pct)),pos=50+p/L*50,nb=(data.near_pct||1.5)/L*50,fl=p>=0?`left:50%;width:${pos-50}%`:`left:${pos}%;width:${50-pos}%`;
@@ -308,8 +353,8 @@ const LAB={buy:"Buy",sell:"Sell",near:"Near"},COL={buy:"var(--buy)",sell:"var(--
 const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
 const stars=s=>s.candle?`${SHORT[s.candle]||esc(s.candle)} <span class="star">${"★".repeat(s.score||0)}${"☆".repeat(3-(s.score||0))}</span>`:"–";
 function tr(s){const o=opened.has(key(s)),sc=`data-k="${esc(key(s))}"`;
- let h=`<tr class="r" ${sc} onclick="tog(this.dataset.k)"><td><b>${esc(s.symbol)}</b><span class="tag ${s.type}">${LAB[s.type]}</span><span class="nm">${esc(s.name||"")}</span></td><td><span class="tag ex">${ex(s)}</span></td><td>${inr(s.price)}</td><td>${pc(s.chg)}</td><td style="color:${COL[s.type]};font-weight:600">${sg(s.pct)}%</td><td>${cr(s.mcap)}</td><td>${stars(s)}</td><td>${s.vol_x!=null?s.vol_x+"×":"–"}</td><td>${s.rsi??"–"}</td><td>${s.above200==null?"–":s.above200?"Above":"Below"}</td><td>${s.since??"–"}</td><td>${s.from_hi!=null?s.from_hi+"%":"–"}</td></tr>`;
- if(o)h+=`<tr class="dt"><td colspan="12" style="--c:${COL[s.type]};--cb:${COLB[s.type]}">${detail(s)}</td></tr>`;return h}
+ let h=`<tr class="r" ${sc} onclick="tog(this.dataset.k)"><td><b>${esc(s.symbol)}</b><span class="tag ${s.type}">${LAB[s.type]}</span><span class="nm">${esc(s.name||"")}</span></td><td><span class="tag ex">${ex(s)}</span></td><td>${inr(s.price)}</td><td>${pc(s.chg)}</td><td style="color:${COL[s.type]};font-weight:600">${sg(s.pct)}%</td><td>${cr(s.mcap)}</td><td>${s.candle?SHORT[s.candle]||esc(s.candle):"–"}</td><td><span class="star">${s.candle?"★".repeat(s.score||0)+"☆".repeat(3-(s.score||0)):"–"}</span></td><td>${s.vol_x!=null?s.vol_x+"×":"–"}</td><td>${s.rsi??"–"}</td><td>${s.above200==null?"–":s.above200?"Above":"Below"}</td><td>${s.since??"–"}</td><td>${s.from_hi!=null?s.from_hi+"%":"–"}</td></tr>`;
+ if(o)h+=`<tr class="dt"><td colspan="13" style="--c:${COL[s.type]};--cb:${COLB[s.type]}">${detail(s)}</td></tr>`;return h}
 function card(s){const o=opened.has(key(s));
  return `<article class="card ${s.type}" data-k="${esc(key(s))}" onclick="tog(this.dataset.k)"><div class="ct"><div><b>${esc(s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span><div class="sub">${esc(s.name||"")}</div></div><div class="px">${inr(s.price)}<div class="sub">${s.mcap!=null?cr(s.mcap):""}</div></div></div>
  <div class="pills"><span class="c">${sg(s.pct)}% vs ${data.ma_period}-DMA</span>${s.chg!=null?`<span>Today ${sg(s.chg)}%</span>`:""}${s.candle?`<span>${stars(s)}</span>`:""}${s.vol_x!=null?`<span>Vol ${s.vol_x}×</span>`:""}${s.rsi!=null?`<span>RSI ${s.rsi}</span>`:""}${s.mcap_cat?`<span>${s.mcap_cat} cap</span>`:""}</div>
