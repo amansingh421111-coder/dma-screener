@@ -1,16 +1,17 @@
 {
- "updated": "2026-10-07T10:51:53.222762+00:00",
+ "updated": "2026-10-08T21:01:39.977949+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
- "universe_exchange": "NSE",
+ "near_pct": 1.5,
+ "universe": "NSE + BSE",
+ "bse_updated": "2026-10-08T21:01:39.977961+00:00",
  "signals": [
   {
    "symbol": "20MICRONS",
-   "exchange": "NSE",
    "price": 204.56,
    "ma": 207.74,
    "pct": -1.53,
-   "volume": 70092,
+   "volume": 70093,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -145,11 +146,14 @@
     207.27,
     207.52,
     207.74
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "20 Microns Limited",
+   "mcap": 687.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "5PAISA",
-   "exchange": "NSE",
    "price": 348.0,
    "ma": 347.07,
    "pct": 0.27,
@@ -288,15 +292,18 @@
     347.87,
     347.48,
     347.07
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "5Paisa Capital Limited",
+   "mcap": 1585.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "AARTIDRUGS",
-   "exchange": "NSE",
    "price": 417.55,
    "ma": 424.02,
    "pct": -1.53,
-   "volume": 147070,
+   "volume": 147075,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -431,15 +438,18 @@
     423.5,
     423.87,
     424.02
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Aarti Drugs Limited",
+   "mcap": 3778.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "ABSLAMC",
-   "exchange": "NSE",
    "price": 1015.5,
    "ma": 1029.89,
    "pct": -1.4,
-   "volume": 201334,
+   "volume": 201360,
    "type": "near",
    "candle": "shooting_star",
    "score": 0,
@@ -574,15 +584,18 @@
     1030.26,
     1030.09,
     1029.89
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Aditya Birla Sun Life AMC Limited",
+   "mcap": 29079.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ADANIPORTS",
-   "exchange": "NSE",
    "price": 1750.1,
    "ma": 1725.41,
    "pct": 1.43,
-   "volume": 1187759,
+   "volume": 1187835,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -717,15 +730,18 @@
     1722.26,
     1724.16,
     1725.41
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Adani Ports and Special Economic Zone Limited",
+   "mcap": 393516.2,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "ADVANCE",
-   "exchange": "NSE",
    "price": 117.49,
    "ma": 117.76,
    "pct": -0.23,
-   "volume": 99984,
+   "volume": 100984,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -860,11 +876,14 @@
     118.3,
     118.14,
     117.76
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Advance Agrolife Limited",
+   "mcap": 731.9,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "AEROENTER",
-   "exchange": "NSE",
    "price": 129.01,
    "ma": 132.0,
    "pct": -2.27,
@@ -1003,11 +1022,14 @@
     132.02,
     132.03,
     132.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Aeroflex Enterprises Limited",
+   "mcap": 1419.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "AIIL",
-   "exchange": "NSE",
    "price": 549.65,
    "ma": 547.07,
    "pct": 0.47,
@@ -1146,11 +1168,14 @@
     548.59,
     548.13,
     547.07
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Authum Investment & Infrastructure Limited",
+   "mcap": 46715.9,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "AJAXENGG",
-   "exchange": "NSE",
    "price": 582.75,
    "ma": 576.73,
    "pct": 1.04,
@@ -1289,11 +1314,14 @@
     577.48,
     577.3,
     576.73
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Ajax Engineering Limited",
+   "mcap": 6535.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "AJMERA",
-   "exchange": "NSE",
    "price": 117.99,
    "ma": 117.98,
    "pct": 0.01,
@@ -1432,15 +1460,18 @@
     118.28,
     118.1,
     117.98
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Ajmera Realty & Infra India Limited",
+   "mcap": 2278.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "ALIVUS",
-   "exchange": "NSE",
    "price": 1370.2,
    "ma": 1378.46,
    "pct": -0.6,
-   "volume": 79310,
+   "volume": 79355,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -1575,15 +1606,18 @@
     1376.23,
     1377.44,
     1378.46
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Alivus Life Sciences Limited",
+   "mcap": 16417.0,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ALKEM",
-   "exchange": "NSE",
    "price": 5350.5,
    "ma": 5317.6,
    "pct": 0.62,
-   "volume": 205151,
+   "volume": 205152,
    "type": "buy",
    "candle": "bullish",
    "score": 1,
@@ -1718,15 +1752,18 @@
     5332.65,
     5325.47,
     5317.6
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Alkem Laboratories Limited",
+   "mcap": 62765.6,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "ALKYLAMINE",
-   "exchange": "NSE",
    "price": 1918.9,
    "ma": 1913.67,
    "pct": 0.27,
-   "volume": 189972,
+   "volume": 189986,
    "type": "near",
    "candle": "hammer",
    "score": 0,
@@ -1861,15 +1898,18 @@
     1913.23,
     1913.73,
     1913.67
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Alkyl Amines Chemicals Limited",
+   "mcap": 9346.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ANANTRAJ",
-   "exchange": "NSE",
    "price": 612.15,
    "ma": 609.78,
    "pct": 0.39,
-   "volume": 2033997,
+   "volume": 2034133,
    "type": "buy",
    "candle": "doji",
    "score": 0,
@@ -2004,11 +2044,14 @@
     610.34,
     609.9,
     609.78
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Anant Raj Limited",
+   "mcap": 20962.8,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ANTHEM",
-   "exchange": "NSE",
    "price": 887.05,
    "ma": 898.29,
    "pct": -1.25,
@@ -2147,11 +2190,14 @@
     895.42,
     896.89,
     898.29
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Anthem Biosciences Limited",
+   "mcap": 49012.3,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "ANUHPHR",
-   "exchange": "NSE",
    "price": 85.51,
    "ma": 84.94,
    "pct": 0.67,
@@ -2290,28 +2336,30 @@
     84.61,
     84.8,
     84.94
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Anuh Pharma Limited",
+   "mcap": 819.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "APLAPOLLO",
-   "exchange": "NSE",
    "price": 2135.0,
-   "ma": 2146.36,
-   "pct": -0.53,
-   "volume": 613415,
+   "ma": 2150.24,
+   "pct": -0.71,
+   "volume": 613418,
    "type": "sell",
    "candle": "bullish",
    "score": 0,
-   "vol_x": 1.1,
+   "vol_x": 1.2,
    "chg": -0.79,
-   "rsi": 47.7,
+   "rsi": 47.9,
    "above200": true,
    "hi52": 2280.8,
    "lo52": 1698.4,
    "from_hi": -6.4,
    "since": 1,
    "spark": [
-    1817.2,
     1792.5,
     1795.4,
     1814.3,
@@ -2368,12 +2416,12 @@
     2188.6,
     2190.1,
     2115.7,
+    2115.7,
     2099.8,
     2152.0,
     2135.0
    ],
    "sparkma": [
-    1825.77,
     1823.55,
     1821.72,
     1820.58,
@@ -2430,18 +2478,22 @@
     2119.77,
     2126.52,
     2133.25,
-    2136.85,
-    2142.12,
-    2146.36
-   ]
+    2137.21,
+    2141.29,
+    2145.92,
+    2150.24
+   ],
+   "exchange": "NSE",
+   "name": "APL Apollo Tubes Limited",
+   "mcap": 56642.3,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "APLLTD",
-   "exchange": "NSE",
    "price": 833.8,
    "ma": 827.89,
    "pct": 0.71,
-   "volume": 135880,
+   "volume": 135889,
    "type": "near",
    "candle": "hammer",
    "score": 0,
@@ -2576,11 +2628,14 @@
     826.98,
     827.54,
     827.89
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Alembic Pharmaceuticals Limited",
+   "mcap": 15734.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ASIANENE",
-   "exchange": "NSE",
    "price": 480.15,
    "ma": 476.1,
    "pct": 0.85,
@@ -2719,28 +2774,30 @@
     472.69,
     474.09,
     476.1
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Asian Energy Services Limited",
+   "mcap": 2232.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "ASKAUTOLTD",
-   "exchange": "NSE",
    "price": 626.55,
-   "ma": 633.27,
-   "pct": -1.06,
-   "volume": 298653,
+   "ma": 631.89,
+   "pct": -0.84,
+   "volume": 298688,
    "type": "near",
    "candle": "bullish",
    "score": 2,
    "vol_x": 1.0,
    "chg": 2.76,
-   "rsi": 50.3,
+   "rsi": 50.5,
    "above200": true,
    "hi52": 678.8,
    "lo52": 380.1,
    "from_hi": -7.7,
-   "since": 4,
+   "since": 5,
    "spark": [
-    472.85,
     485.0,
     482.1,
     477.35,
@@ -2797,12 +2854,12 @@
     619.85,
     640.1,
     618.15,
+    618.15,
     608.2,
     609.75,
     626.55
    ],
    "sparkma": [
-    453.33,
     453.93,
     454.6,
     455.09,
@@ -2859,18 +2916,22 @@
     626.26,
     629.26,
     631.31,
-    632.19,
-    633.52,
-    633.27
-   ]
+    632.41,
+    633.71,
+    633.08,
+    631.89
+   ],
+   "exchange": "NSE",
+   "name": "ASK Automotive Limited",
+   "mcap": 11722.1,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "AUROPHARMA",
-   "exchange": "NSE",
    "price": 1682.0,
    "ma": 1667.09,
    "pct": 0.89,
-   "volume": 438089,
+   "volume": 438151,
    "type": "near",
    "candle": "bearish",
    "score": 1,
@@ -3005,15 +3066,18 @@
     1663.17,
     1664.97,
     1667.09
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Aurobindo Pharma Limited",
+   "mcap": 94649.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "AVANTEL",
-   "exchange": "NSE",
    "price": 153.28,
    "ma": 155.12,
    "pct": -1.18,
-   "volume": 733506,
+   "volume": 734201,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -3148,11 +3212,14 @@
     155.68,
     155.37,
     155.12
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Avantel Limited",
+   "mcap": 3862.0,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "AVL",
-   "exchange": "NSE",
    "price": 621.1,
    "ma": 608.99,
    "pct": 1.99,
@@ -3291,15 +3358,18 @@
     610.0,
     609.11,
     608.99
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Aditya Vision Limited",
+   "mcap": 7805.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "AWL",
-   "exchange": "NSE",
    "price": 187.11,
    "ma": 188.11,
    "pct": -0.53,
-   "volume": 2804644,
+   "volume": 2805362,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -3434,15 +3504,18 @@
     188.51,
     188.34,
     188.11
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "AWL Agri Business Limited",
+   "mcap": 23615.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "AXISBANK",
-   "exchange": "NSE",
    "price": 1242.5,
    "ma": 1240.3,
    "pct": 0.18,
-   "volume": 9677744,
+   "volume": 9678421,
    "type": "near",
    "candle": "doji",
    "score": 1,
@@ -3577,11 +3650,14 @@
     1240.74,
     1240.61,
     1240.3
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Axis Bank Limited",
+   "mcap": 387664.7,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "AYMSYNTEX",
-   "exchange": "NSE",
    "price": 277.5,
    "ma": 277.98,
    "pct": -0.17,
@@ -3720,15 +3796,18 @@
     276.64,
     277.49,
     277.98
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "AYM Syntex Limited",
+   "mcap": 1597.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "BAJAJHFL",
-   "exchange": "NSE",
    "price": 84.08,
    "ma": 83.81,
    "pct": 0.32,
-   "volume": 4602872,
+   "volume": 4604045,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -3863,15 +3942,18 @@
     83.97,
     83.86,
     83.81
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Bajaj Housing Finance Limited",
+   "mcap": 68411.6,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "BALAMINES",
-   "exchange": "NSE",
    "price": 2155.9,
    "ma": 2218.78,
    "pct": -2.83,
-   "volume": 709269,
+   "volume": 709751,
    "type": "sell",
    "candle": "bearish",
    "score": 3,
@@ -4006,15 +4088,18 @@
     2210.96,
     2217.53,
     2218.78
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Balaji Amines Limited",
+   "mcap": 6757.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "BELRISE",
-   "exchange": "NSE",
    "price": 246.31,
    "ma": 237.7,
    "pct": 3.62,
-   "volume": 3747573,
+   "volume": 3749664,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -4149,11 +4234,14 @@
     237.76,
     237.66,
     237.7
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Belrise Industries Limited",
+   "mcap": 22708.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "BEML",
-   "exchange": "NSE",
    "price": 2006.2,
    "ma": 1982.81,
    "pct": 1.18,
@@ -4292,11 +4380,14 @@
     1967.21,
     1975.2,
     1982.81
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "BEML Limited",
+   "mcap": 15918.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "BEPL",
-   "exchange": "NSE",
    "price": 127.61,
    "ma": 125.92,
    "pct": 1.35,
@@ -4435,15 +4526,18 @@
     125.63,
     125.8,
     125.92
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Bhansali Engineering Polymers Limited",
+   "mcap": 3071.9,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "BHARTIARTL",
-   "exchange": "NSE",
    "price": 1833.9,
    "ma": 1861.13,
    "pct": -1.46,
-   "volume": 13920615,
+   "volume": 13920833,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -4578,15 +4672,18 @@
     1867.53,
     1863.72,
     1861.13
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Bharti Airtel Limited",
+   "mcap": 1125828.2,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "BLACKBUCK",
-   "exchange": "NSE",
    "price": 616.4,
    "ma": 598.01,
    "pct": 3.08,
-   "volume": 430093,
+   "volume": 430095,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -4721,11 +4818,14 @@
     595.51,
     596.64,
     598.01
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "BLACKBUCK LIMITED",
+   "mcap": 10708.5,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "BLKASHYAP",
-   "exchange": "NSE",
    "price": 53.94,
    "ma": 53.89,
    "pct": 0.09,
@@ -4864,11 +4964,14 @@
     53.88,
     53.88,
     53.89
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "B. L. Kashyap and Sons Limited",
+   "mcap": 1175.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "BLSE",
-   "exchange": "NSE",
    "price": 158.2,
    "ma": 159.38,
    "pct": -0.74,
@@ -5007,15 +5110,18 @@
     159.36,
     159.39,
     159.38
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "BLS E-Services Limited",
+   "mcap": 2856.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "BLUESTARCO",
-   "exchange": "NSE",
    "price": 1530.1,
    "ma": 1508.65,
    "pct": 1.42,
-   "volume": 436481,
+   "volume": 436486,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -5150,28 +5256,30 @@
     1511.71,
     1509.58,
     1508.65
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Blue Star Limited",
+   "mcap": 31229.5,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "BLUESTONE",
-   "exchange": "NSE",
    "price": 831.1,
-   "ma": 832.45,
-   "pct": -0.16,
-   "volume": 707447,
+   "ma": 831.62,
+   "pct": -0.06,
+   "volume": 707911,
    "type": "near",
    "candle": "bullish",
    "score": 2,
    "vol_x": 0.4,
    "chg": 2.12,
-   "rsi": 51.7,
+   "rsi": 52.2,
    "above200": true,
    "hi52": 930.4,
    "lo52": 403.45,
    "from_hi": -10.7,
-   "since": 9,
+   "since": 10,
    "spark": [
-    626.3,
     605.2,
     599.05,
     610.4,
@@ -5228,12 +5336,12 @@
     806.05,
     794.85,
     787.95,
+    787.95,
     790.65,
     813.85,
     831.1
    ],
    "sparkma": [
-    525.59,
     528.54,
     531.6,
     534.95,
@@ -5290,18 +5398,22 @@
     833.99,
     834.73,
     834.08,
-    833.81,
-    833.02,
-    832.45
-   ]
+    833.75,
+    832.43,
+    831.47,
+    831.62
+   ],
+   "exchange": "NSE",
+   "name": "BlueStone Jewellery and Lifestyle Limited",
+   "mcap": 12212.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "BSE",
-   "exchange": "NSE",
    "price": 3356.0,
    "ma": 3304.2,
    "pct": 1.57,
-   "volume": 6607434,
+   "volume": 6608257,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -5436,15 +5548,18 @@
     3311.21,
     3306.0,
     3304.2
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "BSE Limited",
+   "mcap": 135435.9,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "CAPLIPOINT",
-   "exchange": "NSE",
    "price": 2649.1,
    "ma": 2654.38,
    "pct": -0.2,
-   "volume": 103769,
+   "volume": 103774,
    "type": "sell",
    "candle": "bearish",
    "score": 1,
@@ -5579,11 +5694,14 @@
     2649.81,
     2652.94,
     2654.38
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Caplin Point Laboratories Limited",
+   "mcap": 19373.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "CARRARO",
-   "exchange": "NSE",
    "price": 533.85,
    "ma": 530.08,
    "pct": 0.71,
@@ -5722,15 +5840,18 @@
     530.46,
     530.13,
     530.08
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Carraro India Limited",
+   "mcap": 2898.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "CARTRADE",
-   "exchange": "NSE",
    "price": 2914.7,
    "ma": 2946.97,
    "pct": -1.1,
-   "volume": 116480,
+   "volume": 116560,
    "type": "near",
    "candle": "doji",
    "score": 0,
@@ -5865,15 +5986,18 @@
     2942.52,
     2944.1,
     2946.97
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Cartrade Tech Limited",
+   "mcap": 13796.4,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "CGCL",
-   "exchange": "NSE",
    "price": 250.74,
    "ma": 250.55,
    "pct": 0.08,
-   "volume": 1753663,
+   "volume": 1754021,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -6008,15 +6132,18 @@
     249.85,
     250.26,
     250.55
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Capri Global Capital Limited",
+   "mcap": 23239.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "CGPOWER",
-   "exchange": "NSE",
    "price": 894.5,
    "ma": 886.84,
    "pct": 0.86,
-   "volume": 1850975,
+   "volume": 1854228,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -6151,15 +6278,18 @@
     885.91,
     886.42,
     886.84
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "CG Power and Industrial Solutions Limited",
+   "mcap": 135813.2,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "CHENNPETRO",
-   "exchange": "NSE",
    "price": 1612.3,
    "ma": 1414.98,
    "pct": 13.94,
-   "volume": 20027686,
+   "volume": 20027812,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -6294,11 +6424,14 @@
     1405.4,
     1407.71,
     1414.98
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Chennai Petroleum Corporation Limited",
+   "mcap": 22798.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "CLEAN",
-   "exchange": "NSE",
    "price": 813.7,
    "ma": 823.07,
    "pct": -1.14,
@@ -6437,15 +6570,18 @@
     820.95,
     822.05,
     823.07
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Clean Science and Technology Limited",
+   "mcap": 8468.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "COALINDIA",
-   "exchange": "NSE",
    "price": 414.5,
    "ma": 415.11,
    "pct": -0.15,
-   "volume": 6399013,
+   "volume": 6400277,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -6580,15 +6716,18 @@
     415.23,
     415.14,
     415.11
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Coal India Limited",
+   "mcap": 252271.3,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "COFORGE",
-   "exchange": "NSE",
    "price": 1822.2,
    "ma": 1847.31,
    "pct": -1.36,
-   "volume": 1015813,
+   "volume": 1016382,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -6723,15 +6862,18 @@
     1844.53,
     1846.19,
     1847.31
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Coforge Limited",
+   "mcap": 80380.5,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "COHANCE",
-   "exchange": "NSE",
    "price": 455.45,
    "ma": 450.47,
    "pct": 1.11,
-   "volume": 1303079,
+   "volume": 1303279,
    "type": "near",
    "candle": "shooting_star",
    "score": 2,
@@ -6866,15 +7008,18 @@
     449.15,
     449.88,
     450.47
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Cohance Lifesciences Limited",
+   "mcap": 16926.1,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "CUB",
-   "exchange": "NSE",
    "price": 222.12,
    "ma": 224.51,
    "pct": -1.06,
-   "volume": 2247127,
+   "volume": 2247151,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -7009,15 +7154,18 @@
     223.76,
     224.2,
     224.51
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "City Union Bank Limited",
+   "mcap": 21804.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "DABUR",
-   "exchange": "NSE",
    "price": 383.55,
    "ma": 388.96,
    "pct": -1.39,
-   "volume": 2428198,
+   "volume": 2429201,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -7152,11 +7300,14 @@
     390.16,
     389.59,
     388.96
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Dabur India Limited",
+   "mcap": 66842.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "DBL",
-   "exchange": "NSE",
    "price": 409.25,
    "ma": 411.23,
    "pct": -0.48,
@@ -7295,28 +7446,30 @@
     413.86,
     412.35,
     411.23
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Dilip Buildcon Limited",
+   "mcap": 6455.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "DEEDEV",
-   "exchange": "NSE",
    "price": 624.1,
-   "ma": 647.55,
-   "pct": -3.62,
-   "volume": 289010,
+   "ma": 647.81,
+   "pct": -3.66,
+   "volume": 289726,
    "type": "sell",
    "candle": "bearish",
-   "score": 2,
-   "vol_x": 1.5,
+   "score": 3,
+   "vol_x": 1.6,
    "chg": -4.24,
-   "rsi": 43.3,
+   "rsi": 42.9,
    "above200": true,
    "hi52": 738.75,
    "lo52": 184.78,
    "from_hi": -15.5,
    "since": 1,
    "spark": [
-    719.35,
     703.5,
     691.75,
     695.4,
@@ -7373,12 +7526,12 @@
     653.5,
     676.9,
     663.2,
+    663.2,
     636.95,
     651.7,
     624.1
    ],
    "sparkma": [
-    639.11,
     643.7,
     648.6,
     654.12,
@@ -7435,18 +7588,22 @@
     649.55,
     650.25,
     649.9,
-    648.64,
-    648.5,
-    647.55
-   ]
+    649.23,
+    648.76,
+    648.44,
+    647.81
+   ],
+   "exchange": "NSE",
+   "name": "DEE Development Engineers Limited",
+   "mcap": 4579.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "DEEPAKFERT",
-   "exchange": "NSE",
    "price": 1415.4,
    "ma": 1396.27,
    "pct": 1.37,
-   "volume": 423578,
+   "volume": 423588,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -7581,15 +7738,18 @@
     1404.28,
     1399.53,
     1396.27
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Deepak Fertilizers and Petrochemicals Corporation Limited",
+   "mcap": 17567.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "DLF",
-   "exchange": "NSE",
    "price": 656.0,
    "ma": 664.63,
    "pct": -1.3,
-   "volume": 3027061,
+   "volume": 3028905,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -7724,11 +7884,14 @@
     663.93,
     664.31,
     664.63
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "DLF Limited",
+   "mcap": 157665.0,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "ECLERX",
-   "exchange": "NSE",
    "price": 1896.0,
    "ma": 1882.61,
    "pct": 0.71,
@@ -7867,15 +8030,18 @@
     1882.09,
     1882.08,
     1882.61
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "eClerx Services Limited",
+   "mcap": 16995.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "EIHOTEL",
-   "exchange": "NSE",
    "price": 296.5,
    "ma": 297.26,
    "pct": -0.25,
-   "volume": 92133,
+   "volume": 92171,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -8010,154 +8176,14 @@
     298.54,
     297.92,
     297.26
-   ]
-  },
-  {
-   "symbol": "ELECON",
-   "exchange": "NSE",
-   "price": 441.25,
-   "ma": 434.91,
-   "pct": 1.46,
-   "volume": 244777,
-   "type": "near",
-   "candle": "bearish",
-   "score": 2,
-   "vol_x": 0.1,
-   "chg": -1.13,
-   "rsi": 49.9,
-   "above200": false,
-   "hi52": 619.65,
-   "lo52": 354.75,
-   "from_hi": -28.8,
-   "since": 10,
-   "spark": [
-    478.0,
-    461.0,
-    464.35,
-    455.0,
-    449.7,
-    437.1,
-    433.0,
-    421.65,
-    423.7,
-    414.85,
-    423.75,
-    417.25,
-    419.05,
-    428.3,
-    429.55,
-    435.3,
-    450.45,
-    437.85,
-    437.75,
-    436.4,
-    441.45,
-    443.3,
-    432.35,
-    438.25,
-    433.95,
-    428.85,
-    451.7,
-    451.55,
-    438.55,
-    426.25,
-    425.3,
-    423.25,
-    425.25,
-    411.85,
-    412.25,
-    416.6,
-    435.95,
-    433.75,
-    426.7,
-    421.15,
-    419.4,
-    420.5,
-    422.1,
-    422.1,
-    413.5,
-    407.35,
-    414.6,
-    421.2,
-    413.45,
-    420.55,
-    466.6,
-    459.1,
-    458.25,
-    480.75,
-    480.4,
-    461.8,
-    440.0,
-    446.35,
-    446.3,
-    441.25
    ],
-   "sparkma": [
-    521.32,
-    520.78,
-    520.33,
-    519.64,
-    518.81,
-    517.29,
-    515.01,
-    512.15,
-    509.85,
-    507.17,
-    504.69,
-    502.58,
-    500.64,
-    498.81,
-    497.09,
-    495.47,
-    493.64,
-    491.74,
-    489.58,
-    487.62,
-    485.65,
-    483.52,
-    480.61,
-    477.93,
-    475.09,
-    472.68,
-    470.69,
-    468.57,
-    466.2,
-    463.82,
-    461.62,
-    459.37,
-    457.15,
-    454.38,
-    451.25,
-    448.44,
-    446.37,
-    444.16,
-    442.29,
-    440.54,
-    438.43,
-    436.38,
-    434.56,
-    433.1,
-    431.63,
-    430.41,
-    429.28,
-    428.51,
-    427.69,
-    427.31,
-    428.08,
-    428.93,
-    429.71,
-    431.21,
-    432.5,
-    433.51,
-    433.99,
-    434.4,
-    434.78,
-    434.91
-   ]
+   "exchange": "NSE",
+   "name": "EIH Limited",
+   "mcap": 18210.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ELGIEQUIP",
-   "exchange": "NSE",
    "price": 602.05,
    "ma": 610.2,
    "pct": -1.33,
@@ -8296,11 +8322,14 @@
     609.56,
     609.9,
     610.2
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Elgi Equipments Limited",
+   "mcap": 18252.5,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "EMCURE",
-   "exchange": "NSE",
    "price": 1918.0,
    "ma": 1928.44,
    "pct": -0.54,
@@ -8439,15 +8468,18 @@
     1929.7,
     1928.87,
     1928.44
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Emcure Pharmaceuticals Limited",
+   "mcap": 35124.9,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "ENRIN",
-   "exchange": "NSE",
    "price": 3344.0,
    "ma": 3302.9,
    "pct": 1.24,
-   "volume": 426545,
+   "volume": 426581,
    "type": "near",
    "candle": "bullish",
    "score": 0,
@@ -8582,15 +8614,18 @@
     3300.42,
     3300.82,
     3302.9
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Siemens Energy India Limited",
+   "mcap": 113246.3,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "ETERNAL",
-   "exchange": "NSE",
    "price": 328.0,
    "ma": 324.2,
    "pct": 1.17,
-   "volume": 23803873,
+   "volume": 23804457,
    "type": "near",
    "candle": "bearish",
    "score": 1,
@@ -8725,15 +8760,18 @@
     323.51,
     323.94,
     324.2
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "ETERNAL LIMITED",
+   "mcap": 293698.1,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "FLUOROCHEM",
-   "exchange": "NSE",
    "price": 4555.9,
    "ma": 4592.2,
    "pct": -0.79,
-   "volume": 126630,
+   "volume": 126650,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -8868,15 +8906,18 @@
     4590.22,
     4592.02,
     4592.2
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Gujarat Fluorochemicals Limited",
+   "mcap": 48774.5,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "GAIL",
-   "exchange": "NSE",
    "price": 170.71,
    "ma": 173.1,
    "pct": -1.38,
-   "volume": 7092346,
+   "volume": 7094410,
    "type": "near",
    "candle": "hammer",
    "score": 2,
@@ -9011,15 +9052,18 @@
     173.34,
     173.23,
     173.1
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "GAIL (India) Limited",
+   "mcap": 110264.1,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "GHCLTEXTIL",
-   "exchange": "NSE",
    "price": 130.04,
    "ma": 128.45,
    "pct": 1.24,
-   "volume": 251006,
+   "volume": 251094,
    "type": "near",
    "candle": "bearish",
    "score": 1,
@@ -9154,28 +9198,30 @@
     127.71,
     128.11,
     128.45
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "GHCL Textiles Limited",
+   "mcap": 1195.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "GRANULES",
-   "exchange": "NSE",
    "price": 845.3,
-   "ma": 856.52,
-   "pct": -1.31,
-   "volume": 1224532,
+   "ma": 856.14,
+   "pct": -1.27,
+   "volume": 1224602,
    "type": "near",
    "candle": "hammer",
    "score": 2,
-   "vol_x": 0.9,
+   "vol_x": 1.0,
    "chg": 1.06,
-   "rsi": 47.7,
+   "rsi": 48.1,
    "above200": true,
    "hi52": 909.3,
    "lo52": 532.85,
    "from_hi": -7.0,
-   "since": 5,
+   "since": 6,
    "spark": [
-    898.05,
     903.25,
     880.8,
     876.1,
@@ -9232,12 +9278,12 @@
     866.75,
     846.55,
     821.75,
+    821.75,
     817.25,
     836.4,
     845.3
    ],
    "sparkma": [
-    793.36,
     797.16,
     800.56,
     803.05,
@@ -9294,18 +9340,22 @@
     856.64,
     856.93,
     856.86,
-    856.27,
-    856.52,
-    856.52
-   ]
+    856.38,
+    856.18,
+    855.99,
+    856.14
+   ],
+   "exchange": "NSE",
+   "name": "Granules India Limited",
+   "mcap": 22232.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "GVT&D",
-   "exchange": "NSE",
    "price": 4316.3,
    "ma": 4323.14,
    "pct": -0.16,
-   "volume": 660145,
+   "volume": 660155,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -9440,15 +9490,18 @@
     4328.03,
     4324.29,
     4323.14
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "GE Vernova T&D India Limited",
+   "mcap": 107539.5,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "GYFTR",
-   "exchange": "NSE",
    "price": 169.52,
    "ma": 168.03,
    "pct": 0.89,
-   "volume": 417739,
+   "volume": 417740,
    "type": "near",
    "candle": "doji",
    "score": 1,
@@ -9583,15 +9636,18 @@
     167.63,
     167.8,
     168.03
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Gyftr Limited",
+   "mcap": 1316.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "HDFCLIFE",
-   "exchange": "NSE",
    "price": 546.05,
    "ma": 538.9,
    "pct": 1.33,
-   "volume": 2545323,
+   "volume": 2546074,
    "type": "near",
    "candle": "hammer",
    "score": 0,
@@ -9726,11 +9782,14 @@
     538.84,
     538.82,
     538.9
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "HDFC Life Insurance Company Limited",
+   "mcap": 118268.1,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "HERANBA",
-   "exchange": "NSE",
    "price": 169.27,
    "ma": 171.71,
    "pct": -1.42,
@@ -9869,28 +9928,30 @@
     172.29,
     171.98,
     171.71
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Heranba Industries Limited",
+   "mcap": 648.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "HINDOILEXP",
-   "exchange": "NSE",
    "price": 171.88,
-   "ma": 169.88,
-   "pct": 1.18,
-   "volume": 584545,
+   "ma": 170.1,
+   "pct": 1.04,
+   "volume": 584648,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
-   "vol_x": 0.8,
+   "vol_x": 0.9,
    "chg": 3.32,
-   "rsi": 49.2,
+   "rsi": 49.7,
    "above200": true,
    "hi52": 195.83,
    "lo52": 118.33,
    "from_hi": -12.2,
    "since": 1,
    "spark": [
-    159.64,
     157.34,
     155.53,
     161.94,
@@ -9947,12 +10008,12 @@
     173.91,
     171.55,
     167.31,
+    167.31,
     164.87,
     166.35,
     171.88
    ],
    "sparkma": [
-    163.84,
     163.57,
     163.19,
     163.07,
@@ -10009,18 +10070,22 @@
     168.96,
     169.24,
     169.38,
-    169.46,
-    169.57,
-    169.88
-   ]
+    169.52,
+    169.59,
+    169.78,
+    170.1
+   ],
+   "exchange": "NSE",
+   "name": "Hindustan Oil Exploration Company Limited",
+   "mcap": 2240.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "HONASA",
-   "exchange": "NSE",
    "price": 477.05,
    "ma": 470.62,
    "pct": 1.37,
-   "volume": 1568053,
+   "volume": 1568100,
    "type": "near",
    "candle": "bullish",
    "score": 0,
@@ -10155,15 +10220,18 @@
     469.8,
     470.23,
     470.62
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Honasa Consumer Limited",
+   "mcap": 15241.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "IDBI",
-   "exchange": "NSE",
    "price": 85.67,
    "ma": 85.22,
    "pct": 0.53,
-   "volume": 3036202,
+   "volume": 3041959,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -10298,28 +10366,30 @@
     85.13,
     85.19,
     85.22
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "IDBI Bank Limited",
+   "mcap": 89438.5,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "INDHOTEL",
-   "exchange": "NSE",
    "price": 731.3,
-   "ma": 724.96,
-   "pct": 0.87,
-   "volume": 3190721,
+   "ma": 724.55,
+   "pct": 0.93,
+   "volume": 3190796,
    "type": "near",
    "candle": "bearish",
    "score": 2,
    "vol_x": 1.0,
    "chg": -0.64,
-   "rsi": 52.6,
+   "rsi": 52.9,
    "above200": true,
    "hi52": 752.3,
    "lo52": 570.95,
    "from_hi": -2.8,
-   "since": 2,
+   "since": 3,
    "spark": [
-    743.2,
     731.45,
     727.9,
     725.05,
@@ -10376,12 +10446,12 @@
     714.35,
     728.65,
     718.0,
+    718.0,
     725.0,
     736.0,
     731.3
    ],
    "sparkma": [
-    692.64,
     694.35,
     696.15,
     697.8,
@@ -10438,18 +10508,22 @@
     727.05,
     726.58,
     726.12,
-    725.5,
-    725.19,
-    724.96
-   ]
+    725.34,
+    724.78,
+    724.66,
+    724.55
+   ],
+   "exchange": "NSE",
+   "name": "The Indian Hotels Company Limited",
+   "mcap": 102947.7,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "INDIGO",
-   "exchange": "NSE",
    "price": 4990.0,
    "ma": 5060.57,
    "pct": -1.39,
-   "volume": 1618854,
+   "volume": 1618923,
    "type": "near",
    "candle": "shooting_star",
    "score": 1,
@@ -10584,11 +10658,14 @@
     5075.98,
     5068.04,
     5060.57
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "InterGlobe Aviation Limited",
+   "mcap": 186106.5,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "INDOBORAX",
-   "exchange": "NSE",
    "price": 480.9,
    "ma": 474.71,
    "pct": 1.3,
@@ -10727,11 +10804,14 @@
     471.3,
     473.1,
     474.71
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Indo Borax & Chemicals Limited",
+   "mcap": 1547.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "INDOCO",
-   "exchange": "NSE",
    "price": 246.55,
    "ma": 243.02,
    "pct": 1.45,
@@ -10870,15 +10950,18 @@
     241.9,
     242.46,
     243.02
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Indoco Remedies Limited",
+   "mcap": 2183.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "INDOFARM",
-   "exchange": "NSE",
    "price": 139.92,
    "ma": 139.42,
    "pct": 0.36,
-   "volume": 279081,
+   "volume": 279082,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -11013,15 +11096,18 @@
     140.61,
     139.96,
     139.42
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Indo Farm Equipment Limited",
+   "mcap": 647.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "INOXINDIA",
-   "exchange": "NSE",
    "price": 2082.0,
    "ma": 2071.39,
    "pct": 0.51,
-   "volume": 243018,
+   "volume": 243029,
    "type": "near",
    "candle": "shooting_star",
    "score": 2,
@@ -11156,15 +11242,18 @@
     2065.31,
     2068.49,
     2071.39
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "INOX India Limited",
+   "mcap": 18541.8,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "IONEXCHANG",
-   "exchange": "NSE",
    "price": 402.4,
    "ma": 401.16,
    "pct": 0.31,
-   "volume": 251156,
+   "volume": 251291,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -11299,11 +11388,14 @@
     400.95,
     400.8,
     401.16
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "ION Exchange (India) Limited",
+   "mcap": 4820.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "IPCALAB",
-   "exchange": "NSE",
    "price": 1938.5,
    "ma": 1922.7,
    "pct": 0.82,
@@ -11442,11 +11534,14 @@
     1913.95,
     1918.05,
     1922.7
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "IPCA Laboratories Limited",
+   "mcap": 49178.0,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "IRISDOREME",
-   "exchange": "NSE",
    "price": 59.26,
    "ma": 59.83,
    "pct": -0.95,
@@ -11585,15 +11680,18 @@
     59.58,
     59.69,
     59.83
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Iris Clothings Limited",
+   "mcap": 1117.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "ITC",
-   "exchange": "NSE",
    "price": 265.7,
    "ma": 267.21,
    "pct": -0.56,
-   "volume": 50022644,
+   "volume": 50025295,
    "type": "near",
    "candle": "doji",
    "score": 2,
@@ -11728,15 +11826,18 @@
     268.13,
     267.67,
     267.21
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "ITC Limited",
+   "mcap": 319528.2,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "ITCHOTELS",
-   "exchange": "NSE",
    "price": 159.17,
    "ma": 161.1,
    "pct": -1.2,
-   "volume": 1029201,
+   "volume": 1030272,
    "type": "near",
    "candle": "shooting_star",
    "score": 0,
@@ -11871,15 +11972,18 @@
     161.57,
     161.37,
     161.1
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "ITC Hotels Limited",
+   "mcap": 32210.4,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "ITDC",
-   "exchange": "NSE",
    "price": 671.75,
    "ma": 673.24,
    "pct": -0.22,
-   "volume": 75647,
+   "volume": 75732,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -12014,28 +12118,30 @@
     674.68,
     674.01,
     673.24
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "India Tourism Development Corporation Limited",
+   "mcap": 5674.1,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "JAGRAN",
-   "exchange": "NSE",
    "price": 62.05,
-   "ma": 62.08,
-   "pct": -0.05,
-   "volume": 71286,
+   "ma": 62.05,
+   "pct": -0.0,
+   "volume": 71301,
    "type": "near",
    "candle": "doji",
    "score": 0,
    "vol_x": 0.5,
    "chg": 0.53,
-   "rsi": 49.5,
+   "rsi": 49.9,
    "above200": false,
    "hi52": 78.2,
    "lo52": 59.85,
    "from_hi": -20.7,
-   "since": 4,
+   "since": 5,
    "spark": [
-    63.33,
     63.08,
     63.21,
     62.91,
@@ -12092,12 +12198,12 @@
     62.01,
     62.3,
     61.55,
+    61.55,
     61.33,
     61.72,
     62.05
    ],
    "sparkma": [
-    66.76,
     66.67,
     66.58,
     66.47,
@@ -12155,13 +12261,17 @@
     62.21,
     62.16,
     62.13,
-    62.1,
-    62.08
-   ]
+    62.09,
+    62.07,
+    62.05
+   ],
+   "exchange": "NSE",
+   "name": "Jagran Prakashan Limited",
+   "mcap": 1336.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "JAGSNPHARM",
-   "exchange": "NSE",
    "price": 235.4,
    "ma": 234.35,
    "pct": 0.45,
@@ -12300,11 +12410,14 @@
     234.51,
     234.44,
     234.35
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Jagsonpal Pharmaceuticals Limited",
+   "mcap": 1530.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "JAIBALAJI",
-   "exchange": "NSE",
    "price": 67.37,
    "ma": 66.43,
    "pct": 1.41,
@@ -12316,9 +12429,9 @@
    "chg": 4.99,
    "rsi": 56.5,
    "above200": false,
-   "hi52": 98.94,
+   "hi52": 98.08,
    "lo52": 54.14,
-   "from_hi": -31.9,
+   "from_hi": -31.3,
    "since": 1,
    "spark": [
     65.43,
@@ -12443,15 +12556,18 @@
     66.3,
     66.32,
     66.43
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Jai Balaji Industries Limited",
+   "mcap": 6259.0,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "JSL",
-   "exchange": "NSE",
    "price": 732.15,
    "ma": 734.62,
    "pct": -0.34,
-   "volume": 546005,
+   "volume": 546010,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -12586,11 +12702,14 @@
     734.55,
     734.9,
     734.62
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Jindal Stainless Limited",
+   "mcap": 58137.9,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "JUBLPHARMA",
-   "exchange": "NSE",
    "price": 974.6,
    "ma": 962.72,
    "pct": 1.23,
@@ -12729,15 +12848,18 @@
     960.15,
     961.62,
     962.72
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Jubilant Pharmova Limited",
+   "mcap": 14764.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KAJARIACER",
-   "exchange": "NSE",
    "price": 1226.2,
    "ma": 1220.56,
    "pct": 0.46,
-   "volume": 238401,
+   "volume": 238403,
    "type": "buy",
    "candle": "bullish",
    "score": 1,
@@ -12872,15 +12994,18 @@
     1219.28,
     1219.65,
     1220.56
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Kajaria Ceramics Limited",
+   "mcap": 19023.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KANSAINER",
-   "exchange": "NSE",
    "price": 192.4,
    "ma": 193.47,
    "pct": -0.55,
-   "volume": 1839428,
+   "volume": 1839514,
    "type": "near",
    "candle": "bullish",
    "score": 3,
@@ -13015,15 +13140,18 @@
     194.22,
     193.88,
     193.47
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Kansai Nerolac Paints Limited",
+   "mcap": 14620.0,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KARURVYSYA",
-   "exchange": "NSE",
    "price": 330.1,
    "ma": 334.42,
    "pct": -1.29,
-   "volume": 2515345,
+   "volume": 2515356,
    "type": "near",
    "candle": "bullish",
    "score": 3,
@@ -13158,28 +13286,30 @@
     334.88,
     334.59,
     334.42
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Karur Vysya Bank Limited",
+   "mcap": 31822.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "KECL",
-   "exchange": "NSE",
    "price": 129.04,
-   "ma": 129.64,
-   "pct": -0.46,
-   "volume": 272022,
-   "type": "near",
+   "ma": 128.96,
+   "pct": 0.06,
+   "volume": 272071,
+   "type": "buy",
    "candle": "bullish",
    "score": 2,
-   "vol_x": 2.0,
+   "vol_x": 2.1,
    "chg": 0.73,
-   "rsi": 56.4,
+   "rsi": 57.1,
    "above200": true,
    "hi52": 150.21,
    "lo52": 77.31,
    "from_hi": -14.1,
-   "since": 26,
+   "since": 1,
    "spark": [
-    118.33,
     115.74,
     121.51,
     119.11,
@@ -13236,12 +13366,12 @@
     121.4,
     120.64,
     120.43,
+    120.43,
     125.42,
     128.11,
     129.04
    ],
    "sparkma": [
-    112.06,
     112.03,
     112.18,
     112.38,
@@ -13298,18 +13428,22 @@
     131.13,
     130.61,
     130.25,
-    129.97,
-    129.81,
-    129.64
-   ]
+    129.86,
+    129.64,
+    129.44,
+    128.96
+   ],
+   "exchange": "NSE",
+   "name": "Kirloskar Electric Company Limited",
+   "mcap": 860.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "KRBL",
-   "exchange": "NSE",
    "price": 398.2,
    "ma": 403.18,
    "pct": -1.24,
-   "volume": 376507,
+   "volume": 376596,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -13444,15 +13578,18 @@
     402.31,
     402.63,
     403.18
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "KRBL Limited",
+   "mcap": 8836.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KRN",
-   "exchange": "NSE",
    "price": 1484.2,
    "ma": 1471.63,
    "pct": 0.85,
-   "volume": 516183,
+   "volume": 516318,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -13587,11 +13724,14 @@
     1459.85,
     1465.5,
     1471.63
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "KRN Heat Exchanger and Refrigeration Limited",
+   "mcap": 9259.1,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KRSNAA",
-   "exchange": "NSE",
    "price": 548.1,
    "ma": 555.43,
    "pct": -1.32,
@@ -13730,15 +13870,18 @@
     555.94,
     555.73,
     555.43
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Krsnaa Diagnostics Limited",
+   "mcap": 1725.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "KSB",
-   "exchange": "NSE",
    "price": 801.5,
    "ma": 804.19,
    "pct": -0.33,
-   "volume": 71145,
+   "volume": 71157,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -13873,15 +14016,18 @@
     805.06,
     803.97,
     804.19
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Ksb Limited",
+   "mcap": 13517.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KTKBANK",
-   "exchange": "NSE",
    "price": 326.45,
    "ma": 325.02,
    "pct": 0.44,
-   "volume": 1917888,
+   "volume": 1917889,
    "type": "buy",
    "candle": "hammer",
    "score": 2,
@@ -14016,11 +14162,14 @@
     324.01,
     324.57,
     325.02
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "The Karnataka Bank Limited",
+   "mcap": 12132.1,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "KUANTUM",
-   "exchange": "NSE",
    "price": 76.72,
    "ma": 77.35,
    "pct": -0.82,
@@ -14159,11 +14308,14 @@
     77.55,
     77.44,
     77.35
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Kuantum Papers Limited",
+   "mcap": 646.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "LALPATHLAB",
-   "exchange": "NSE",
    "price": 1945.1,
    "ma": 1925.84,
    "pct": 1.0,
@@ -14302,15 +14454,18 @@
     1922.82,
     1924.52,
     1925.84
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Dr. Lal Path Labs Ltd.",
+   "mcap": 31707.4,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "LLOYDSME",
-   "exchange": "NSE",
    "price": 1844.5,
    "ma": 1853.69,
    "pct": -0.5,
-   "volume": 251025,
+   "volume": 251085,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -14445,15 +14600,18 @@
     1863.77,
     1858.57,
     1853.69
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Lloyds Metals And Energy Limited",
+   "mcap": 101044.1,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "MAHABANK",
-   "exchange": "NSE",
    "price": 84.15,
    "ma": 82.07,
    "pct": 2.54,
-   "volume": 20880113,
+   "volume": 20883267,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -14588,28 +14746,30 @@
     81.9,
     81.93,
     82.07
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Bank of Maharashtra",
+   "mcap": 63109.2,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "MARKOLINES",
-   "exchange": "NSE",
    "price": 169.6,
-   "ma": 172.14,
-   "pct": -1.47,
-   "volume": 187634,
+   "ma": 171.91,
+   "pct": -1.34,
+   "volume": 187834,
    "type": "near",
    "candle": "hammer",
    "score": 1,
-   "vol_x": 0.9,
+   "vol_x": 1.1,
    "chg": -0.48,
-   "rsi": 48.4,
+   "rsi": 48.8,
    "above200": true,
    "hi52": 188.47,
    "lo52": 133.68,
    "from_hi": -10.0,
-   "since": 19,
+   "since": 20,
    "spark": [
-    168.21,
     168.12,
     173.09,
     164.72,
@@ -14666,12 +14826,12 @@
     167.82,
     167.72,
     167.26,
+    167.26,
     169.29,
     170.41,
     169.6
    ],
    "sparkma": [
-    169.29,
     169.36,
     169.55,
     169.61,
@@ -14728,18 +14888,22 @@
     173.06,
     172.84,
     172.6,
-    172.44,
-    172.28,
-    172.14
-   ]
+    172.39,
+    172.21,
+    172.08,
+    171.91
+   ],
+   "exchange": "NSE",
+   "name": "Markolines Pavement Technologies Limited",
+   "mcap": 365.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MARKSANS",
-   "exchange": "NSE",
    "price": 325.45,
    "ma": 323.79,
    "pct": 0.51,
-   "volume": 2154052,
+   "volume": 2155353,
    "type": "near",
    "candle": "hammer",
    "score": 0,
@@ -14874,15 +15038,18 @@
     321.29,
     322.51,
     323.79
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Marksans Pharma Limited",
+   "mcap": 13948.4,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "MARSONS",
-   "exchange": "NSE",
    "price": 132.45,
    "ma": 120.01,
    "pct": 10.37,
-   "volume": 19130787,
+   "volume": 19136401,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -15017,15 +15184,18 @@
     119.19,
     119.45,
     120.01
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Marsons Limited",
+   "mcap": 2182.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MASTERTR",
-   "exchange": "NSE",
    "price": 82.94,
    "ma": 83.88,
    "pct": -1.12,
-   "volume": 1651804,
+   "volume": 1651954,
    "type": "near",
    "candle": "shooting_star",
    "score": 1,
@@ -15160,28 +15330,30 @@
     83.89,
     83.86,
     83.88
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Master Trust Limited",
+   "mcap": 1003.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MBEL",
-   "exchange": "NSE",
    "price": 290.6,
-   "ma": 266.12,
-   "pct": 9.2,
-   "volume": 7110215,
+   "ma": 265.29,
+   "pct": 9.54,
+   "volume": 7111495,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
-   "vol_x": 55.4,
+   "vol_x": 60.1,
    "chg": 13.78,
-   "rsi": 68.8,
+   "rsi": 69.8,
    "above200": false,
    "hi52": 514.25,
    "lo52": 226.45,
    "from_hi": -43.5,
    "since": 1,
    "spark": [
-    333.75,
     328.65,
     321.35,
     317.4,
@@ -15238,12 +15410,12 @@
     251.5,
     249.0,
     251.75,
+    251.75,
     247.63,
     255.41,
     290.6
    ],
    "sparkma": [
-    304.87,
     305.31,
     305.67,
     306.04,
@@ -15300,14 +15472,18 @@
     269.99,
     269.0,
     268.04,
-    266.97,
-    266.06,
-    266.12
-   ]
+    267.07,
+    265.97,
+    265.24,
+    265.29
+   ],
+   "exchange": "NSE",
+   "name": "M & B Engineering Limited",
+   "mcap": 1518.0,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MOL",
-   "exchange": "NSE",
    "price": 61.06,
    "ma": 60.84,
    "pct": 0.35,
@@ -15446,15 +15622,18 @@
     60.49,
     60.65,
     60.84
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Meghmani Organics Limited",
+   "mcap": 1468.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MSTCLTD",
-   "exchange": "NSE",
    "price": 698.75,
    "ma": 703.62,
    "pct": -0.69,
-   "volume": 105107,
+   "volume": 105257,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -15589,19 +15768,22 @@
     698.82,
     701.42,
     703.62
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Mstc Limited",
+   "mcap": 4705.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "MUFIN",
-   "exchange": "NSE",
    "price": 135.17,
    "ma": 134.84,
    "pct": 0.25,
-   "volume": 1987309,
+   "volume": 2030615,
    "type": "near",
    "candle": "bearish",
    "score": 2,
-   "vol_x": 2.7,
+   "vol_x": 2.8,
    "chg": 0.0,
    "rsi": 56.0,
    "above200": true,
@@ -15732,15 +15914,18 @@
     134.8,
     134.81,
     134.84
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Mufin Green Finance Limited",
+   "mcap": 2637.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "NAVINFLUOR",
-   "exchange": "NSE",
    "price": 8490.0,
    "ma": 8404.64,
    "pct": 1.02,
-   "volume": 111749,
+   "volume": 111760,
    "type": "near",
    "candle": "shooting_star",
    "score": 2,
@@ -15749,7 +15934,7 @@
    "rsi": 54.1,
    "above200": true,
    "hi52": 8775.5,
-   "lo52": 4572.1,
+   "lo52": 4586.6,
    "from_hi": -3.3,
    "since": 2,
    "spark": [
@@ -15875,11 +16060,14 @@
     8387.22,
     8408.27,
     8404.64
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Navin Fluorine International Limited",
+   "mcap": 43188.6,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "NOCIL",
-   "exchange": "NSE",
    "price": 172.82,
    "ma": 174.85,
    "pct": -1.16,
@@ -16018,28 +16206,30 @@
     174.83,
     174.85,
     174.85
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "NOCIL Limited",
+   "mcap": 2768.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "NORTHARC",
-   "exchange": "NSE",
    "price": 293.75,
-   "ma": 295.9,
-   "pct": -0.73,
-   "volume": 1102265,
+   "ma": 296.09,
+   "pct": -0.79,
+   "volume": 1102834,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
-   "vol_x": 1.2,
+   "vol_x": 1.3,
    "chg": -1.49,
-   "rsi": 46.2,
+   "rsi": 46.6,
    "above200": true,
    "hi52": 325.3,
    "lo52": 206.85,
    "from_hi": -9.7,
    "since": 1,
    "spark": [
-    317.1,
     314.3,
     301.6,
     305.3,
@@ -16096,12 +16286,12 @@
     290.75,
     287.35,
     288.7,
+    288.7,
     289.45,
     298.2,
     293.75
    ],
    "sparkma": [
-    293.9,
     294.65,
     295.29,
     295.97,
@@ -16158,14 +16348,18 @@
     295.22,
     295.26,
     295.3,
-    295.4,
-    295.7,
-    295.9
-   ]
+    295.39,
+    295.49,
+    295.78,
+    296.09
+   ],
+   "exchange": "NSE",
+   "name": "Northern Arc Capital Limited",
+   "mcap": 4541.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "OMPOWER",
-   "exchange": "NSE",
    "price": 165.75,
    "ma": 167.53,
    "pct": -1.07,
@@ -16304,15 +16498,18 @@
     168.0,
     167.64,
     167.53
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Om Power Transmission Limited",
+   "mcap": 568.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "ORIENTTECH",
-   "exchange": "NSE",
    "price": 239.8,
    "ma": 241.65,
    "pct": -0.77,
-   "volume": 14171297,
+   "volume": 14171312,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -16447,11 +16644,14 @@
     242.91,
     242.13,
     241.65
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Orient Technologies Limited",
+   "mcap": 1076.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "PARADEEP",
-   "exchange": "NSE",
    "price": 155.38,
    "ma": 154.0,
    "pct": 0.89,
@@ -16590,15 +16790,18 @@
     153.61,
     153.84,
     154.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Paradeep Phosphates Limited",
+   "mcap": 15634.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "PATANJALI",
-   "exchange": "NSE",
    "price": 360.95,
    "ma": 358.0,
    "pct": 0.82,
-   "volume": 3163332,
+   "volume": 3163358,
    "type": "near",
    "candle": "hammer",
    "score": 0,
@@ -16733,11 +16936,14 @@
     357.73,
     357.86,
     358.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Patanjali Foods Limited",
+   "mcap": 38619.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "PCBL",
-   "exchange": "NSE",
    "price": 326.9,
    "ma": 325.27,
    "pct": 0.5,
@@ -16876,15 +17082,18 @@
     325.26,
     325.22,
     325.27
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "PCBL Chemical Limited",
+   "mcap": 12561.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "PERSISTENT",
-   "exchange": "NSE",
    "price": 5507.0,
    "ma": 5509.35,
    "pct": -0.04,
-   "volume": 298315,
+   "volume": 298344,
    "type": "sell",
    "candle": "hammer",
    "score": 0,
@@ -17019,15 +17228,18 @@
     5508.25,
     5508.27,
     5509.35
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Persistent Systems Limited",
+   "mcap": 85427.1,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "PNB",
-   "exchange": "NSE",
    "price": 114.59,
    "ma": 115.61,
    "pct": -0.89,
-   "volume": 18274050,
+   "volume": 18275898,
    "type": "near",
    "candle": "bullish",
    "score": 3,
@@ -17162,15 +17374,18 @@
     115.65,
     115.61,
     115.61
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Punjab National Bank",
+   "mcap": 132502.1,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "PNBHOUSING",
-   "exchange": "NSE",
    "price": 1131.0,
    "ma": 1143.66,
    "pct": -1.11,
-   "volume": 1125048,
+   "volume": 1125058,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -17305,15 +17520,18 @@
     1144.54,
     1144.09,
     1143.66
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "PNB Housing Finance Limited",
+   "mcap": 29992.4,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "PNGJL",
-   "exchange": "NSE",
    "price": 597.05,
    "ma": 604.03,
    "pct": -1.16,
-   "volume": 424422,
+   "volume": 424424,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -17448,11 +17666,14 @@
     606.5,
     604.9,
     604.03
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "P N Gadgil Jewellers Limited",
+   "mcap": 8630.5,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "PRIVISCL",
-   "exchange": "NSE",
    "price": 3519.2,
    "ma": 3500.2,
    "pct": 0.54,
@@ -17591,15 +17812,18 @@
     3505.5,
     3503.41,
     3500.2
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Privi Speciality Chemicals Limited",
+   "mcap": 13462.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "RACE",
-   "exchange": "NSE",
    "price": 103.75,
    "ma": 104.52,
    "pct": -0.74,
-   "volume": 85897,
+   "volume": 90297,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -17734,15 +17958,18 @@
     104.76,
     104.69,
     104.52
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Race Eco Chain Limited",
+   "mcap": 174.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "RACLGEAR",
-   "exchange": "NSE",
    "price": 1589.5,
    "ma": 1569.42,
    "pct": 1.28,
-   "volume": 15986,
+   "volume": 15992,
    "type": "near",
    "candle": "bearish",
    "score": 1,
@@ -17877,15 +18104,18 @@
     1559.51,
     1564.95,
     1569.42
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "RACL Geartech Limited",
+   "mcap": 1773.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "RADICO",
-   "exchange": "NSE",
    "price": 4495.0,
    "ma": 4505.23,
    "pct": -0.23,
-   "volume": 460014,
+   "volume": 460029,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -18020,15 +18250,18 @@
     4506.7,
     4504.66,
     4505.23
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Radico Khaitan Limited",
+   "mcap": 59156.2,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "RBA",
-   "exchange": "NSE",
    "price": 96.08,
    "ma": 97.1,
    "pct": -1.05,
-   "volume": 3125360,
+   "volume": 3125930,
    "type": "near",
    "candle": "hammer",
    "score": 2,
@@ -18163,28 +18396,30 @@
     96.8,
     96.97,
     97.1
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Restaurant Brands Asia Limited",
+   "mcap": 6595.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "RESPONIND",
-   "exchange": "NSE",
    "price": 159.73,
-   "ma": 160.2,
-   "pct": -0.3,
-   "volume": 443321,
+   "ma": 160.0,
+   "pct": -0.17,
+   "volume": 443322,
    "type": "near",
    "candle": "bullish",
    "score": 1,
    "vol_x": 0.3,
    "chg": 2.19,
-   "rsi": 48.1,
+   "rsi": 48.0,
    "above200": false,
    "hi52": 221.39,
    "lo52": 127.01,
    "from_hi": -27.9,
    "since": 3,
    "spark": [
-    190.53,
     190.59,
     220.6,
     192.77,
@@ -18241,12 +18476,12 @@
     168.09,
     165.38,
     162.59,
+    162.59,
     158.17,
     156.31,
     159.73
    ],
    "sparkma": [
-    186.08,
     186.7,
     187.79,
     188.41,
@@ -18303,18 +18538,22 @@
     161.64,
     161.52,
     161.31,
-    160.97,
-    160.51,
-    160.2
-   ]
+    161.07,
+    160.65,
+    160.27,
+    160.0
+   ],
+   "exchange": "NSE",
+   "name": "Responsive Industries Limited",
+   "mcap": 4078.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "RKFORGE",
-   "exchange": "NSE",
    "price": 716.4,
    "ma": 722.08,
    "pct": -0.79,
-   "volume": 562375,
+   "volume": 562430,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -18449,11 +18688,14 @@
     720.86,
     721.85,
     722.08
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Ramkrishna Forgings Limited",
+   "mcap": 12978.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "RSL",
-   "exchange": "NSE",
    "price": 174.51,
    "ma": 174.22,
    "pct": 0.17,
@@ -18592,15 +18834,18 @@
     172.9,
     173.67,
     174.22
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Rajputana Stainless Limited",
+   "mcap": 1436.9,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "RSYSTEMS",
-   "exchange": "NSE",
    "price": 252.35,
    "ma": 247.96,
    "pct": 1.77,
-   "volume": 1316696,
+   "volume": 1316807,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -18735,11 +18980,14 @@
     248.61,
     248.03,
     247.96
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "R Systems International Limited",
+   "mcap": 2877.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SAKAR",
-   "exchange": "NSE",
    "price": 1020.1,
    "ma": 1018.75,
    "pct": 0.13,
@@ -18878,11 +19126,14 @@
     1012.8,
     1015.81,
     1018.75
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Sakar Healthcare Limited",
+   "mcap": 2200.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SARDAEN",
-   "exchange": "NSE",
    "price": 499.35,
    "ma": 506.9,
    "pct": -1.49,
@@ -19021,11 +19272,14 @@
     507.11,
     506.91,
     506.9
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Sarda Energy & Minerals Limited",
+   "mcap": 17333.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SAREGAMA",
-   "exchange": "NSE",
    "price": 503.75,
    "ma": 502.34,
    "pct": 0.28,
@@ -19164,15 +19418,18 @@
     504.1,
     502.89,
     502.34
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Saregama India Limited",
+   "mcap": 9249.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SATIN",
-   "exchange": "NSE",
    "price": 223.79,
    "ma": 224.0,
    "pct": -0.09,
-   "volume": 1190084,
+   "volume": 1191616,
    "type": "sell",
    "candle": "bearish",
    "score": 3,
@@ -19307,15 +19564,18 @@
     224.31,
     224.16,
     224.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Satin Creditcare Network Limited",
+   "mcap": 2391.0,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SBILIFE",
-   "exchange": "NSE",
    "price": 1726.1,
    "ma": 1750.18,
    "pct": -1.38,
-   "volume": 1030031,
+   "volume": 1030112,
    "type": "near",
    "candle": "bearish",
    "score": 0,
@@ -19450,11 +19710,14 @@
     1756.21,
     1753.26,
     1750.18
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "SBI Life Insurance Company Limited",
+   "mcap": 168822.9,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "SCHNEIDER",
-   "exchange": "NSE",
    "price": 1256.2,
    "ma": 1240.45,
    "pct": 1.27,
@@ -19593,15 +19856,18 @@
     1244.03,
     1242.24,
     1240.45
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Schneider Electric Infrastructure Limited",
+   "mcap": 28486.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SCI",
-   "exchange": "NSE",
    "price": 285.35,
    "ma": 285.36,
    "pct": -0.01,
-   "volume": 1736641,
+   "volume": 1736876,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -19736,11 +20002,14 @@
     286.16,
     285.89,
     285.36
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Shipping Corporation Of India Limited",
+   "mcap": 13077.3,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SDBL",
-   "exchange": "NSE",
    "price": 73.08,
    "ma": 72.52,
    "pct": 0.78,
@@ -19879,15 +20148,18 @@
     72.53,
     72.54,
     72.52
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Som Distilleries & Breweries Limited",
+   "mcap": 1465.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SGFIN",
-   "exchange": "NSE",
    "price": 663.7,
    "ma": 656.93,
    "pct": 1.03,
-   "volume": 231755,
+   "volume": 231759,
    "type": "near",
    "candle": "doji",
    "score": 0,
@@ -20022,28 +20294,30 @@
     658.71,
     657.98,
     656.93
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "SG Finserve Limited",
+   "mcap": 4256.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SHRINGARMS",
-   "exchange": "NSE",
    "price": 221.03,
-   "ma": 220.2,
-   "pct": 0.38,
-   "volume": 376217,
+   "ma": 219.97,
+   "pct": 0.48,
+   "volume": 376220,
    "type": "near",
    "candle": "bearish",
    "score": 2,
    "vol_x": 0.8,
    "chg": -1.03,
-   "rsi": 54.8,
+   "rsi": 54.7,
    "above200": true,
    "hi52": 261.86,
    "lo52": 166.89,
    "from_hi": -15.6,
    "since": 2,
    "spark": [
-    224.68,
     226.03,
     224.56,
     224.29,
@@ -20100,12 +20374,12 @@
     215.91,
     224.6,
     221.31,
+    221.31,
     219.36,
     223.32,
     221.03
    ],
    "sparkma": [
-    215.29,
     215.73,
     216.19,
     216.6,
@@ -20162,18 +20436,22 @@
     220.8,
     220.91,
     220.88,
-    220.64,
-    220.43,
-    220.2
-   ]
+    220.68,
+    220.39,
+    220.2,
+    219.97
+   ],
+   "exchange": "NSE",
+   "name": "Shringar House of Mangalsutra Limited",
+   "mcap": 2107.9,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SIGNPOST",
-   "exchange": "NSE",
    "price": 267.45,
    "ma": 264.25,
    "pct": 1.21,
-   "volume": 64315,
+   "volume": 64335,
    "type": "buy",
    "candle": "bullish",
    "score": 1,
@@ -20308,11 +20586,14 @@
     264.8,
     264.39,
     264.25
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Signpost India Limited",
+   "mcap": 1393.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SIMPLEXINF",
-   "exchange": "NSE",
    "price": 255.77,
    "ma": 254.78,
    "pct": 0.39,
@@ -20451,15 +20732,18 @@
     253.75,
     254.37,
     254.78
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Simplex Infrastructures Limited",
+   "mcap": 1924.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SKIPPER",
-   "exchange": "NSE",
    "price": 541.35,
-   "ma": 549.71,
-   "pct": -1.52,
-   "volume": 545079,
+   "ma": 550.04,
+   "pct": -1.58,
+   "volume": 546134,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -20472,7 +20756,6 @@
    "from_hi": -10.5,
    "since": 1,
    "spark": [
-    545.15,
     558.05,
     538.8,
     544.9,
@@ -20529,12 +20812,12 @@
     541.55,
     531.15,
     541.2,
+    541.2,
     538.9,
     551.5,
     541.35
    ],
    "sparkma": [
-    532.4,
     534.63,
     536.62,
     538.4,
@@ -20591,18 +20874,22 @@
     549.59,
     549.68,
     549.99,
-    549.75,
-    549.87,
-    549.71
-   ]
+    549.8,
+    549.64,
+    549.7,
+    550.04
+   ],
+   "exchange": "NSE",
+   "name": "Skipper Limited",
+   "mcap": 6321.8,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SOLARINDS",
-   "exchange": "NSE",
    "price": 20050.0,
    "ma": 20062.27,
    "pct": -0.06,
-   "volume": 158097,
+   "volume": 158117,
    "type": "sell",
    "candle": "hammer",
    "score": 0,
@@ -20737,15 +21024,18 @@
     19988.98,
     20026.95,
     20062.27
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Solar Industries India Limited",
+   "mcap": 179803.7,
+   "mcap_cat": "Large"
   },
   {
    "symbol": "SONACOMS",
-   "exchange": "NSE",
    "price": 810.5,
    "ma": 805.65,
    "pct": 0.6,
-   "volume": 1762731,
+   "volume": 1762964,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -20880,11 +21170,14 @@
     805.11,
     805.23,
     805.65
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Sona BLW Precision Forgings Limited",
+   "mcap": 49496.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "SPARC",
-   "exchange": "NSE",
    "price": 196.79,
    "ma": 198.83,
    "pct": -1.03,
@@ -21023,11 +21316,14 @@
     199.78,
     199.29,
     198.83
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Sun Pharma Advanced Research Company Limited",
+   "mcap": 6092.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "STAR",
-   "exchange": "NSE",
    "price": 1100.6,
    "ma": 1085.71,
    "pct": 1.37,
@@ -21166,19 +21462,22 @@
     1080.61,
     1082.75,
     1085.71
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Strides Pharma Science Limited",
+   "mcap": 10095.7,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "STYLEBAAZA",
-   "exchange": "NSE",
    "price": 379.9,
    "ma": 385.16,
    "pct": -1.36,
-   "volume": 1164054,
+   "volume": 1166930,
    "type": "near",
    "candle": "bullish",
    "score": 1,
-   "vol_x": 0.9,
+   "vol_x": 1.0,
    "chg": 1.19,
    "rsi": 50.4,
    "above200": true,
@@ -21309,28 +21608,30 @@
     381.55,
     383.46,
     385.16
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Baazar Style Retail Limited",
+   "mcap": 2834.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SUDEEPPHRM",
-   "exchange": "NSE",
    "price": 1170.4,
-   "ma": 1161.83,
-   "pct": 0.74,
-   "volume": 204461,
-   "type": "near",
+   "ma": 1166.96,
+   "pct": 0.29,
+   "volume": 204466,
+   "type": "buy",
    "candle": "bullish",
-   "score": 0,
-   "vol_x": 0.9,
+   "score": 2,
+   "vol_x": 1.0,
    "chg": 1.04,
-   "rsi": 50.8,
+   "rsi": 50.5,
    "above200": true,
    "hi52": 1344.2,
    "lo52": 530.0,
    "from_hi": -12.9,
-   "since": 104,
+   "since": 1,
    "spark": [
-    847.65,
     883.35,
     862.75,
     866.45,
@@ -21387,12 +21688,12 @@
     1195.2,
     1205.8,
     1199.8,
+    1199.8,
     1173.4,
     1158.4,
     1170.4
    ],
    "sparkma": [
-    775.55,
     780.88,
     785.73,
     790.68,
@@ -21449,18 +21750,22 @@
     1128.37,
     1136.32,
     1143.56,
-    1150.51,
-    1157.02,
-    1161.83
-   ]
+    1151.11,
+    1157.96,
+    1162.5,
+    1166.96
+   ],
+   "exchange": "NSE",
+   "name": "Sudeep Pharma Limited",
+   "mcap": 12592.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "SUPREMEIND",
-   "exchange": "NSE",
    "price": 3550.0,
    "ma": 3502.13,
    "pct": 1.37,
-   "volume": 381972,
+   "volume": 381975,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -21595,28 +21900,30 @@
     3499.62,
     3500.47,
     3502.13
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Supreme Industries Limited",
+   "mcap": 43995.7,
+   "mcap_cat": "Mid"
   },
   {
    "symbol": "SURYAROSNI",
-   "exchange": "NSE",
    "price": 218.34,
-   "ma": 220.59,
-   "pct": -1.02,
-   "volume": 272902,
+   "ma": 219.91,
+   "pct": -0.71,
+   "volume": 273102,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
    "vol_x": 0.6,
    "chg": -1.36,
-   "rsi": 48.3,
+   "rsi": 48.0,
    "above200": false,
    "hi52": 305.45,
    "lo52": 188.08,
    "from_hi": -28.5,
    "since": 1,
    "spark": [
-    245.75,
     248.4,
     246.65,
     241.9,
@@ -21673,12 +21980,12 @@
     220.75,
     221.37,
     220.67,
+    220.67,
     220.41,
     221.35,
     218.34
    ],
    "sparkma": [
-    251.99,
     252.12,
     252.29,
     252.35,
@@ -21736,13 +22043,17 @@
     222.43,
     222.0,
     221.62,
-    221.23,
-    220.59
-   ]
+    221.22,
+    220.64,
+    219.91
+   ],
+   "exchange": "NSE",
+   "name": "Surya Roshni Limited",
+   "mcap": 4635.6,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "SURYODAY",
-   "exchange": "NSE",
    "price": 155.54,
    "ma": 151.57,
    "pct": 2.62,
@@ -21881,15 +22192,18 @@
     151.99,
     151.73,
     151.57
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Suryoday Small Finance Bank Limited",
+   "mcap": 1584.4,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "TALBROAUTO",
-   "exchange": "NSE",
    "price": 417.05,
    "ma": 426.25,
    "pct": -2.16,
-   "volume": 180760,
+   "volume": 181320,
    "type": "sell",
    "candle": "bearish",
    "score": 2,
@@ -22024,15 +22338,18 @@
     426.91,
     426.71,
     426.25
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Talbros Automotive Components Limited",
+   "mcap": 2502.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "TARIL",
-   "exchange": "NSE",
    "price": 289.15,
    "ma": 291.0,
    "pct": -0.64,
-   "volume": 3039654,
+   "volume": 3041176,
    "type": "near",
    "candle": "bullish",
    "score": 2,
@@ -22167,15 +22484,18 @@
     291.41,
     291.16,
     291.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Transformers And Rectifiers (India) Limited",
+   "mcap": 8487.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "TBOTEK",
-   "exchange": "NSE",
    "price": 1704.5,
    "ma": 1680.03,
    "pct": 1.46,
-   "volume": 1938660,
+   "volume": 1938711,
    "type": "near",
    "candle": "shooting_star",
    "score": 3,
@@ -22310,28 +22630,30 @@
     1677.14,
     1679.19,
     1680.03
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "TBO Tek Limited",
+   "mcap": 17795.6,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "TCI",
-   "exchange": "NSE",
    "price": 885.6,
-   "ma": 878.72,
-   "pct": 0.78,
-   "volume": 69645,
+   "ma": 877.58,
+   "pct": 0.91,
+   "volume": 69647,
    "type": "near",
    "candle": "bearish",
    "score": 2,
    "vol_x": 0.2,
    "chg": -0.27,
-   "rsi": 57.3,
+   "rsi": 57.5,
    "above200": false,
    "hi52": 1227.6,
    "lo52": 807.25,
    "from_hi": -27.9,
    "since": 2,
    "spark": [
-    930.15,
     932.6,
     930.85,
     930.15,
@@ -22388,12 +22710,12 @@
     868.7,
     872.5,
     877.1,
+    877.1,
     878.75,
     888.0,
     885.6
    ],
    "sparkma": [
-    926.57,
     927.52,
     928.66,
     929.85,
@@ -22450,14 +22772,18 @@
     883.63,
     882.3,
     881.09,
-    880.27,
-    879.68,
-    878.72
-   ]
+    880.23,
+    879.43,
+    878.52,
+    877.58
+   ],
+   "exchange": "NSE",
+   "name": "Transport Corporation of India Limited",
+   "mcap": 6738.5,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "TECHNOE",
-   "exchange": "NSE",
    "price": 988.3,
    "ma": 993.37,
    "pct": -0.51,
@@ -22596,15 +22922,164 @@
     993.5,
     993.74,
     993.37
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Techno Electric & Engineering Company Limited",
+   "mcap": 10963.6,
+   "mcap_cat": "Small"
+  },
+  {
+   "symbol": "TEMBO",
+   "price": 56.42,
+   "ma": 58.05,
+   "pct": -2.81,
+   "volume": 1221774,
+   "type": "sell",
+   "candle": "bearish",
+   "score": 1,
+   "vol_x": 0.9,
+   "chg": -3.14,
+   "rsi": 46.2,
+   "above200": false,
+   "hi52": 81.34,
+   "lo52": 46.74,
+   "from_hi": -30.6,
+   "since": 1,
+   "spark": [
+    55.02,
+    54.72,
+    54.7,
+    54.8,
+    52.61,
+    53.22,
+    53.04,
+    55.23,
+    56.12,
+    55.99,
+    56.58,
+    55.33,
+    56.04,
+    57.42,
+    65.9,
+    63.8,
+    60.95,
+    62.1,
+    61.7,
+    61.25,
+    59.85,
+    60.8,
+    60.35,
+    59.75,
+    59.75,
+    58.2,
+    58.3,
+    57.7,
+    56.3,
+    58.4,
+    57.7,
+    58.2,
+    58.05,
+    56.03,
+    56.67,
+    55.94,
+    58.47,
+    58.43,
+    58.17,
+    57.45,
+    57.12,
+    56.08,
+    56.08,
+    55.52,
+    56.48,
+    56.57,
+    56.19,
+    57.8,
+    57.36,
+    59.31,
+    59.26,
+    58.28,
+    57.75,
+    57.99,
+    57.67,
+    57.16,
+    57.16,
+    55.18,
+    58.25,
+    56.42
+   ],
+   "sparkma": [
+    57.44,
+    57.4,
+    57.35,
+    57.26,
+    57.1,
+    56.87,
+    56.64,
+    56.5,
+    56.36,
+    56.22,
+    56.13,
+    56.03,
+    55.96,
+    55.96,
+    56.1,
+    56.19,
+    56.27,
+    56.42,
+    56.58,
+    56.73,
+    56.85,
+    56.94,
+    57.02,
+    57.09,
+    57.15,
+    57.19,
+    57.24,
+    57.3,
+    57.34,
+    57.41,
+    57.46,
+    57.53,
+    57.55,
+    57.49,
+    57.46,
+    57.42,
+    57.46,
+    57.48,
+    57.51,
+    57.53,
+    57.56,
+    57.58,
+    57.61,
+    57.63,
+    57.67,
+    57.71,
+    57.74,
+    57.81,
+    57.92,
+    58.06,
+    58.2,
+    58.27,
+    58.3,
+    58.35,
+    58.37,
+    58.42,
+    58.44,
+    58.39,
+    58.22,
+    58.05
+   ],
+   "exchange": "NSE",
+   "name": "Tembo Global Industries Limited",
+   "mcap": 1082.1,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "TEXRAIL",
-   "exchange": "NSE",
    "price": 114.74,
    "ma": 114.05,
    "pct": 0.61,
-   "volume": 2009062,
+   "volume": 2010213,
    "type": "near",
    "candle": "bearish",
    "score": 2,
@@ -22739,15 +23214,18 @@
     113.68,
     113.9,
     114.05
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Texmaco Rail & Engineering Limited",
+   "mcap": 4356.7,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "TI",
-   "exchange": "NSE",
    "price": 551.55,
    "ma": 551.75,
    "pct": -0.04,
-   "volume": 1058897,
+   "volume": 1058902,
    "type": "near",
    "candle": "bullish",
    "score": 1,
@@ -22882,15 +23360,18 @@
     549.26,
     550.32,
     551.75
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Tilaknagar Industries Limited",
+   "mcap": 13586.0,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "TMB",
-   "exchange": "NSE",
    "price": 877.35,
    "ma": 887.54,
    "pct": -1.15,
-   "volume": 153611,
+   "volume": 153612,
    "type": "near",
    "candle": "hammer",
    "score": 2,
@@ -23025,11 +23506,14 @@
     886.89,
     887.45,
     887.54
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Tamilnad Mercantile Bank Limited",
+   "mcap": 13546.2,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "TRUALT",
-   "exchange": "NSE",
    "price": 448.85,
    "ma": 443.0,
    "pct": 1.32,
@@ -23168,15 +23652,18 @@
     443.11,
     443.29,
     443.0
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "TruAlt Bioenergy Limited",
+   "mcap": 3636.3,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "TVSSCS",
-   "exchange": "NSE",
    "price": 130.4,
    "ma": 128.6,
    "pct": 1.4,
-   "volume": 475180,
+   "volume": 475200,
    "type": "near",
    "candle": "doji",
    "score": 0,
@@ -23311,11 +23798,14 @@
     128.76,
     128.65,
     128.6
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "TVS Supply Chain Solutions Limited",
+   "mcap": 5555.9,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "UNICHEMLAB",
-   "exchange": "NSE",
    "price": 546.2,
    "ma": 539.51,
    "pct": 1.24,
@@ -23454,11 +23944,14 @@
     537.32,
     538.41,
     539.51
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Unichem Laboratories Limited",
+   "mcap": 3737.8,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "UTLSOLAR",
-   "exchange": "NSE",
    "price": 431.75,
    "ma": 430.65,
    "pct": 0.26,
@@ -23597,15 +24090,18 @@
     429.05,
     429.72,
     430.65
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Fujiyama Power Systems Limited",
+   "mcap": 12558.4,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "VIJAYA",
-   "exchange": "NSE",
    "price": 1462.4,
    "ma": 1483.05,
    "pct": -1.39,
-   "volume": 86568,
+   "volume": 86569,
    "type": "near",
    "candle": "shooting_star",
    "score": 0,
@@ -23740,15 +24236,18 @@
     1479.19,
     1480.94,
     1483.05
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Vijaya Diagnostic Centre Limited",
+   "mcap": 14740.0,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "VOEPL",
-   "exchange": "NSE",
    "price": 526.9,
    "ma": 514.51,
    "pct": 2.41,
-   "volume": 108277,
+   "volume": 108377,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -23883,15 +24382,18 @@
     513.8,
     514.1,
     514.51
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Virtuoso Optoelectronics Limited",
+   "mcap": 1824.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "WALCHANNAG",
-   "exchange": "NSE",
    "price": 223.99,
    "ma": 213.44,
    "pct": 4.94,
-   "volume": 8077174,
+   "volume": 8077353,
    "type": "buy",
    "candle": "bullish",
    "score": 3,
@@ -24026,15 +24528,18 @@
     214.29,
     213.62,
     213.44
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Walchandnagar Industries Limited",
+   "mcap": 1412.5,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "WCIL",
-   "exchange": "NSE",
    "price": 92.54,
    "ma": 88.8,
    "pct": 4.21,
-   "volume": 265422,
+   "volume": 265462,
    "type": "buy",
    "candle": "bullish",
    "score": 2,
@@ -24169,15 +24674,18 @@
     88.81,
     88.74,
     88.8
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "Western Carriers (India) Limited",
+   "mcap": 951.2,
+   "mcap_cat": "Micro"
   },
   {
    "symbol": "WEWORK",
-   "exchange": "NSE",
    "price": 673.15,
    "ma": 681.34,
    "pct": -1.2,
-   "volume": 134359,
+   "volume": 134408,
    "type": "near",
    "candle": "bullish",
    "score": 1,
@@ -24312,28 +24820,30 @@
     684.68,
     683.03,
     681.34
-   ]
+   ],
+   "exchange": "NSE",
+   "name": "WeWork India Management Limited",
+   "mcap": 9222.4,
+   "mcap_cat": "Small"
   },
   {
    "symbol": "ZYDUSLIFE",
-   "exchange": "NSE",
    "price": 1153.0,
-   "ma": 1146.9,
-   "pct": 0.53,
-   "volume": 1142936,
+   "ma": 1147.75,
+   "pct": 0.46,
+   "volume": 1143059,
    "type": "near",
    "candle": "bearish",
    "score": 2,
-   "vol_x": 0.7,
+   "vol_x": 0.8,
    "chg": -0.56,
-   "rsi": 49.7,
+   "rsi": 49.8,
    "above200": true,
    "hi52": 1215.0,
    "lo52": 860.6,
    "from_hi": -5.1,
    "since": 2,
    "spark": [
-    1156.9,
     1153.9,
     1143.7,
     1149.0,
@@ -24390,12 +24900,12 @@
     1200.5,
     1162.0,
     1145.7,
+    1145.7,
     1139.0,
     1159.5,
     1153.0
    ],
    "sparkma": [
-    1093.14,
     1096.37,
     1099.84,
     1102.8,
@@ -24452,10 +24962,16 @@
     1143.6,
     1144.66,
     1145.09,
-    1145.5,
-    1146.17,
-    1146.9
-   ]
+    1145.65,
+    1145.86,
+    1146.73,
+    1147.75
+   ],
+   "exchange": "NSE",
+   "name": "Zydus Lifesciences Limited",
+   "mcap": 110922.4,
+   "mcap_cat": "Large"
   }
- ]
+ ],
+ "quotes": {}
 }
