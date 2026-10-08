@@ -507,6 +507,15 @@ def main():
     log.info("fetching %d of %d tickers (%d skipped as no-data)", len(todo), len(items), len(items) - len(todo))
     t_fetch = time.time()
     data = fetch([u["yahoo"] for u in todo])
+    # BSE scrip codes (500325.BO) often return no history on Yahoo; retry those under the BSE ticker name (RELIANCE.BO)
+    need = c["ma_period"] + 2
+    short = [u for u in todo if u["exchange"] == "BSE" and not u["symbol"].isdigit() and (u["yahoo"] not in data or data[u["yahoo"]]["Close"].dropna().shape[0] < need)]
+    if short:
+        alt = fetch([u["symbol"] + ".BO" for u in short]); fixed = 0
+        for u in short:
+            d = alt.get(u["symbol"] + ".BO")
+            if d is not None and d["Close"].dropna().shape[0] >= need: data[u["yahoo"]] = d; fixed += 1
+        log.info("BSE history retried by ticker name: %d of %d recovered", fixed, len(short)); PRE["bse_name_retry"] = {"tried": len(short), "recovered": fixed}
     fetch_secs = round(time.time() - t_fetch)
     reconcile(data, {u["yahoo"]: (u["exchange"], u["symbol"] if u["exchange"] == "NSE" else u["yahoo"].split(".")[0]) for u in todo})
     for u in todo:
