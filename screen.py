@@ -474,9 +474,9 @@ def main():
     if isinstance(st["pos_sent"], list): st["pos_sent"] = {k: 0 for k in st["pos_sent"]}
     t_now = time.time()
     def due(k):
-        # stop loss / target alerts repeat about hourly while the price stays beyond the level; other alerts once a day
+        # stop loss / target alerts repeat on every run while the price stays beyond the level; other alerts once a day
         last = st["pos_sent"].get(k)
-        return last is None or (k.endswith((":sl", ":tg")) and t_now - last >= 55 * 60)
+        return last is None or k.endswith((":sl", ":tg"))
     if a.summary:
         notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])); return
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
