@@ -1,6 +1,8 @@
-// Save this file in your GitHub repo as:  api/dma.js
-// One serverless function that handles: Telegram connect, Telegram webhook, saving positions.
+// api/dma.js - one serverless function: accounts, Telegram connect/webhook, saving positions.
 const crypto = require("crypto");
+const { promisify } = require("util");
+const scrypt = promisify(crypto.scrypt);
+
 const E = Object.assign({}, process.env);
 // match bot settings regardless of capitalization (Bot_token, bot_token, BOT_TOKEN ...)
 for (const k of ["BOT_TOKEN", "BOT_USERNAME"]) {
@@ -15,15 +17,79 @@ const redis = async (cmd) => {
   if (j.error) throw new Error(j.error);
   return j.result;
 };
-const send = (res, body, code = 200) => res.status(code).json(body);
+
 const HEX32 = /^[a-f0-9]{32}$/;
+const HEX64 = /^[a-f0-9]{64}$/;
+const SESSION_SECS = 60 * 60 * 24 * 30;
+const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
+const send = (res, body, code = 200, cookie) => {
+  if (res.setHeader) {
+    res.setHeader("Cache-Control", "no-store");
+    if (cookie) res.setHeader("Set-Cookie", cookie);
+  }
+  return res.status(code).json(body);
+};
+const cookieFor = (token, maxAge) => `dma_s=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
+const clientIp = (req) => String((req.headers["x-forwarded-for"] || "").split(",")[0] || req.headers["x-real-ip"] || "unknown").trim();
+const normName = (u) => String(u || "").trim().toLowerCase();
+const NAME_RE = /^[a-z0-9_.-]{3,30}$/;
+
+// rate limit: true while under the limit
+const rl = async (key, max, secs) => {
+  const n = await redis(["INCR", key]);
+  if (n === 1) await redis(["EXPIRE", key, secs]);
+  return n <= max;
+};
+const hashPw = async (pw, salt) => (await scrypt(pw, salt, 32)).toString("hex");
+const sameHash = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+
+const parseCookies = (h) => Object.fromEntries(String(h || "").split(";").map((c) => c.trim().split(/=(.*)/s).slice(0, 2)).filter((p) => p[0]));
+async function getSession(req) {
+  const t = parseCookies(req.headers.cookie).dma_s;
+  if (!t || !HEX64.test(t)) return null;
+  const raw = await redis(["GET", "sess:" + sha(t)]);
+  if (!raw) return null;
+  let s; try { s = JSON.parse(raw); } catch (e) { return null; }
+  const acct = await redis(["GET", "acct:" + s.u]);
+  if (!acct) return null;
+  const a = JSON.parse(acct);
+  if (a.sv !== s.sv) return null;
+  return { name: s.u, uid: a.uid, token: t };
+}
+async function newSession(name, sv) {
+  const token = crypto.randomBytes(32).toString("hex");
+  await redis(["SET", "sess:" + sha(token), JSON.stringify({ u: name, sv }), "EX", SESSION_SECS]);
+  return token;
+}
+const checkPw = (pw) => (typeof pw !== "string" || pw.length < 8 ? "Password must be at least 8 characters." : pw.length > 128 ? "Password is too long." : null);
 
 module.exports = async (req, res) => {
   try {
-    if (req.query.a === "health" && (!URL_ || !TOK)) return send(res, { storage: false, bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null });
+    const a = req.query.a;
+
+    // Diagnostics (no secrets returned) and one-tap webhook registration
+    if (a === "health" || a === "setup") {
+      const host = req.headers["x-forwarded-host"] || req.headers.host;
+      const out = { storage: !!(URL_ && TOK), bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null };
+      if (E.BOT_TOKEN) {
+        try {
+          if (a === "setup") {
+            const r = await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/setWebhook`, { method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ url: `https://${host}/api/dma`, allowed_updates: ["message"] }) });
+            out.setWebhook = await r.json();
+          }
+          const w = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getWebhookInfo`)).json();
+          out.webhook_url = w.result && w.result.url; out.webhook_error = (w.result && w.result.last_error_message) || null;
+          const me = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getMe`)).json();
+          out.bot_ok = !!me.ok; out.bot_real_username = me.ok ? me.result.username : null;
+          out.username_matches = me.ok && String(E.BOT_USERNAME || "").replace("@", "").toLowerCase() === String(me.result.username).toLowerCase();
+        } catch (e) { out.telegram_error = String(e.message || e); }
+      }
+      return send(res, out);
+    }
+
     if (!URL_ || !TOK) return send(res, { error: "Storage is not connected to this project yet." }, 503);
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    const a = req.query.a;
 
     // Telegram calls this when someone messages the bot
     if (a === "hook" || body.update_id !== undefined) {
@@ -36,9 +102,14 @@ module.exports = async (req, res) => {
           const tok = text.split(/\s+/)[1];
           const uid = tok && HEX32.test(tok) ? await redis(["GET", "link:" + tok]) : null;
           if (uid) {
+            // one Telegram chat belongs to one account, and one account to one chat
+            const prevUid = await redis(["GET", "uid:" + chat]);
+            if (prevUid && prevUid !== uid) await redis(["DEL", "chat:" + prevUid]);
+            const prevChat = await redis(["GET", "chat:" + uid]);
+            if (prevChat && prevChat !== chat) await redis(["DEL", "uid:" + prevChat]);
             await redis(["SET", "chat:" + uid, chat]); await redis(["SET", "uid:" + chat, uid]); await redis(["DEL", "link:" + tok]);
             await say("✅ Connected. I'll message you here when a saved position hits its stop loss, target, or 44-DMA level. Send /stop to disconnect.");
-          } else await say("To connect, open your 44-DMA Watch website, go to My Positions and tap Connect Telegram.");
+          } else await say("To connect, open your 44-DMA Watch website, log in, go to My Positions and tap Connect Telegram.");
         } else if (text === "/stop") {
           const uid = await redis(["GET", "uid:" + chat]);
           if (uid) { await redis(["DEL", "chat:" + uid]); await redis(["DEL", "uid:" + chat]); }
@@ -48,29 +119,89 @@ module.exports = async (req, res) => {
       return send(res, { ok: true });
     }
 
-    // Diagnostics (no secrets returned) and one-tap webhook registration
-    if (a === "health" || a === "setup") {
-      const host = req.headers["x-forwarded-host"] || req.headers.host;
-      const out = { storage: true, bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null };
-      if (E.BOT_TOKEN) {
-        try {
-          if (a === "setup") {
-            const r = await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/setWebhook`, { method: "POST", headers: { "content-type": "application/json" },
-              body: JSON.stringify({ url: `https://${host}/api/dma`, allowed_updates: ["message"] }) });
-            out.setWebhook = await r.json();
-          }
-          const w = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getWebhookInfo`)).json();
-          out.webhook_url = w.result && w.result.url; out.webhook_error = w.result && w.result.last_error_message || null;
-          const me = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getMe`)).json();
-          out.bot_ok = !!me.ok; out.bot_real_username = me.ok ? me.result.username : null;
-          out.username_matches = me.ok && String(E.BOT_USERNAME || "").replace("@", "").toLowerCase() === String(me.result.username).toLowerCase();
-        } catch (e) { out.telegram_error = String(e.message || e); }
+    // everything below is called by the website itself
+    if (req.method === "POST" && req.headers["x-dma"] !== "1") return send(res, { error: "Bad request." }, 400);
+    const needPost = () => req.method !== "POST" && send(res, { error: "Use POST." }, 405);
+    const ip = clientIp(req);
+
+    if (a === "register") {
+      if (needPost()) return;
+      if (!(await rl("rl:reg:" + ip, 8, 3600))) return send(res, { error: "Too many sign-ups from here. Try again later." }, 429);
+      const name = normName(body.username), pw = body.password;
+      if (!NAME_RE.test(name)) return send(res, { error: "Username must be 3-30 characters: letters, numbers, . _ -" }, 400);
+      const pe = checkPw(pw); if (pe) return send(res, { error: pe }, 400);
+      if (await redis(["GET", "acct:" + name])) return send(res, { error: "That username is taken." }, 409);
+      // carry over data created before accounts existed (key held only in this browser)
+      let uid = null, claimed = false;
+      const legacy = String(body.legacy_uid || "").toLowerCase();
+      if (HEX32.test(legacy) && ((await redis(["GET", "pos:" + legacy])) || (await redis(["GET", "chat:" + legacy])))) {
+        if ((await redis(["SET", "owner:" + legacy, name, "NX"])) === "OK") { uid = legacy; claimed = true; }
       }
-      return send(res, out);
+      if (!uid) uid = crypto.randomBytes(16).toString("hex");
+      const salt = crypto.randomBytes(16).toString("hex");
+      const acct = { salt, hash: await hashPw(pw, salt), uid, sv: 1, created: Date.now() };
+      if ((await redis(["SET", "acct:" + name, JSON.stringify(acct), "NX"])) !== "OK") {
+        if (claimed) await redis(["DEL", "owner:" + uid]);
+        return send(res, { error: "That username is taken." }, 409);
+      }
+      if (!claimed) await redis(["SET", "owner:" + uid, name]);
+      await redis(["SADD", "users", uid]);
+      const token = await newSession(name, 1);
+      return send(res, { username: name, claimed }, 200, cookieFor(token, SESSION_SECS));
     }
 
-    const uid = String(req.headers["x-uid"] || "");
-    if (!HEX32.test(uid)) return send(res, { error: "Missing or invalid sync key." }, 400);
+    if (a === "login") {
+      if (needPost()) return;
+      if (!(await rl("rl:login:" + ip, 40, 900))) return send(res, { error: "Too many attempts. Try again in a few minutes." }, 429);
+      const name = normName(body.username), pw = String(body.password || "");
+      const failKey = "rl:fail:" + name;
+      if (NAME_RE.test(name) && Number(await redis(["GET", failKey])) >= 8) return send(res, { error: "Too many wrong attempts for this account. Try again in 15 minutes." }, 429);
+      const raw = NAME_RE.test(name) ? await redis(["GET", "acct:" + name]) : null;
+      const acct = raw ? JSON.parse(raw) : null;
+      const h = await hashPw(pw.slice(0, 128), acct ? acct.salt : "0".repeat(32));
+      if (!acct || !sameHash(h, acct.hash)) {
+        if (NAME_RE.test(name)) { const n = await redis(["INCR", failKey]); if (n === 1) await redis(["EXPIRE", failKey, 900]); }
+        return send(res, { error: "Wrong username or password." }, 401);
+      }
+      await redis(["DEL", failKey]);
+      const token = await newSession(name, acct.sv);
+      return send(res, { username: name }, 200, cookieFor(token, SESSION_SECS));
+    }
+
+    if (a === "logout") {
+      if (needPost()) return;
+      const s = await getSession(req);
+      if (s) await redis(["DEL", "sess:" + sha(s.token)]);
+      return send(res, { ok: true }, 200, cookieFor("", 0));
+    }
+
+    const sess = await getSession(req);
+    if (a === "me") return sess ? send(res, { username: sess.name }) : send(res, { error: "Not signed in." }, 401);
+    if (!sess) return send(res, { error: "Please log in." }, 401);
+    const uid = sess.uid;
+
+    if (a === "passwd") {
+      if (needPost()) return;
+      const acct = JSON.parse(await redis(["GET", "acct:" + sess.name]));
+      if (!sameHash(await hashPw(String(body.old || "").slice(0, 128), acct.salt), acct.hash)) return send(res, { error: "Current password is wrong." }, 401);
+      const pe = checkPw(body.new); if (pe) return send(res, { error: pe }, 400);
+      acct.salt = crypto.randomBytes(16).toString("hex"); acct.hash = await hashPw(body.new, acct.salt); acct.sv += 1;
+      await redis(["SET", "acct:" + sess.name, JSON.stringify(acct)]);
+      await redis(["DEL", "sess:" + sha(sess.token)]);
+      const token = await newSession(sess.name, acct.sv);
+      return send(res, { ok: true }, 200, cookieFor(token, SESSION_SECS));
+    }
+
+    if (a === "delete") {
+      if (needPost()) return;
+      const acct = JSON.parse(await redis(["GET", "acct:" + sess.name]));
+      if (!sameHash(await hashPw(String(body.password || "").slice(0, 128), acct.salt), acct.hash)) return send(res, { error: "Password is wrong." }, 401);
+      const chat = await redis(["GET", "chat:" + uid]);
+      if (chat) await redis(["DEL", "uid:" + chat]);
+      for (const k of ["chat:" + uid, "pos:" + uid, "owner:" + uid, "acct:" + sess.name, "sess:" + sha(sess.token)]) await redis(["DEL", k]);
+      await redis(["SREM", "users", uid]);
+      return send(res, { ok: true }, 200, cookieFor("", 0));
+    }
 
     if (a === "status") return send(res, { connected: !!(await redis(["GET", "chat:" + uid])) });
 
@@ -92,6 +223,7 @@ module.exports = async (req, res) => {
     }
 
     if (a === "link") {
+      if (needPost()) return;
       if (!E.BOT_TOKEN || !E.BOT_USERNAME) return send(res, { error: "Telegram bot is not configured yet." }, 503);
       const t = crypto.randomBytes(16).toString("hex");
       await redis(["SET", "link:" + t, uid, "EX", 600]); await redis(["SADD", "users", uid]);
@@ -99,6 +231,7 @@ module.exports = async (req, res) => {
     }
 
     if (a === "unlink") {
+      if (needPost()) return;
       const chat = await redis(["GET", "chat:" + uid]);
       if (chat) { await redis(["DEL", "chat:" + uid]); await redis(["DEL", "uid:" + chat]); }
       return send(res, { connected: false });

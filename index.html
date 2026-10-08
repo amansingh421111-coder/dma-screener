@@ -140,6 +140,22 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </section>
 
 <section id="vPos" hidden>
+<div class="fm" id="authcard" hidden>
+<h3 id="atitle">Log in to see your positions</h3>
+<div class="sub" id="alegacy" hidden>Positions and a Telegram link from before were found on this device. Creating your account keeps them.</div>
+<form id="aform" onsubmit="submitAuth();return false" style="margin-top:10px">
+<div class="fg"><div><label for="au">Username</label><input id="au" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="30"></div>
+<div><label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password" maxlength="128"></div></div>
+<div class="act"><button class="btn pri" type="submit" id="abtn">Log in</button><button class="btn" type="button" id="aswitch" onclick="switchAuth()">Create an account</button></div>
+<div class="msg" id="amsg"></div>
+</form>
+</div>
+<div id="posapp" hidden>
+<div class="fm" id="acctbar"><div class="tgrow"><div><b>Signed in as <span id="who"></span></b></div><button class="btn sm" onclick="logout()">Log out</button></div>
+<details class="set"><summary>Account settings</summary>
+<div class="fg"><div><label for="pw0">Current password</label><input id="pw0" type="password" autocomplete="current-password"></div><div><label for="pw1">New password (8+ characters)</label><input id="pw1" type="password" autocomplete="new-password"></div></div>
+<div class="act"><button class="btn sm" onclick="changePw()">Change password</button><button class="btn sm danger" onclick="deleteAcct()">Delete account</button></div><div class="msg" id="pwmsg"></div>
+<p class="sub">Delete account removes your positions and Telegram link. Enter your current password above first.</p></details></div>
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
 <div class="bar"><button class="btn pri" onclick="openForm()">＋ Add position</button><span style="flex:1"></span><button class="btn" onclick="exportPos()">Export</button><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
@@ -163,10 +179,11 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 <div id="plist"></div>
 <div class="note" id="psync" hidden></div>
+</div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are stored in this browser only; use Export for a backup.</footer>
-<details class="set"><summary>Device sync (advanced)</summary><p>Private sync key. Paste the same key on another device to share your positions and Telegram link. Never share it.</p><input id="synckey" type="password" readonly autocomplete="off"><div class="act"><button class="btn sm" onclick="showKey()" id="showbtn">Show</button><button class="btn sm" onclick="copyKey()">Copy key</button></div><input id="newkey" placeholder="Paste a key from another device" autocomplete="off" style="margin-top:8px"><div class="act"><button class="btn sm" onclick="useKey()">Use this key</button></div></details>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file.</footer>
+
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -270,21 +287,50 @@ async function copyList(){const t=view().map(s=>ex(s)+":"+s.symbol).join(",");tr
 
 /* ---------- My Positions ---------- */
 let POS=[];try{POS=JSON.parse(rd("dma_positions")||"[]")}catch(e){}
-function newUid(){const a=new Uint8Array(16);crypto.getRandomValues(a);return[...a].map(b=>b.toString(16).padStart(2,"0")).join("")}
-let UID=rd("dma_uid");if(!/^[a-f0-9]{32}$/.test(UID||"")){UID=newUid();wr("dma_uid",UID)}
-let TS=+rd("dma_pos_ts")||0,CLOUD={ok:null,connected:false,link:null,err:"",diag:""},pushT=null,pollT=null,POLL=3000;
-async function api(a,body,method){const r=await fetch("/api/dma?a="+a,{method:method||(body?"POST":"GET"),headers:{"x-uid":UID,"content-type":"application/json"},body:body?JSON.stringify(body):undefined});
+let ME=null,PENDING=null,AUTHMODE="login",TS=+rd("dma_pos_ts")||0,CLOUD={ok:null,connected:false,link:null,err:"",diag:""},pushT=null,pollT=null,POLL=3000;
+async function api(a,body,method){const r=await fetch("/api/dma?a="+a,{method:method||(body?"POST":"GET"),headers:{"content-type":"application/json","x-dma":"1"},credentials:"same-origin",body:body?JSON.stringify(body):undefined});
  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||("HTTP "+r.status)),{code:r.status});return j}
 const stamp=()=>{TS=Date.now();wr("dma_pos_ts",String(TS))};
-const savePos=()=>{wr("dma_positions",JSON.stringify(POS));stamp();clearTimeout(pushT);pushT=setTimeout(push,400)};
-async function push(){try{await api("positions",{positions:POS,ts:TS});CLOUD.ok=true}catch(e){CLOUD.ok=false;CLOUD.err=e.message}render()}
+const savePos=()=>{wr("dma_positions",JSON.stringify(POS));stamp();if(ME){clearTimeout(pushT);pushT=setTimeout(push,400)}};
+async function push(){pushT=null;try{await api("positions",{positions:POS,ts:TS});CLOUD.ok=true}catch(e){if(e.code===401){ME=null}else{CLOUD.ok=false;CLOUD.err=e.message}}render()}
+async function initAuth(){
+ try{ME=(await api("me",null,"GET")).username;CLOUD.ok=true;await initSync()}
+ catch(e){ME=null;if(e.code===401)CLOUD.ok=true;else{CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}}
+ render()}
 async function initSync(){
  try{const s=await api("positions",null,"GET");CLOUD.ok=true;
   if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS))}
   else if(TS>s.ts||(!s.ts&&POS.length)){if(!TS)stamp();await push()}
   CLOUD.connected=(await api("status",null,"GET")).connected}
- catch(e){CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}
+ catch(e){if(e.code===401)ME=null;else{CLOUD.ok=false;CLOUD.err=e.message}}
  render()}
+function switchAuth(){AUTHMODE=AUTHMODE==="login"?"register":"login";$("amsg").textContent="";renderAuth()}
+function renderAuth(){const reg=AUTHMODE==="register",down=CLOUD.ok===false;
+ $("atitle").textContent=reg?"Create your account":"Log in to see your positions";
+ $("abtn").textContent=reg?"Create account":"Log in";$("aswitch").textContent=reg?"I already have an account":"Create an account";
+ $("ap").autocomplete=reg?"new-password":"current-password";
+ let legacy=false;try{legacy=!!localStorage.getItem("dma_uid")||POS.length>0}catch(e){}
+ $("alegacy").hidden=!(reg&&legacy);
+ $("abtn").disabled=down;if(down)$("amsg").textContent="The accounts server is not set up yet ("+CLOUD.err+")."}
+async function submitAuth(){const u=$("au").value.trim(),p=$("ap").value,m=t=>{$("amsg").textContent=t},reg=AUTHMODE==="register";
+ if(!u||!p)return m("Enter a username and password.");if(reg&&p.length<8)return m("Password must be at least 8 characters.");
+ $("abtn").disabled=true;m("");
+ try{let legacy="";try{legacy=localStorage.getItem("dma_uid")||""}catch(e){}
+  const r=await api(reg?"register":"login",reg?{username:u,password:p,legacy_uid:legacy}:{username:u,password:p});
+  ME=r.username;CLOUD.ok=true;$("ap").value="";
+  if(reg){try{localStorage.removeItem("dma_uid")}catch(e){}}else{POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0")}
+  await initSync();if(PENDING){const p=PENDING;PENDING=null;openForm(p)}}
+ catch(e){m(e.message)}
+ $("abtn").disabled=false;render()}
+async function logout(){if(pushT){clearTimeout(pushT);await push()}
+ try{await api("logout",{})}catch(e){}
+ ME=null;POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0");clearTimeout(pollT);CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";closeForm();render()}
+async function changePw(){const m=t=>{$("pwmsg").textContent=t};m("");
+ try{await api("passwd",{old:$("pw0").value,new:$("pw1").value});$("pw0").value=$("pw1").value="";m("Password changed. Other devices were logged out.")}catch(e){m(e.message)}}
+async function deleteAcct(){const m=t=>{$("pwmsg").textContent=t};
+ if(!$("pw0").value)return m("Enter your current password above first.");
+ if(!confirm("Delete your account, positions and Telegram link? This cannot be undone."))return;
+ try{await api("delete",{password:$("pw0").value});$("pw0").value="";ME=null;POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0");CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";render()}catch(e){m(e.message)}}
 async function connectTg(){CLOUD.err="";CLOUD.diag="";CLOUD.link=null;render();
  try{const j=await api("link",{});CLOUD.link=j.url;pollTg(Date.now());render();try{window.open(j.url,"_blank")}catch(e){}}
  catch(e){CLOUD.err=e.message;try{const d=await (await fetch("/api/dma?a=health")).json();
@@ -293,11 +339,7 @@ async function connectTg(){CLOUD.err="";CLOUD.diag="";CLOUD.link=null;render();
 function pollTg(t0){clearTimeout(pollT);pollT=setTimeout(async()=>{try{if((await api("status",null,"GET")).connected){CLOUD.connected=true;CLOUD.link=null;render();return}}catch(e){}
  if(Date.now()-t0<18e4)pollTg(t0);else{CLOUD.link=null;render()}},POLL)}
 async function disconnectTg(){try{await api("unlink",{});CLOUD.connected=false}catch(e){alert("Could not disconnect: "+e.message)}render()}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&CLOUD.ok&&!CLOUD.connected)api("status",null,"GET").then(s=>{CLOUD.connected=s.connected;render()}).catch(()=>{})});
-function showKey(){const k=$("synckey"),b=$("showbtn");const show=k.type==="password";k.type=show?"text":"password";b.textContent=show?"Hide":"Show"}
-function copyKey(){navigator.clipboard?.writeText(UID).then(()=>alert("Key copied."),()=>prompt("Copy this key:",UID))}
-function useKey(){const k=$("newkey").value.trim().toLowerCase();if(!/^[a-f0-9]{32}$/.test(k))return alert("That is not a valid key.");
- if(!confirm("Switch to this key? Positions from that key will replace the ones on this device."))return;UID=k;wr("dma_uid",k);TS=0;wr("dma_pos_ts","0");$("newkey").value="";initSync()}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ME&&CLOUD.ok&&!CLOUD.connected)api("status",null,"GET").then(s=>{CLOUD.connected=s.connected;render()}).catch(()=>{})});
 function renderTg(){const c=$("tgcard");
  if(CLOUD.ok===null){c.innerHTML=`<b>Telegram alerts</b><div class="sub">Checking…</div>`;return}
  if(CLOUD.ok===false){c.innerHTML=`<b>Telegram alerts</b><div class="sub">The alerts server is not set up yet (${esc(CLOUD.err)}). Positions are saved on this device only. Finish the Telegram setup steps, then reload.</div>`;return}
@@ -314,7 +356,7 @@ function openForm(p){editing=p?p.exchange+":"+p.symbol:null;$("ptitle").textCont
 function closeForm(){$("pform").hidden=true;editing=null}
 function quickFill(){const mk=(id,t,arr,sign)=>$(id).innerHTML=arr.map(x=>`<button class="chip" onclick="fillPct('${t}',${sign*x})">${sign<0?"−":"+"}${x}%</button>`).join("");mk("slq","psl",[5,8,10],-1);mk("tgq","ptg",[10,15,20],1)}
 function fillPct(t,p){const b=num("pbuy");if(!b){$("pmsg").textContent="Enter the buy price first.";return}$(t).value=(b*(1+p/100)).toFixed(2);$("pmsg").textContent=""}
-function track(btn){go("pos");const px=+btn.dataset.px;openForm({symbol:btn.dataset.sym,exchange:btn.dataset.ex,buy:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),date:new Date().toISOString().slice(0,10),qty:"",thesis:"From screener",alertMa:true,alertSl:true,alertTg:true})}
+function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,buy:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),date:new Date().toISOString().slice(0,10),qty:"",thesis:"From screener",alertMa:true,alertSl:true,alertTg:true};go("pos");if(!ME){PENDING=draft;return}openForm(draft)}
 function savePosition(){const sym=$("psym").value.trim().toUpperCase(),e=$("pex").value,q=num("pqty"),b=num("pbuy"),sl=num("psl"),tg=num("ptg"),m=t=>{$("pmsg").textContent=t};
  if(!sym)return m("Enter a symbol.");if(!q||q<=0)return m("Enter a quantity above zero.");if(!b||b<=0)return m("Enter the buy price.");
  if(sl!==null&&sl>=b)return m("Stop loss must be below the buy price.");if(tg!==null&&tg<=b)return m("Target must be above the buy price.");
@@ -326,6 +368,9 @@ function exportPos(){dl("positions.json",JSON.stringify({positions:POS},null,1),
 $("pimp").addEventListener("change",async e=>{try{const d=JSON.parse(await e.target.files[0].text()),a=Array.isArray(d)?d:d.positions;
  a.filter(p=>p.symbol&&p.qty&&p.buy).forEach(p=>{p.exchange=p.exchange||"NSE";const i=POS.findIndex(x=>x.exchange+":"+x.symbol===p.exchange+":"+p.symbol);i>=0?POS[i]=p:POS.push(p)});savePos();render()}catch(x){alert("That file is not a valid positions export.")}e.target.value=""});
 function renderPos(){
+ $("authcard").hidden=!!ME;$("posapp").hidden=!ME;
+ if(!ME){renderAuth();return}
+ $("who").textContent=ME;
  renderTg();
  let inv=0,val=0,priced=0;POS.forEach(p=>{inv+=p.qty*p.buy;const q=quote(p);if(q){val+=p.qty*q.price;priced++}else val+=p.qty*p.buy});
  const pl=val-inv,pp=inv?pl/inv*100:0;
@@ -353,12 +398,12 @@ function route(){view_=location.hash==="#positions"?"pos":"screen";render()}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
- $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions<span class="badge">${POS.length}</span></button>`;
+ $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${POS.length}</span>`:""}</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";
  if(view_==="screen")renderScreen();else renderPos()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
-$("synckey").value=UID;$("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
+$("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
 addEventListener("hashchange",route);matchMedia("(max-width:760px)").addEventListener("change",render);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
-route();load();initSync();setInterval(load,3e5);
+route();load();initAuth();setInterval(load,3e5);
 </script></body></html>
