@@ -219,8 +219,11 @@ def redis(cmd):
     r = requests.post(url, headers={"Authorization": f"Bearer {tok}"}, json=cmd, timeout=20)
     r.raise_for_status(); return r.json().get("result")
 
+CLOUD = {"redis": False, "users": 0, "connected": 0, "error": None}
+
 def cloud_users():
     """Everyone who connected Telegram on the website: [{uid, chat, positions}]."""
+    CLOUD["redis"] = bool(os.getenv("UPSTASH_URL") and os.getenv("UPSTASH_TOKEN"))
     try:
         uids = redis(["SMEMBERS", "users"]) or []
         out = []
@@ -229,8 +232,10 @@ def cloud_users():
             if not chat or not raw: continue
             d = json.loads(raw); d = d["positions"] if isinstance(d, dict) else d
             out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol")]))
+        CLOUD["users"] = len(uids); CLOUD["connected"] = len(out)
         return out
     except Exception as e:
+        CLOUD["error"] = str(e)[:150]
         log.warning("Cloud positions unavailable: %s", e); return []
 
 def send_telegram(chat, text):
@@ -354,6 +359,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
+         "cloud": CLOUD,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})

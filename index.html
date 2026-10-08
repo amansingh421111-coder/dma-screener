@@ -341,6 +341,7 @@ function renderPos(){
  const un=POS.filter(p=>!quote(p)).length,al=POS.some(p=>p.alertMa||p.alertSl||p.alertTg);
  let n="";if(un&&CLOUD.ok)n+=`${un} position${un>1?"s have":" has"} no price yet. It appears after the next screener run (hourly for BSE). `;
  if(al&&CLOUD.ok&&!CLOUD.connected)n+=`<b>Alerts are on, but Telegram is not connected.</b> Tap Connect Telegram above.`;
+ if(al&&CLOUD.ok&&CLOUD.connected&&data&&data.cloud){if(data.cloud.redis===false)n+=`<b>Alerts will not send yet:</b> the screener on GitHub has no UPSTASH_URL / UPSTASH_TOKEN secrets. Add them under Settings → Secrets and variables → Actions, then run the screener. `;else if(data.cloud.error)n+=`<b>Alerts store error on the last run:</b> ${esc(data.cloud.error)} `;else if(!data.cloud.connected)n+=`The last screener run did not see your Telegram link. Run the screener once more. `}
  if(al&&CLOUD.ok===false)n+=`<b>To get alerts without the server:</b> tap Export, then upload <b>positions.json</b> to your GitHub repo.`;
  $("psync").hidden=!POS.length||!n;$("psync").innerHTML=n}
 
