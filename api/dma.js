@@ -1,3 +1,5 @@
+// Save this file in your GitHub repo as:  api/dma.js
+// One serverless function that handles: Telegram connect, Telegram webhook, saving positions.
 const crypto = require("crypto");
 const E = process.env;
 const URL_ = E.KV_REST_API_URL || E.UPSTASH_REDIS_REST_URL;

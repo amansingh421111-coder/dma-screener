@@ -4,7 +4,7 @@ import argparse, sys
 from pathlib import Path
 import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from screen import ROOT, load_cfg, moving_avg, universe, fetch
+from screen import ROOT, load_cfg, moving_avg, nse_universe, fetch
 
 def trades(df, kind, n, cost):
     close = df["Close"].dropna()
@@ -28,8 +28,9 @@ def main():
     ap.add_argument("--years", type=int, default=5); ap.add_argument("--cost", type=float, default=0.002,
                     help="round-trip cost as a fraction (0.002 = 0.2%%)")
     a = ap.parse_args(); c = load_cfg()
-    syms = a.symbols.split(",") if a.symbols else universe()[:a.top]
-    data = fetch(syms, period=f"{a.years}y")
+    items = [dict(symbol=s, yahoo=s + ".NS") for s in a.symbols.split(",")] if a.symbols else nse_universe()[:a.top]
+    raw = fetch([u["yahoo"] for u in items], period=f"{a.years}y")
+    data = {u["symbol"]: raw[u["yahoo"]] for u in items if u["yahoo"] in raw}
     rows, bh = [], []
     for s, df in data.items():
         t, b = trades(df, c["ma_type"], c["ma_period"], a.cost)

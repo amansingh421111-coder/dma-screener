@@ -4,3 +4,8 @@ near_pct: 1.5       # "approaching" = within this % of the average
 min_price: 50
 min_avg_volume: 100000
 max_near_alerts: 25 # cap per alert message
+include_bse: true        # also scan BSE-only stocks (hourly)
+bse_min_avg_volume: 25000
+mcap_large_cr: 100000    # market cap buckets, in rupees crore (approximate)
+mcap_mid_cr: 30000
+mcap_small_cr: 5000

@@ -1,1 +1,1 @@
-{"headers":[{"source":"/signals.json","headers":[{"key":"Cache-Control","value":"no-cache"},{"key":"Access-Control-Allow-Origin","value":"*"}]}]}
+{"framework":null,"buildCommand":null,"installCommand":null,"outputDirectory":".","headers":[{"source":"/signals.json","headers":[{"key":"Cache-Control","value":"no-cache"},{"key":"Access-Control-Allow-Origin","value":"*"}]}]}
