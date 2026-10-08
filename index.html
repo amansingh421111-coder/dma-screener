@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en"><head>
+<meta name="robots" content="noindex,nofollow">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>44-DMA Watch</title>
@@ -165,7 +166,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </section>
 
 <footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are stored in this browser only; use Export for a backup.</footer>
-<details class="set"><summary>Settings</summary><p>Sync key. Use the same key on another device to share your positions and Telegram link. Keep it private.</p><input id="synckey" readonly><div class="act"><button class="btn sm" onclick="copyKey()">Copy key</button></div><input id="newkey" placeholder="Paste a key from another device" style="margin-top:8px"><div class="act"><button class="btn sm" onclick="useKey()">Use this key</button></div><p>Data link (leave empty for the default):</p><input id="url" placeholder="/signals.json"><button class="btn" style="margin-top:8px" onclick="saveUrl()">Save and reload</button></details>
+<details class="set"><summary>Device sync (advanced)</summary><p>Private sync key. Paste the same key on another device to share your positions and Telegram link. Never share it.</p><input id="synckey" type="password" readonly autocomplete="off"><div class="act"><button class="btn sm" onclick="showKey()" id="showbtn">Show</button><button class="btn sm" onclick="copyKey()">Copy key</button></div><input id="newkey" placeholder="Paste a key from another device" autocomplete="off" style="margin-top:8px"><div class="act"><button class="btn sm" onclick="useKey()">Use this key</button></div></details>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -187,8 +188,7 @@ const sg=n=>(n>0?"+":"")+n;
 const cr=n=>n==null?"–":n>=1e5?`₹${(n/1e5).toFixed(2)} L Cr`:`₹${Math.round(n).toLocaleString("en-IN")} Cr`;
 const num=id=>{const v=$(id).value.trim();return v===""||isNaN(v)?null:Number(v)};
 const ex=s=>s.exchange||"NSE",key=s=>ex(s)+":"+s.symbol;
-function saveUrl(){wr("dataUrl",$("url").value.trim());location.reload()}
-async function load(){const u=rd("dataUrl")||"/signals.json";$("url").value=rd("dataUrl")||"";
+async function load(){const u="/signals.json";
  try{const r=await fetch(u+"?t="+Date.now());if(!r.ok)throw 0;data=await r.json();$("note").hidden=true}catch(e){data=SAMPLE;$("note").hidden=false}
  $("syms").innerHTML=data.signals.slice(0,800).map(s=>`<option value="${esc(s.symbol)}">${esc(s.name||"")}</option>`).join("");render()}
 function ago(iso){const m=Math.max(0,Math.round((Date.now()-new Date(iso))/6e4));return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"}
@@ -294,6 +294,7 @@ function pollTg(t0){clearTimeout(pollT);pollT=setTimeout(async()=>{try{if((await
  if(Date.now()-t0<18e4)pollTg(t0);else{CLOUD.link=null;render()}},POLL)}
 async function disconnectTg(){try{await api("unlink",{});CLOUD.connected=false}catch(e){alert("Could not disconnect: "+e.message)}render()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&CLOUD.ok&&!CLOUD.connected)api("status",null,"GET").then(s=>{CLOUD.connected=s.connected;render()}).catch(()=>{})});
+function showKey(){const k=$("synckey"),b=$("showbtn");const show=k.type==="password";k.type=show?"text":"password";b.textContent=show?"Hide":"Show"}
 function copyKey(){navigator.clipboard?.writeText(UID).then(()=>alert("Key copied."),()=>prompt("Copy this key:",UID))}
 function useKey(){const k=$("newkey").value.trim().toLowerCase();if(!/^[a-f0-9]{32}$/.test(k))return alert("That is not a valid key.");
  if(!confirm("Switch to this key? Positions from that key will replace the ones on this device."))return;UID=k;wr("dma_uid",k);TS=0;wr("dma_pos_ts","0");$("newkey").value="";initSync()}
