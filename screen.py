@@ -117,27 +117,65 @@ def _num(x):
     try: return float(str(x).replace(",", "").strip())
     except Exception: return None
 
+BHAV = {}   # exchange -> (date, {key: (open, high, low, close, volume)}) from the official end-of-day files
+
+def load_bhav():
+    """Official end-of-day prices from NSE and BSE (the exchanges' own files)."""
+    def nse_parse(df):
+        df = df[df["SERIES"].str.strip() == "EQ"]
+        return {r["SYMBOL"].strip(): tuple(_num(r[k]) for k in ("OPEN_PRICE", "HIGH_PRICE", "LOW_PRICE", "CLOSE_PRICE", "TTL_TRD_QNTY")) for r in df.to_dict("records")}
+    def bse_parse(df):
+        return {str(r["FinInstrmId"]).strip(): tuple(_num(r[k]) for k in ("OpnPric", "HghPric", "LwPric", "ClsPric", "TtlTradgVol")) for r in df.to_dict("records")}
+    for ex, url, hd, fn in (("NSE", NSE_BHAV, BH_H, nse_parse),
+                            ("BSE", BSE_BHAV, dict(BH_H, Referer="https://www.bseindia.com/"), bse_parse)):
+        if ex in BHAV: continue
+        try:
+            m, day = _latest_bhav(url, hd, fn); BHAV[ex] = (day, m)
+        except Exception as e: log.warning("%s official prices unavailable (%s)", ex, str(e)[:100])
+
+RECON = {"checked": 0, "mismatch": 0, "added": 0, "date": {}}
+
+def reconcile(data, keys):
+    """Make the last daily bar match the exchange's official end-of-day figures.
+    data: {yahoo: DataFrame}; keys: {yahoo: (exchange, key)}.
+    If Yahoo's last bar is that same day, its OHLC+volume are replaced by the official ones (mismatches counted);
+    if Yahoo has no bar for that day yet, one is added. A newer Yahoo bar (today, still trading) is left untouched."""
+    load_bhav()
+    for y, df in list(data.items()):
+        ex, key = keys.get(y, (None, None))
+        if ex not in BHAV: continue
+        day, m = BHAV[ex]; v = m.get(key)
+        if not v or any(x is None for x in v[:4]) or v[3] <= 0: continue
+        df = df.dropna(subset=["Close"])
+        if df.empty: continue
+        last = df.index[-1].date()
+        row = dict(Open=v[0], High=v[1], Low=v[2], Close=v[3], Volume=v[4] or 0)
+        if last == day:
+            RECON["checked"] += 1
+            if abs(float(df["Close"].iloc[-1]) / v[3] - 1) > 0.003: RECON["mismatch"] += 1
+            df = df.copy()
+            for k, x in row.items(): df.iloc[-1, df.columns.get_loc(k)] = x
+        elif last < day:
+            ts = pd.Timestamp(day)
+            if df.index.tz is not None: ts = ts.tz_localize(df.index.tz)
+            df = pd.concat([df, pd.DataFrame([row], index=[ts])[df.columns]]); RECON["added"] += 1
+        else: continue
+        data[y] = df
+    RECON["date"] = {k: str(v[0]) for k, v in BHAV.items()}
+    if RECON["checked"] or RECON["added"]: log.info("official-price check: %s", {k: RECON[k] for k in ("checked", "mismatch", "added", "date")})
+
 def prefilter(items, c):
     """Drop stocks that cannot pass the price / volume filters, using the exchanges' official end-of-day files.
     Fewer tickers to download = much faster runs. Any failure leaves the list untouched."""
-    def nse_parse(df):
-        df = df[df["SERIES"].str.strip() == "EQ"]
-        return {r["SYMBOL"].strip(): (_num(r["CLOSE_PRICE"]), _num(r["TTL_TRD_QNTY"])) for r in df.to_dict("records")}
-    def bse_parse(df):
-        return {str(r["FinInstrmId"]).strip(): (_num(r["ClsPric"]), _num(r["TtlTradgVol"])) for r in df.to_dict("records")}
-    keep, info = [], {}
-    maps = {}
-    for ex, url, hd, fn in (("NSE", NSE_BHAV, BH_H, nse_parse),
-                            ("BSE", BSE_BHAV, dict(BH_H, Referer="https://www.bseindia.com/"), bse_parse)):
-        try: maps[ex], day = _latest_bhav(url, hd, fn); info[ex] = str(day)
-        except Exception as e: log.warning("%s prefilter unavailable (%s)", ex, str(e)[:100]); info[ex] = None
+    load_bhav()
+    keep, info = [], {k: str(v[0]) for k, v in BHAV.items()}
     for u in items:
-        m = maps.get(u["exchange"])
-        if m is None: keep.append(u); continue
+        b = BHAV.get(u["exchange"])
+        if b is None: keep.append(u); continue
         key = u["symbol"] if u["exchange"] == "NSE" else u["yahoo"].split(".")[0]
-        v = m.get(key)
+        v = b[1].get(key)
         if v is None: continue                      # did not trade on the latest day
-        px, vol = v
+        px, vol = v[3], v[4]
         mv = c["bse_min_avg_volume"] if u["exchange"] == "BSE" else c["min_avg_volume"]
         if px is not None and px < c["min_price"] * 0.97: continue
         if vol is not None and vol < mv * 0.15: continue
@@ -337,6 +375,7 @@ def pos_yahoo(p): return p["symbol"] + (".BO" if p.get("exchange") == "BSE" else
 def position_quotes(pos, c):
     if not pos: return {}
     data = fetch([pos_yahoo(p) for p in pos]); q = {}
+    reconcile(data, {pos_yahoo(p): (p.get("exchange", "NSE"), p["symbol"]) for p in pos})
     for p in pos:
         df = data.get(pos_yahoo(p))
         if df is None: continue
@@ -433,6 +472,7 @@ def main():
     t_fetch = time.time()
     data = fetch([u["yahoo"] for u in todo])
     fetch_secs = round(time.time() - t_fetch)
+    reconcile(data, {u["yahoo"]: (u["exchange"], u["symbol"] if u["exchange"] == "NSE" else u["yahoo"].split(".")[0]) for u in todo})
     for u in todo:
         if u["yahoo"] in data: miss.pop(u["yahoo"], None)
         else: miss[u["yahoo"]] = miss.get(u["yahoo"], 0) + 1
@@ -465,7 +505,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
-         "cloud": CLOUD, "fetch_secs": fetch_secs, "prefilter": PRE or None, "bse_stats": bse_stats,
+         "cloud": CLOUD, "fetch_secs": fetch_secs, "price_date": str(latest), "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})

@@ -528,7 +528,7 @@ function go(v){location.hash=v==="pos"?"#positions":"#screener";route()}
 function route(){view_=location.hash==="#positions"?"pos":"screen";render()}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
- $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
+ $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · ${data.price_date?`prices as of ${new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"})} · `:""}updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
  $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";
  if(view_==="screen")renderScreen();else renderPos()}
