@@ -1,15 +1,20 @@
 {
- "updated": "2026-10-08T21:46:02.311263+00:00",
+ "updated": "2026-10-08T22:01:05.064130+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 1.5,
  "universe": "NSE + BSE",
- "bse_updated": "2026-10-08T21:46:02.311275+00:00",
+ "bse_updated": "2026-10-08T22:01:05.064141+00:00",
  "cloud": {
   "redis": true,
-  "users": 1,
+  "users": 2,
   "connected": 1,
   "error": null
+ },
+ "bse_stats": {
+  "listed": 1882,
+  "priced": 215,
+  "signals": 0
  },
  "bse_error": null,
  "signals": [
