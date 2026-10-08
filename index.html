@@ -245,7 +245,7 @@ function set_(id,k){const S={exch,caps,candles}[id];S.has(k)?S.delete(k):S.add(k
 function renderScreen(){
  const miss=["candle","rsi","trend","hi","since","mcap"].filter(k=>!has(k)),msgs=[];
  if(miss.length&&data.signals.length)msgs.push(`<b>Some data is missing (${miss.join(", ")}).</b> Update <b>screen.py</b> in GitHub, then run <b>Actions → screener → Run workflow → run</b>. Related filters are greyed out until then.`);
- if(data.signals.length&&!data.signals.some(s=>ex(s)==="BSE")&&data.universe!=="Sample")msgs.push(`No BSE stocks in the data yet. They appear after the updated screener runs (BSE is scanned hourly).`);
+ if(data.signals.length&&!data.signals.some(s=>ex(s)==="BSE")&&data.universe!=="Sample")msgs.push(data.bse_error?`BSE stocks could not be loaded on the last run (${esc(data.bse_error)}). NSE stocks are unaffected.`:`No BSE stocks in the data yet. They appear after the next screener run (BSE is scanned hourly).`);
  $("warn").hidden=!msgs.length;$("warn").innerHTML=msgs.join("<br>");
  document.querySelectorAll("[data-need]").forEach(e=>e.classList.toggle("off",!has(e.dataset.need)));
  $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");

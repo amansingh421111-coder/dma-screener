@@ -44,22 +44,55 @@ def nse_universe():
     return [dict(symbol=s, name=n, isin=i, exchange="NSE", yahoo=s + ".NS")
             for s, n, i in zip(out["symbol"], out["name"], out["isin"])]
 
+BSE_ERR = []
+BSE_BHAV = "https://www.bseindia.com/download/BhavCopy/Equity/BhavCopy_BSE_CM_0_0_0_{d:%Y%m%d}_F_0000.CSV"
+
+def _bse_from_api(skip_isins, groups):
+    s = requests.Session(); h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+                                 "Referer": "https://www.bseindia.com/", "Origin": "https://www.bseindia.com", "Accept": "application/json, text/plain, */*"}
+    try: s.get("https://www.bseindia.com/", headers=h, timeout=20)
+    except Exception: pass
+    r = s.get(BSE_URL, headers=h, timeout=45); r.raise_for_status()
+    rec = []
+    for x in r.json():
+        code, isin, grp = pick(x, "SCRIP_CD"), pick(x, "ISIN_NUMBER", "ISIN"), pick(x, "GROUP", "Scrip_Grp")
+        if not code.isdigit() or (isin and isin in skip_isins) or (groups and grp and grp not in groups): continue
+        rec.append(dict(symbol=pick(x, "scrip_id") or code, name=pick(x, "Scrip_Name", "Issuer_Name"), isin=isin, code=code))
+    return rec
+
+def _bse_from_bhavcopy(skip_isins, groups):
+    """Fallback: list of BSE scrips that traded on a recent day (from the exchange's daily bhavcopy file)."""
+    h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Referer": "https://www.bseindia.com/"}
+    day, last = dt.date.today(), None
+    for _ in range(8):
+        if day.weekday() < 5:
+            try:
+                r = requests.get(BSE_BHAV.format(d=day), headers=h, timeout=45); r.raise_for_status()
+                df = pd.read_csv(io.StringIO(r.text), dtype=str).fillna(""); df.columns = [c.strip() for c in df.columns]
+                rec = []
+                for x in df.to_dict("records"):
+                    code, isin, grp = str(x.get("FinInstrmId", "")).strip(), str(x.get("ISIN", "")).strip(), str(x.get("SctySrs", "")).strip()
+                    if not code.isdigit() or (isin and isin in skip_isins) or (groups and grp and grp not in groups): continue
+                    rec.append(dict(symbol=str(x.get("TckrSymb", "")).strip() or code, name=str(x.get("FinInstrmNm", "")).strip(), isin=isin, code=code))
+                if rec: return rec
+            except Exception as e:
+                last = e
+        day -= dt.timedelta(days=1)
+    raise last or ValueError("no bhavcopy found")
+
 def bse_universe(skip_isins, groups):
     """BSE-only stocks (those not already listed on NSE, matched by ISIN). Yahoo uses scrip code + .BO"""
-    cache = ROOT / "universe_bse.csv"
-    try:
-        h = dict(UA, Referer="https://www.bseindia.com/", Accept="application/json")
-        r = requests.get(BSE_URL, headers=h, timeout=45); r.raise_for_status()
-        rec = []
-        for x in r.json():
-            code, isin, grp = pick(x, "SCRIP_CD"), pick(x, "ISIN_NUMBER", "ISIN"), pick(x, "GROUP", "Scrip_Grp")
-            if not code.isdigit() or (isin and isin in skip_isins) or (groups and grp and grp not in groups): continue
-            rec.append(dict(symbol=pick(x, "scrip_id") or code, name=pick(x, "Scrip_Name", "Issuer_Name"), isin=isin, code=code))
-        if not rec: raise ValueError("empty BSE list")
-        pd.DataFrame(rec).to_csv(cache, index=False)
-    except Exception as e:
-        log.warning("BSE list failed (%s); using cache", e)
+    cache = ROOT / "universe_bse.csv"; rec = None
+    for name, fn in (("BSE list API", _bse_from_api), ("BSE bhavcopy", _bse_from_bhavcopy)):
+        try:
+            rec = fn(skip_isins, groups)
+            if rec: pd.DataFrame(rec).to_csv(cache, index=False); BSE_ERR.clear(); break
+            raise ValueError("empty list")
+        except Exception as e:
+            log.warning("%s failed (%s)", name, e); BSE_ERR.append(f"{name}: {str(e)[:120]}"); rec = None
+    if rec is None:
         if not cache.exists(): return []
+        log.warning("Using cached BSE list")
         rec = pd.read_csv(cache, dtype=str).fillna("").to_dict("records")
     return [dict(symbol=r["symbol"], name=r["name"], isin=r["isin"], exchange="BSE", yahoo=str(r["code"]) + ".BO") for r in rec]
 
@@ -321,6 +354,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
+         "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
     if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": []}
