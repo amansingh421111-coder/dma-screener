@@ -167,7 +167,9 @@ def fetch(tickers, batch=150, period="1y"):
         for attempt in range(3):
             try:
                 d = yf.download(chunk, period=period, interval="1d", group_by="ticker", threads=True,
-                                progress=False, auto_adjust=False); break
+                                progress=False, auto_adjust=False)
+                if d is not None and not d.empty: break
+                log.warning("batch %d empty (attempt %d), retrying", i, attempt); time.sleep(8 * (attempt + 1))
             except Exception as e:
                 log.warning("batch %d retry %d: %s", i, attempt, e); time.sleep(5 * (attempt + 1))
         if d is None or d.empty: continue
@@ -335,6 +337,8 @@ def main():
     if scan_bse:
         items += bse_universe({u["isin"] for u in nse if u["isin"]}, c["bse_groups"])
     data = fetch([u["yahoo"] for u in items])
+    bse_items = [u for u in items if u["exchange"] == "BSE"]
+    bse_stats = {"listed": len(bse_items), "priced": sum(1 for u in bse_items if u["yahoo"] in data), "signals": 0} if scan_bse else (old.get("bse_stats"))
     if not data: log.error("No price data fetched"); sys.exit(1)
     latest = max(d.dropna().index[-1].date() for d in data.values() if not d.dropna().empty)
     if latest != now.date() and not (a.force or a.summary):
@@ -347,6 +351,7 @@ def main():
         if s:
             s.update(exchange=u["exchange"], name=u["name"]); sigs.append(s)
             yh[f"{u['exchange']}:{u['symbol']}"] = u["yahoo"]
+    if scan_bse and bse_stats: bse_stats["signals"] = sum(1 for s in sigs if s["exchange"] == "BSE"); log.info("BSE stats: %s", bse_stats)
     mc = get_mcaps([dict(key=k, yahoo=y) for k, y in yh.items()])
     for s in sigs:
         cr = mc.get(f"{s['exchange']}:{s['symbol']}"); s["mcap"] = cr; s["mcap_cat"] = mcap_cat(cr, c)
@@ -359,7 +364,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
-         "cloud": CLOUD,
+         "cloud": CLOUD, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
