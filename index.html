@@ -132,6 +132,8 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.acts .btn{text-decoration:none}
 .src{font-size:11.5px;color:var(--mute);margin:12px 0 0;opacity:.8}
 @media(max-width:760px){.dg{grid-template-columns:1fr}}
+.dt2{position:relative}.dt2 input[type=text]{padding-right:46px}.cal{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;font-size:17px;overflow:hidden;margin:0}.cal:hover{background:var(--line)}.nat{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
+.dw.empty input{color:inherit}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
@@ -197,7 +199,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 <div><label for="pex">Exchange</label><select id="pex"><option>NSE</option><option>BSE</option></select></div>
 <div><label for="pqty">Quantity</label><input id="pqty" type="number" inputmode="numeric" placeholder="100"></div>
 <div><label for="pbuy">Buy price (₹)</label><input id="pbuy" type="number" inputmode="decimal" placeholder="2500"></div>
-<div><label for="pdate">Buy date <button type="button" class="lk" onclick="setDate('pdate',todayStr())">Today</button></label><div class="dw" id="dw1"><input id="pdate" type="date"><span>Select date</span></div></div>
+<div><label for="pdate">Buy date <button type="button" class="lk" onclick="setDate('pdate',todayStr())">Today</button></label><div class="dw dt2" id="dw1"><input id="pdate" type="text" inputmode="numeric" autocomplete="off" placeholder="DD/MM/YYYY" maxlength="10"><label class="cal" title="Pick from calendar">📅<input type="date" class="nat" tabindex="-1" aria-label="Pick date" onchange="pickDate('pdate',this.value)"></label></div></div>
 <div><label for="pth">Note</label><input id="pth" placeholder="44-DMA bullish cross" maxlength="120"></div>
 </div>
 <div class="fh">Risk levels</div>
@@ -207,7 +209,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 <div class="fh">Exit (fill in when you sell)</div>
 <div class="fg">
-<div><label for="psd">Sell date <button type="button" class="lk" onclick="setDate('psd',todayStr())">Today</button><button type="button" class="lk" onclick="setDate('psd','')">Clear</button></label><div class="dw" id="dw2"><input id="psd" type="date"><span>Select date</span></div></div>
+<div><label for="psd">Sell date <button type="button" class="lk" onclick="setDate('psd',todayStr())">Today</button><button type="button" class="lk" onclick="setDate('psd','')">Clear</button></label><div class="dw dt2" id="dw2"><input id="psd" type="text" inputmode="numeric" autocomplete="off" placeholder="DD/MM/YYYY" maxlength="10"><label class="cal" title="Pick from calendar">📅<input type="date" class="nat" tabindex="-1" aria-label="Pick date" onchange="pickDate('psd',this.value)"></label></div></div>
 <div><label for="psp">Sell price (₹)</label><input id="psp" type="number" inputmode="decimal" placeholder="Price you sold at"></div>
 </div>
 <div class="sub" style="margin-top:6px">Leave both empty while you still hold it. Entering both moves it to Closed and stops its alerts.</div>
@@ -223,7 +225,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.2</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.3</span></footer>
 
 </main>
 <script>
@@ -416,18 +418,28 @@ function calc(p){const q=quote(p);
  const px=q?q.price:null,cost=p.buy*p.qty;
  return{q,cl:false,px,value:px!=null?px*p.qty:cost,cost,pl:px!=null?(px-p.buy)*p.qty:null,pct:px!=null?(px/p.buy-1)*100:null,days:dd(p.date),st:status(p,q),
   day:q&&q.chg!=null&&px!=null?p.qty*(px-px/(1+q.chg/100)):null}}
-function setDate(id,v){$(id).value=v;dwSync()}
-function dwSync(){[["pdate","dw1"],["psd","dw2"]].forEach(([i,w])=>$(w).classList.toggle("empty",!$(i).value))}
-["pdate","psd"].forEach(i=>["input","change"].forEach(ev=>$(i).addEventListener(ev,dwSync)));
+const pad2=n=>String(n).padStart(2,"0");
+function parseD(t){t=String(t||"").trim();if(!t)return"";let y,m,d,x;
+ if(x=/^(\d{4})-(\d{2})-(\d{2})$/.exec(t)){y=+x[1];m=+x[2];d=+x[3]}
+ else if(x=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(t)){d=+x[1];m=+x[2];y=+x[3];if(y<100)y+=2000}
+ else return null;
+ const dt=new Date(Date.UTC(y,m-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d||y<1990)return null;
+ return `${y}-${pad2(m)}-${pad2(d)}`}
+function fmtD(iso){const x=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");return x?`${x[3]}/${x[2]}/${x[1]}`:""}
+function setDate(id,iso){$(id).value=fmtD(iso)}
+function pickDate(id,iso){if(iso)setDate(id,iso)}
+function dwSync(){}
+["pdate","psd"].forEach(i=>$(i).addEventListener("input",()=>{const e=$(i),v=e.value;if(!/^[\d\/.\-]*$/.test(v)||/^\d{4}-/.test(v))return;const d=v.replace(/\D/g,"").slice(0,8);e.value=d.slice(0,2)+(d.length>2?"/"+d.slice(2,4):"")+(d.length>4?"/"+d.slice(4):"")}));
 function openForm(p){editing=p&&p.id?p.id:null;$("ptitle").textContent=p&&p.id?(isClosed(p)?"Edit closed trade":"Edit position"):"Add position";
  const set=(i,v)=>$(i).value=v??"";p=p||{exchange:"NSE",date:todayStr(),alertMa:true,alertSl:true,alertTg:true};
- set("psym",p.symbol);set("pex",p.exchange);set("pqty",p.qty);set("pbuy",p.buy);set("psl",p.sl);set("ptg",p.target);set("pdate",p.date);set("pth",p.thesis);set("psd",p.sellDate);set("psp",p.sellPrice);
+ set("psym",p.symbol);set("pex",p.exchange==="BSE"?"BSE":"NSE");set("pqty",p.qty);set("pbuy",p.buy);set("psl",p.sl);set("ptg",p.target);setDate("pdate",p.date);set("pth",p.thesis);setDate("psd",p.sellDate);set("psp",p.sellPrice);
  $("a1").checked=p.alertMa!==false;$("a2").checked=p.alertSl!==false;$("a3").checked=p.alertTg!==false;$("pmsg").textContent="";$("pform").hidden=false;quickFill();dwSync();$("pform").scrollIntoView({behavior:"smooth",block:"start"})}
 function closeForm(){$("pform").hidden=true;editing=null}
 function quickFill(){const mk=(id,t,arr,sign)=>$(id).innerHTML=arr.map(x=>`<button type="button" class="chip" onclick="fillPct('${t}',${sign*x})">${sign<0?"−":"+"}${x}%</button>`).join("");mk("slq","psl",[5,8,10],-1);mk("tgq","ptg",[10,15,20],1)}
 function fillPct(t,p){const b=num("pbuy");if(!b){$("pmsg").textContent="Enter the buy price first.";return}$(t).value=(b*(1+p/100)).toFixed(2);$("pmsg").textContent=""}
 function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,buy:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),date:todayStr(),qty:"",thesis:"From screener",alertMa:true,alertSl:true,alertTg:true};go("pos");if(!ME){PENDING=draft;return}openForm(draft)}
-function savePosition(){const sym=$("psym").value.trim().toUpperCase(),e=$("pex").value,q=num("pqty"),b=num("pbuy"),sl=num("psl"),tg=num("ptg"),sd=$("psd").value,sp=num("psp"),bd=$("pdate").value,m=t=>{$("pmsg").textContent=t};
+function savePosition(){const sym=$("psym").value.trim().toUpperCase(),e=$("pex").value,q=num("pqty"),b=num("pbuy"),sl=num("psl"),tg=num("ptg"),sd=parseD($("psd").value),sp=num("psp"),bd=parseD($("pdate").value),m=t=>{$("pmsg").textContent=t};
+ if(sd===null||bd===null)return m("Enter dates as DD/MM/YYYY, for example 09/10/2026.");
  if(!sym)return m("Enter a symbol.");if(!q||q<=0)return m("Enter a quantity above zero.");if(!b||b<=0)return m("Enter the buy price.");
  if(sl!==null&&sl>=b&&!sd)return m("Stop loss must be below the buy price.");if(tg!==null&&tg<=b&&!sd)return m("Target must be above the buy price.");
  if(!!sd!==(sp!==null&&sp>0))return m("To record a sale, enter both the sell date and the sell price. Clear both if you still hold it.");
