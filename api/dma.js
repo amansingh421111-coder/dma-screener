@@ -96,7 +96,8 @@ module.exports = async (req, res) => {
       const m = body.message;
       if (m && m.text && m.chat) {
         const chat = String(m.chat.id), text = m.text.trim();
-        const say = (t) => fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/sendMessage`, {
+        try { await redis(["SET", "cfg:bot", E.BOT_TOKEN]); } catch (e) {}
+      const say = (t) => fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/sendMessage`, {
           method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: t }) });
         if (text.startsWith("/start")) {
           const tok = text.split(/\s+/)[1];
@@ -230,6 +231,8 @@ module.exports = async (req, res) => {
       if (!E.BOT_TOKEN || !E.BOT_USERNAME) return send(res, { error: "Telegram bot is not configured yet." }, 503);
       const t = crypto.randomBytes(16).toString("hex");
       await redis(["SET", "link:" + t, uid, "EX", 600]); await redis(["SADD", "users", uid]);
+      // let the screener use the very same bot as this site (avoids a mismatched GitHub secret)
+      await redis(["SET", "cfg:bot", E.BOT_TOKEN]);
       return send(res, { url: `https://t.me/${E.BOT_USERNAME.replace("@", "")}?start=${t}` });
     }
 

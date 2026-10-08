@@ -47,7 +47,7 @@ jobs:
       - name: Save results
         run: |
           git config user.name dma-bot; git config user.email dma-bot@users.noreply.github.com
-          for f in signals.json state.json mcap.json universe_nse.csv universe_bse.csv backtest.csv backtest.txt; do [ -e "$f" ] && git add "$f"; done
+          for f in signals.json state.json mcap.json nodata.json universe_nse.csv universe_bse.csv backtest.csv backtest.txt; do [ -e "$f" ] && git add "$f"; done
           git diff --cached --quiet && exit 0
           git commit -m "data update"
           for i in 1 2 3; do

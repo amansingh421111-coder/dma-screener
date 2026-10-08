@@ -120,6 +120,18 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 @media(min-width:900px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}#filters{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;display:block!important}#ft{display:none}}
 @media(max-width:760px){.tiles,.sum{grid-template-columns:repeat(2,1fr)}.bar select{display:block}.seg{max-width:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.dg{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start;text-align:left}
+.dh{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--ink);font-size:15px}
+.chart{width:100%;height:auto;display:block}.chart .gr{stroke:var(--line);stroke-width:1}.chart .ax{fill:var(--mute);font-size:10px}
+.lg{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:4px}.lg i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}.lg i.ds{background:repeating-linear-gradient(90deg,var(--mute) 0 5px,transparent 5px 8px)}.lg .sub{margin-left:auto}
+.rg{margin-top:14px}.rb{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--sell),var(--near),var(--buy));opacity:.8}.rb span{position:absolute;top:-4px;width:4px;height:14px;border-radius:2px;background:#fff;transform:translateX(-2px)}
+.stg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.st{background:var(--bg);padding:9px 12px;display:flex;flex-direction:column;gap:2px}.st span{font-size:11.5px;color:var(--mute)}.st b{font-size:14px;color:var(--ink);font-weight:600}
+.why{margin-top:12px;padding:12px 14px;border-left:3px solid var(--c);background:var(--cb);border-radius:6px;font-size:13px;line-height:1.5;color:var(--mute)}.why b{display:block;color:var(--ink);margin-bottom:4px;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.acts .btn{text-decoration:none}
+.src{font-size:11.5px;color:var(--mute);margin:12px 0 0;opacity:.8}
+@media(max-width:760px){.dg{grid-template-columns:1fr}}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
@@ -211,7 +223,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file.</footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <span id="ver" style="opacity:.6">Build 2026-10-09.2</span></footer>
 
 </main>
 <script>
@@ -265,15 +277,25 @@ function sortBy(k){sortDir=sortKey===k?-sortDir:(k==="symbol"||k==="exchange"?1:
 function gauge(s){const L=5,p=Math.max(-L,Math.min(L,s.pct)),pos=50+p/L*50,nb=(data.near_pct||1.5)/L*50,fl=p>=0?`left:50%;width:${pos-50}%`:`left:${pos}%;width:${50-pos}%`;
  return `<div class="g"><span class="band" style="left:${50-nb}%;width:${nb*2}%"></span><span class="fill" style="${fl}"></span><span class="mid"></span><span class="pin" style="left:${pos}%"></span></div><div class="gl"><span>−5%</span><span>${data.ma_period}-DMA</span><span>+5%</span></div>`}
 function chart(s){const c=s.spark,m=s.sparkma;if(!c||c.length<5)return"";
- const all=c.concat((m||[]).filter(x=>x!=null)),lo=Math.min(...all),hi=Math.max(...all),W=300,H=84,px=i=>i/(c.length-1)*W,py=v=>H-4-(v-lo)/(hi-lo||1)*(H-8);
+ const all=c.concat((m||[]).filter(x=>x!=null)),lo=Math.min(...all),hi=Math.max(...all),W=520,H=170,L=8,R=58,T=10,B=10,iw=W-L-R,ih=H-T-B,px=i=>L+i/(c.length-1)*iw,py=v=>T+ih-(v-lo)/(hi-lo||1)*ih;
  const ln=a=>a.map((v,i)=>v==null?null:`${px(i).toFixed(1)},${py(v).toFixed(1)}`).filter(Boolean).join(" ");
- return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Last 60 days, price and ${data.ma_period}-day average"><polyline points="${ln(m||[])}" fill="none" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="4 3"/><polyline points="${ln(c)}" fill="none" stroke="var(--c)" stroke-width="2"/></svg><div class="gl"><span>60 days ago</span><span>solid: price · dashed: ${data.ma_period}-DMA</span><span>today</span></div>`}
+ const pts=ln(c),last=c[c.length-1],area=`${px(0).toFixed(1)},${T+ih} ${pts} ${px(c.length-1).toFixed(1)},${T+ih}`;
+ const grid=[hi,(hi+lo)/2,lo].map(v=>`<line x1="${L}" x2="${W-R}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}" class="gr"/><text x="${W-R+6}" y="${(py(v)+4).toFixed(1)}" class="ax">${Math.round(v).toLocaleString("en-IN")}</text>`).join("");
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Last 60 trading days: price and ${data.ma_period}-day average">${grid}<polygon points="${area}" fill="var(--c)" opacity=".10"/><polyline points="${ln(m||[])}" fill="none" stroke="var(--mute)" stroke-width="1.5" stroke-dasharray="5 4"/><polyline points="${pts}" fill="none" stroke="var(--c)" stroke-width="2.2" stroke-linejoin="round"/><circle cx="${px(c.length-1).toFixed(1)}" cy="${py(last).toFixed(1)}" r="4" fill="var(--c)"/></svg><div class="lg"><span><i style="background:var(--c)"></i>Price</span><span><i class="ds"></i>${data.ma_period}-day average</span><span class="sub">Last 60 trading days</span></div>`}
+function rng(s){if(!s.hi52||!s.lo52||s.hi52<=s.lo52)return"";const p=Math.max(0,Math.min(100,(s.price-s.lo52)/(s.hi52-s.lo52)*100));
+ return `<div class="rg"><div class="rb"><span style="left:${p}%"></span></div><div class="gl"><span>${inr(s.lo52)}</span><span>52-week range</span><span>${inr(s.hi52)}</span></div></div>`}
 function reading(s){const side=s.pct>=0?"above":"below";
  let t=`Price is ${Math.abs(s.pct).toFixed(2)}% ${side} its ${data.ma_period}-day average`+(s.since!=null?`, and has been ${side} it for ${s.since} trading day${s.since==1?"":"s"}.`:".");
  t+=s.type==="buy"?" It has just crossed above the average, which trend followers read as a possible buy.":s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
  return t+" "+(WHY[s.candle]||"")}
-function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol;
- return `${gauge(s)}<div style="height:12px"></div>${chart(s)}<div class="facts"><div>${data.ma_period}-DMA<b>${inr(s.ma)}</b></div><div>Market cap<b>${cr(s.mcap)}${s.mcap_cat?" · "+s.mcap_cat:""}</b></div><div>Volume<b>${(s.volume/1e5).toFixed(1)} lakh</b></div><div>52W high<b>${s.hi52?inr(s.hi52):"n/a"}</b></div><div>52W low<b>${s.lo52?inr(s.lo52):"n/a"}</b></div></div>${esc(reading(s))}<div style="margin-top:12px"><a target="_blank" rel="noopener" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tv)}">Open chart</a><button class="btn sm pri" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" data-px="${s.price}" onclick="event.stopPropagation();track(this)">＋ Add to My Positions</button></div>`}
+function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.volume;
+ const vol=v>=1e7?(v/1e7).toFixed(2)+" Cr":v>=1e5?(v/1e5).toFixed(1)+" lakh":Number(v).toLocaleString("en-IN");
+ const st=(l,x,c)=>`<div class="st"><span>${l}</span><b${c?` class="${c}"`:""}>${x}</b></div>`;
+ return `<div class="dg"><div class="dl"><div class="dh"><b>${esc(s.name||s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span></div>${chart(s)}${rng(s)}</div>
+ <div class="dr"><div class="stg">${st("Price",inr(s.price))}${st("Today",s.chg==null?"–":sg(s.chg)+"%",s.chg>0?"pos":s.chg<0?"neg":"")}${st(data.ma_period+"-DMA",inr(s.ma))}${st("Vs average",sg(s.pct)+"%",s.pct>0?"pos":"neg")}${st("Market cap",cr(s.mcap)+(s.mcap_cat?" · "+s.mcap_cat:""))}${st("Volume",vol)}${st("Volume vs avg",s.vol_x!=null?s.vol_x+"×":"–")}${st("RSI (14)",s.rsi??"–")}${st("200-DMA",s.above200==null?"–":s.above200?"Above":"Below")}${st("Days "+(s.pct>=0?"above":"below"),s.since??"–")}</div>
+ <div class="why"><b>What this means</b>${esc(reading(s))}</div>
+ <div class="acts"><button class="btn sm pri" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" data-px="${s.price}" onclick="event.stopPropagation();track(this)">＋ Add to My Positions</button><a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tv)}">Open full chart ↗</a></div>
+ <p class="src">Prices: Yahoo Finance (about 15 minutes delayed). Listings and filters: NSE and BSE official files. Research alert only, not investment advice.</p></div></div>`}
 const LAB={buy:"Buy",sell:"Sell",near:"Near"},COL={buy:"var(--buy)",sell:"var(--sell)",near:"var(--near)"},COLB={buy:"var(--buy-bg)",sell:"var(--sell-bg)",near:"var(--near-bg)"};
 const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
 const stars=s=>s.candle?`${SHORT[s.candle]||esc(s.candle)} <span class="star">${"★".repeat(s.score||0)}${"☆".repeat(3-(s.score||0))}</span>`:"–";
@@ -291,7 +313,7 @@ function set_(id,k){const S={exch,caps,candles}[id];S.has(k)?S.delete(k):S.add(k
 function renderScreen(){
  const miss=["candle","rsi","trend","hi","since","mcap"].filter(k=>!has(k)),msgs=[];
  if(miss.length&&data.signals.length)msgs.push(`<b>Some data is missing (${miss.join(", ")}).</b> Update <b>screen.py</b> in GitHub, then run <b>Actions → screener → Run workflow → run</b>. Related filters are greyed out until then.`);
- if(data.signals.length&&!data.signals.some(s=>ex(s)==="BSE")&&data.universe!=="Sample")msgs.push(data.bse_error?`BSE stocks could not be loaded on the last run (${esc(data.bse_error)}). NSE stocks are unaffected.`:(data.bse_stats?`No BSE stocks matched on the last run: ${data.bse_stats.listed} listed, ${data.bse_stats.priced} had price data, ${data.bse_stats.signals} passed the filters.`:`No BSE stocks in the data yet. They appear after the next screener run (BSE is scanned hourly).`));
+ if(data.signals.length&&!data.signals.some(s=>ex(s)==="BSE")&&data.universe!=="Sample")msgs.push(data.bse_error?`BSE stocks could not be loaded on the last run (${esc(data.bse_error)}). NSE stocks are unaffected.`:(data.bse_stats?`No BSE stocks matched on the last run: ${data.bse_stats.listed} listed, ${data.bse_stats.priced} had price data, ${data.bse_stats.signals} passed the filters.${data.bse_stats.rejected?" Rejected: "+Object.entries(data.bse_stats.rejected).map(([k,v])=>v+" "+k.replace(/_/g," ")).join(", ")+".":""}`:`No BSE stocks in the data yet. They appear after the next screener run (BSE is scanned hourly).`));
  $("warn").hidden=!msgs.length;$("warn").innerHTML=msgs.join("<br>");
  document.querySelectorAll("[data-need]").forEach(e=>e.classList.toggle("off",!has(e.dataset.need)));
  $("tiles").innerHTML=TABS.map(([k,l])=>`<button class="tile ${k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?data.signals.length:data.signals.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("");
@@ -482,8 +504,7 @@ function renderPos(){
  if(al&&CLOUD.ok&&CLOUD.connected&&data&&data.cloud){const cl=data.cloud;
   if(cl.redis===false)n+=`<b>Alerts will not send yet:</b> the screener on GitHub has no UPSTASH_URL / UPSTASH_TOKEN secrets. Add them under Settings → Secrets and variables → Actions, then run the screener. `;
   else if(cl.error)n+=`<b>Alerts store error on the last run:</b> ${esc(cl.error)} `;
-  else if(cl.token_set===false)n+=`<b>Alerts will not send yet:</b> the GitHub secret TELEGRAM_TOKEN is missing. Add your bot token under Settings → Secrets and variables → Actions, then run the screener. `;
-  else if(cl.send&&cl.send.ok===false)n+=`<b>Telegram refused the alert:</b> ${esc(cl.send.error||"unknown error")}. ${/unauthor/i.test(cl.send.error||"")?"The TELEGRAM_TOKEN secret in GitHub is not a valid bot token.":"The TELEGRAM_TOKEN secret in GitHub must be the token of the same bot you pressed Start on."} `;
+  else if(cl.send&&cl.send.ok===false)n+=`<b>Telegram refused the alert:</b> ${esc(cl.send.error||"unknown error")}. ${/unauthor|not found/i.test(cl.send.error||"")||[401,404].includes(cl.send.status)?"Telegram does not recognise the TELEGRAM_TOKEN secret in GitHub. Open @BotFather, send /mybots, pick your bot, tap API Token, copy the full token (it looks like 123456789:AAH...), and paste it as the TELEGRAM_TOKEN secret with no spaces or quotes. It must be the same bot as the one on Vercel.":"The TELEGRAM_TOKEN secret in GitHub must be the token of the same bot you pressed Start on."} `;
   else if(!cl.connected)n+=`The last screener run did not see your Telegram link. Run the screener once more. `}
  if(al&&CLOUD.ok===false)n+=`<b>To get alerts without the server:</b> tap Export, then upload <b>positions.json</b> to your GitHub repo.`;
  $("psync").hidden=!open.length||!n;$("psync").innerHTML=n}

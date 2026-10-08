@@ -96,6 +96,56 @@ def bse_universe(skip_isins, groups):
         rec = pd.read_csv(cache, dtype=str).fillna("").to_dict("records")
     return [dict(symbol=r["symbol"], name=r["name"], isin=r["isin"], exchange="BSE", yahoo=str(r["code"]) + ".BO") for r in rec]
 
+PRE = {}
+BH_H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
+NSE_BHAV = "https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_{d:%d%m%Y}.csv"
+
+def _latest_bhav(url, headers, parse):
+    day, last = dt.date.today(), None
+    for _ in range(8):
+        if day.weekday() < 5:
+            try:
+                r = requests.get(url.format(d=day), headers=headers, timeout=40); r.raise_for_status()
+                df = pd.read_csv(io.StringIO(r.text), dtype=str).fillna(""); df.columns = [c.strip() for c in df.columns]
+                out = parse(df)
+                if len(out) > 300: return out, day
+            except Exception as e: last = e
+        day -= dt.timedelta(days=1)
+    raise last or ValueError("no bhavcopy")
+
+def _num(x):
+    try: return float(str(x).replace(",", "").strip())
+    except Exception: return None
+
+def prefilter(items, c):
+    """Drop stocks that cannot pass the price / volume filters, using the exchanges' official end-of-day files.
+    Fewer tickers to download = much faster runs. Any failure leaves the list untouched."""
+    def nse_parse(df):
+        df = df[df["SERIES"].str.strip() == "EQ"]
+        return {r["SYMBOL"].strip(): (_num(r["CLOSE_PRICE"]), _num(r["TTL_TRD_QNTY"])) for r in df.to_dict("records")}
+    def bse_parse(df):
+        return {str(r["FinInstrmId"]).strip(): (_num(r["ClsPric"]), _num(r["TtlTradgVol"])) for r in df.to_dict("records")}
+    keep, info = [], {}
+    maps = {}
+    for ex, url, hd, fn in (("NSE", NSE_BHAV, BH_H, nse_parse),
+                            ("BSE", BSE_BHAV, dict(BH_H, Referer="https://www.bseindia.com/"), bse_parse)):
+        try: maps[ex], day = _latest_bhav(url, hd, fn); info[ex] = str(day)
+        except Exception as e: log.warning("%s prefilter unavailable (%s)", ex, str(e)[:100]); info[ex] = None
+    for u in items:
+        m = maps.get(u["exchange"])
+        if m is None: keep.append(u); continue
+        key = u["symbol"] if u["exchange"] == "NSE" else u["yahoo"].split(".")[0]
+        v = m.get(key)
+        if v is None: continue                      # did not trade on the latest day
+        px, vol = v
+        mv = c["bse_min_avg_volume"] if u["exchange"] == "BSE" else c["min_avg_volume"]
+        if px is not None and px < c["min_price"] * 0.97: continue
+        if vol is not None and vol < mv * 0.15: continue
+        keep.append(u)
+    PRE.update(info=info, before=len(items), after=len(keep))
+    log.info("prefilter %s: %d -> %d tickers", info, len(items), len(keep))
+    return keep
+
 def moving_avg(close, kind, n):
     return close.rolling(n).mean() if kind.upper() == "SMA" else close.ewm(span=n, adjust=False).mean()
 
@@ -138,18 +188,23 @@ def extras(close, m, c0, c1):
                 spark=[round(float(x), 2) for x in close.tail(60)],
                 sparkma=[None if pd.isna(x) else round(float(x), 2) for x in m.tail(60)])
 
+WHY = {}; CUR = ["NSE"]
+def _no(r):
+    k = f"{CUR[0]}:{r}"; WHY[k] = WHY.get(k, 0) + 1
+
 def classify(sym, df, c):
     """Return a signal dict (buy/sell/near) or None. Pure function, easy to test."""
     df = df.dropna(subset=["Close"])
-    if len(df) < c["ma_period"] + 2: return None
+    if len(df) < c["ma_period"] + 2: _no("short_history"); return None
     close = df["Close"]; m = moving_avg(close, c["ma_type"], c["ma_period"])
     c0, c1, m0, m1 = close.iloc[-1], close.iloc[-2], m.iloc[-1], m.iloc[-2]
-    if c0 < c["min_price"] or df["Volume"].tail(20).mean() < c["min_avg_volume"]: return None
+    if c0 < c["min_price"]: _no("low_price"); return None
+    if df["Volume"].tail(20).mean() < c["min_avg_volume"]: _no("low_volume"); return None
     pct = (c0 / m0 - 1) * 100
     if c1 <= m1 and c0 > m0: kind = "buy"
     elif c1 >= m1 and c0 < m0: kind = "sell"
     elif abs(pct) <= c["near_pct"]: kind = "near"
-    else: return None
+    else: _no("not_near_average"); return None
     name, pos = candle_info(df)
     prev_vol = df["Volume"].iloc[-21:-1].mean()
     vol_x = float(df["Volume"].iloc[-1] / prev_vol) if prev_vol > 0 else 0.0
@@ -158,25 +213,30 @@ def classify(sym, df, c):
                 volume=int(df["Volume"].iloc[-1]), type=kind, candle=name,
                 score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1), **extras(close, m, c0, c1))
 
-def fetch(tickers, batch=150, period="1y"):
-    """Download daily OHLCV for Yahoo tickers. Returns {ticker: DataFrame}."""
+def fetch(tickers, batch=100, period="1y", workers=3, budget=780):
+    """Download daily OHLCV for Yahoo tickers in parallel batches. Returns {ticker: DataFrame}."""
     import yfinance as yf
-    out = {}
-    for i in range(0, len(tickers), batch):
-        chunk = tickers[i:i + batch]; d = None
-        for attempt in range(3):
+    out = {}; t0 = time.time()
+    chunks = [tickers[i:i + batch] for i in range(0, len(tickers), batch)]
+    def one(chunk):
+        if time.time() - t0 > budget: return chunk, None
+        for attempt in range(2):
             try:
                 d = yf.download(chunk, period=period, interval="1d", group_by="ticker", threads=True,
                                 progress=False, auto_adjust=False)
-                if d is not None and not d.empty: break
-                log.warning("batch %d empty (attempt %d), retrying", i, attempt); time.sleep(8 * (attempt + 1))
+                if d is not None and not d.empty: return chunk, d
+                time.sleep(3 * (attempt + 1))
             except Exception as e:
-                log.warning("batch %d retry %d: %s", i, attempt, e); time.sleep(5 * (attempt + 1))
-        if d is None or d.empty: continue
-        for t in chunk:
-            try: out[t] = d[t][["Open", "High", "Low", "Close", "Volume"]]
-            except KeyError: pass
-        time.sleep(1)
+                log.warning("batch retry %d: %s", attempt, str(e)[:100]); time.sleep(4 * (attempt + 1))
+        return chunk, None
+    skipped = 0
+    with cf.ThreadPoolExecutor(workers) as ex:
+        for chunk, d in ex.map(one, chunks):
+            if d is None: skipped += 1; continue
+            for t in chunk:
+                try: out[t] = d[t][["Open", "High", "Low", "Close", "Volume"]]
+                except KeyError: pass
+    if skipped: log.warning("%d of %d batches returned nothing (rate limit or time budget)", skipped, len(chunks))
     return out
 
 # ---- market cap (cached; only fetched for stocks that show up in signals) ----
@@ -242,22 +302,34 @@ def cloud_users():
         CLOUD["error"] = str(e)[:150]
         log.warning("Cloud positions unavailable: %s", e); return []
 
-def send_telegram(chat, text):
-    tok = os.getenv("TELEGRAM_TOKEN")
-    if not tok:
-        log.warning("TELEGRAM_TOKEN missing; cannot message %s", chat)
-        CLOUD["send"] = {"ok": False, "status": None, "error": "TELEGRAM_TOKEN secret is missing"}; return False
+def _tokens():
+    t = []
+    if os.getenv("TELEGRAM_TOKEN"): t.append(os.getenv("TELEGRAM_TOKEN").strip())
     try:
-        r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
-                          data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
-        err = None
-        if not r.ok:
-            try: err = r.json().get("description")
-            except Exception: err = r.text[:120]
-        CLOUD["send"] = {"ok": r.ok, "status": r.status_code, "error": err}
-        log.info("telegram user alert %s %s", r.status_code, err or ""); return r.ok
-    except Exception as e:
-        CLOUD["send"] = {"ok": False, "status": None, "error": str(e)[:120]}; return False
+        r = redis(["GET", "cfg:bot"])          # the website saves its own bot token here when you press Connect
+        if r and r not in t: t.append(r)
+    except Exception: pass
+    return t
+
+def send_telegram(chat, text):
+    toks = _tokens()
+    if not toks:
+        log.warning("no Telegram token available; cannot message %s", chat)
+        CLOUD["send"] = {"ok": False, "status": None, "error": "No bot token: set the TELEGRAM_TOKEN secret, or press Connect Telegram on the site once"}; return False
+    for tok in toks:
+        try:
+            r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
+                              data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
+            err = None
+            if not r.ok:
+                try: err = r.json().get("description")
+                except Exception: err = r.text[:120]
+            CLOUD["send"] = {"ok": r.ok, "status": r.status_code, "error": err}
+            log.info("telegram user alert %s %s", r.status_code, err or "")
+            if r.ok or r.status_code not in (401, 404): return r.ok
+        except Exception as e:
+            CLOUD["send"] = {"ok": False, "status": None, "error": str(e)[:120]}
+    return False
 
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
 def pos_yahoo(p): return p["symbol"] + (".BO" if p.get("exchange") == "BSE" else ".NS")
@@ -351,9 +423,22 @@ def main():
     scan_bse = c["include_bse"] and (a.force or a.summary or now.minute < 15 or not old.get("bse_updated"))
     if scan_bse:
         items += bse_universe({u["isin"] for u in nse if u["isin"]}, c["bse_groups"])
-    data = fetch([u["yahoo"] for u in items])
+    items = prefilter(items, c)
+    # skip tickers that Yahoo has had no data for on 2+ consecutive runs (refreshed weekly) -> faster runs
+    nd = read_json("nodata.json", {}); today = now.strftime("%Y-%m-%d")
+    if nd.get("week") != now.strftime("%G-%V"): nd = {"week": now.strftime("%G-%V"), "miss": {}}
+    miss = nd["miss"]
+    todo = [u for u in items if miss.get(u["yahoo"], 0) < 2]
+    log.info("fetching %d of %d tickers (%d skipped as no-data)", len(todo), len(items), len(items) - len(todo))
+    t_fetch = time.time()
+    data = fetch([u["yahoo"] for u in todo])
+    fetch_secs = round(time.time() - t_fetch)
+    for u in todo:
+        if u["yahoo"] in data: miss.pop(u["yahoo"], None)
+        else: miss[u["yahoo"]] = miss.get(u["yahoo"], 0) + 1
+    if len(data) > 0.3 * len(todo): (ROOT / "nodata.json").write_text(json.dumps(nd))
     bse_items = [u for u in items if u["exchange"] == "BSE"]
-    bse_stats = {"listed": len(bse_items), "priced": sum(1 for u in bse_items if u["yahoo"] in data), "signals": 0} if scan_bse else (old.get("bse_stats"))
+    bse_stats = {"listed": len(bse_items), "priced": sum(1 for u in bse_items if u["yahoo"] in data), "signals": 0, "skipped": sum(1 for u in bse_items if miss.get(u["yahoo"], 0) >= 2)} if scan_bse else (old.get("bse_stats"))
     if not data: log.error("No price data fetched"); sys.exit(1)
     latest = max(d.dropna().index[-1].date() for d in data.values() if not d.dropna().empty)
     if latest != now.date() and not (a.force or a.summary):
@@ -362,11 +447,12 @@ def main():
     for u in items:
         df = data.get(u["yahoo"])
         if df is None: continue
+        CUR[0] = u["exchange"]
         s = classify(u["symbol"], df, dict(c, min_avg_volume=c["bse_min_avg_volume"]) if u["exchange"] == "BSE" else c)
         if s:
             s.update(exchange=u["exchange"], name=u["name"]); sigs.append(s)
             yh[f"{u['exchange']}:{u['symbol']}"] = u["yahoo"]
-    if scan_bse and bse_stats: bse_stats["signals"] = sum(1 for s in sigs if s["exchange"] == "BSE"); log.info("BSE stats: %s", bse_stats)
+    if scan_bse and bse_stats: bse_stats["signals"] = sum(1 for s in sigs if s["exchange"] == "BSE"); bse_stats["rejected"] = {k[4:]: v for k, v in WHY.items() if k.startswith("BSE:")}; log.info("BSE stats: %s", bse_stats)
     mc = get_mcaps([dict(key=k, yahoo=y) for k, y in yh.items()])
     for s in sigs:
         cr = mc.get(f"{s['exchange']}:{s['symbol']}"); s["mcap"] = cr; s["mcap_cat"] = mcap_cat(cr, c)
@@ -379,7 +465,7 @@ def main():
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
-         "cloud": CLOUD, "bse_stats": bse_stats,
+         "cloud": CLOUD, "fetch_secs": fetch_secs, "prefilter": PRE or None, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
