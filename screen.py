@@ -469,21 +469,27 @@ def main():
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
-    if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": []}
-    st.setdefault("sent", []); st.setdefault("pos_sent", [])
+    if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": {}}
+    st.setdefault("sent", []); st.setdefault("pos_sent", {})
+    if isinstance(st["pos_sent"], list): st["pos_sent"] = {k: 0 for k in st["pos_sent"]}
+    t_now = time.time()
+    def due(k):
+        # stop loss / target alerts repeat about hourly while the price stays beyond the level; other alerts once a day
+        last = st["pos_sent"].get(k)
+        return last is None or (k.endswith((":sl", ":tg")) and t_now - last >= 55 * 60)
     if a.summary:
         notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])); return
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
     new = [s for s in sigs if sk(s) not in st["sent"]]
     if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
         st["sent"] += [sk(s) for s in new]
-    ev = [e for e in position_events(pos, quotes, c) if e[0] not in st["pos_sent"]]
+    ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
     if ev and notify("📌 Position alerts\n" + "\n".join(t for _, t in ev) + "\n\nResearch alert only, not financial advice."):
-        st["pos_sent"] += [k for k, _ in ev]
+        st["pos_sent"].update({k: t_now for k, _ in ev})
     for u in users:
-        uev = [e for e in position_events(u["positions"], quotes, c) if f"{u['uid']}:{e[0]}" not in st["pos_sent"]]
+        uev = [e for e in position_events(u["positions"], quotes, c) if due(f"{u['uid']}:{e[0]}")]
         if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(t for _, t in uev) + "\n\nResearch alert only, not financial advice."):
-            st["pos_sent"] += [f"{u['uid']}:{k}" for k, _ in uev]; ev += uev
+            st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
     (ROOT / "state.json").write_text(json.dumps(st))
     try:
         sj = json.loads((ROOT / "signals.json").read_text()); sj["cloud"] = CLOUD
