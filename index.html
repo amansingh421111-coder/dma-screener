@@ -221,6 +221,68 @@ tr.dt td{padding:14px 16px}
 .sc{padding:8px 11px}.sc b{font-size:18px}.pc{padding:11px}
 footer{font-size:11.5px;margin-top:18px}
 @media(min-width:761px){html{zoom:.92}}
+/* ===== Strategies page ===== */
+.sx-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 16px;margin:2px 0 12px}
+.sx-head h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
+.sx-head p{margin:3px 0 0;color:var(--mute);font-size:13.5px;max-width:720px}
+.sx-asof{font-size:12.5px;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:4px 12px;background:var(--card);white-space:nowrap}
+.sx-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.sx-kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.sx-kpi .l{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600}
+.sx-kpi .v{font-size:22px;font-weight:700;line-height:1.2;margin-top:3px;letter-spacing:-.01em}
+.sx-kpi .s{font-size:12.5px;color:var(--mute);margin-top:2px}
+.sx-pos{color:var(--buy)}.sx-neg{color:var(--sell)}.sx-mut{color:var(--mute)}
+.sx-how{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
+.sx-how>summary{padding:11px 14px;cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.sx-how>summary::after{content:"+";color:var(--mute);font-size:18px;line-height:1}.sx-how[open]>summary::after{content:"–"}
+.sx-how .b{padding:0 14px 14px;font-size:13.5px;color:var(--mute);display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 28px}
+.sx-how .b div{padding-left:12px;border-left:2px solid var(--line)}.sx-how b{color:var(--ink)}
+.sx-bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-bottom:10px}
+.sx-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden;flex-wrap:wrap}
+.sx-seg button{border:0;background:none;color:var(--mute);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;border-right:1px solid var(--line)}
+.sx-seg button:last-child{border-right:0}.sx-seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.sx-bar .sp{flex:1}.sx-bar label{font-size:12.5px;color:var(--mute)}
+.sx-bar select{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.sx-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sx-t{display:block;width:100%;overflow-x:auto}
+table.sx{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px;min-width:860px}.sx-dw{position:sticky;left:0;width:min(calc(100vw - 30px),1050px)}
+table.sx th{position:sticky;top:0;background:var(--card);text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);font-weight:600;padding:10px 9px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+table.sx th.l,table.sx td.l{text-align:left}
+table.sx th:hover{color:var(--ink)}table.sx th .ar{display:inline-block;width:10px;margin-left:3px;color:var(--accent)}
+table.sx td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+table.sx tbody tr.r{cursor:pointer}table.sx tbody tr.r:hover td{background:color-mix(in srgb,var(--accent) 6%,var(--card))}
+table.sx tr.r.on td{background:color-mix(in srgb,var(--accent) 9%,var(--card));border-bottom-color:transparent}
+table.sx td.nm{white-space:normal;min-width:190px}.sx-nm{font-weight:600}.sx-fam{font-size:11.5px;color:var(--mute);margin-top:1px}
+.sx-score{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.sx-score b{font-size:15px;min-width:26px;text-align:right}
+.sx-meter{width:54px;height:6px;border-radius:99px;background:var(--line);overflow:hidden}.sx-meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.sx-t1 .sx-meter i{background:var(--buy)}
+.sx-chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--line);color:var(--mute)}
+.sx-chip.g{background:var(--buy-bg);color:var(--buy)}.sx-chip.a{background:var(--near-bg);color:var(--near)}.sx-chip.r{background:var(--sell-bg);color:var(--sell)}
+tr.sx-d>td{padding:0;text-align:left;white-space:normal;background:color-mix(in srgb,var(--accent) 3%,var(--card));border-bottom:1px solid var(--line)}
+.sx-panel{padding:16px 16px 18px}
+.sx-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px}
+.sx-tile{border:1px solid var(--line);border-radius:10px;padding:8px 11px;background:var(--card)}
+.sx-tile .l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);font-weight:600}.sx-tile .v{font-size:17px;font-weight:700;margin-top:1px}
+.sx-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 24px;margin-bottom:14px}
+.sx-panel h4{margin:0 0 5px;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:700}
+.sx-panel p,.sx-panel li{font-size:13.5px;margin:0;color:var(--ink)}.sx-panel .m{color:var(--mute)}
+.sx-sub{margin:16px 0 6px}
+table.sx2{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px}
+table.sx2 th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mute);font-weight:600;text-align:right;padding:6px 7px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sx2 td{padding:7px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sx2 th:first-child,table.sx2 td:first-child{text-align:left}table.sx2 tr:last-child td{border-bottom:0}
+.sx-w{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.sx-parts{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.sx-parts li{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}.sx-parts li span:first-child{color:var(--mute)}.sx-parts b{white-space:nowrap}
+.sx-m{display:none}
+.sx-mc{border-bottom:1px solid var(--line);padding:12px 14px}.sx-mc:last-child{border-bottom:0}
+.sx-mc .tp{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;cursor:pointer}
+.sx-mc .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 10px;margin-top:10px}
+.sx-mc .mg>div{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}.sx-mc .mg b{display:block;font-size:14px;text-transform:none;letter-spacing:0;color:var(--ink);margin-top:1px}
+.sx-mc .sx-panel{padding:14px 0 4px}
+.sx-sig a{color:var(--accent);font-weight:600;text-decoration:none}
+@media(max-width:760px){.sx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sx-t{display:none}.sx-m{display:block}.sx-bar .sp{display:none}.sx-seg button{padding:7px 11px}}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
@@ -333,7 +395,7 @@ footer{font-size:11.5px;margin-top:18px}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.3</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.5</span></footer>
 
 </main>
 <script>
@@ -908,39 +970,52 @@ function stratLabel(key,pos,px){const buys=stratBuys(key);const ls=buys&&buys.le
  if(!STRAT||!STRAT.states)return null;if(buys===null)return null;return buys.length?{l:"Buy",c:"buy",why:ls}:{l:"Wait",c:"ex",why:"No strategy with a score of "+SMIN()+" or more is signalling"}}
 function stratChip(key,full,pos,px){const r=stratLabel(key,pos,px);if(!r)return "";const t=`<span class="tag ${r.c}" title="${esc(r.why)}">${r.l}</span>`;return full?t+`<span class="sub" style="display:block;margin-top:2px">${esc(r.why)}</span>`:t}
 const pc1=v=>v==null?"–":(v*100).toFixed(1)+"%";
+let SDIR=-1;
+const SCOLS=[["name","Strategy",1,s=>s.name.toLowerCase()],["score","Score",0,s=>s.stars||0],["rr","Stop / target",0,s=>s.params.target/s.params.stop],["trades","Trades",0,s=>s.test?s.test.n:null],["win","Won",0,s=>s.test?s.test.win_rate:null],["avg","Avg / trade",0,s=>s.test?s.test.avg_ret:null],["edge","Edge",0,s=>s.test&&s.test.edge!=null?s.test.edge:null],["t","Confidence",0,s=>s.test&&s.test.t!=null?s.test.t:null],["pf","Profit factor",0,s=>s.test?s.test.profit_factor:null],["sig","Signals today",0,s=>(s.today||{}).buy_n||0]];
+function sxSort(k){if(SSORT===k)SDIR=-SDIR;else{SSORT=k;SDIR=k==="name"?1:-1}render()}
+const pp=(v,d=1)=>{if(v==null)return "–";const x=Math.abs(v*100).toFixed(d);return (+x===0?"":v>0?"+":"−")+x+"%"};const pf2=v=>v==null?"–":Number(v).toFixed(2);
+const pu=v=>v==null?"–":(v*100).toFixed(1)+"%";
+const sxc=v=>v==null||Math.abs(v)<5e-4?"sx-mut":v>0?"sx-pos":"sx-neg";
+const tchip=t=>t==null?`<span class="sx-chip">–</span>`:`<span class="sx-chip ${t>=2?"g":t>=1?"a":t<=-1?"r":""}" title="Edge divided by its standard error. About 2 or more is unlikely to be luck.">t ${t.toFixed(1)}</span>`;
+const smeter=v=>`<span class="sx-score"><b>${v.toFixed(1)}</b><span class="sx-meter"><i style="width:${v/5*100}%"></i></span></span>`;
+function sxTbl(rows){const r=(l,t)=>t?`<tr><td>${l}</td><td>${t.n.toLocaleString("en-IN")}</td><td>${pu(t.win_rate)}</td><td class="${sxc(t.avg_ret)}">${pp(t.avg_ret)}</td><td>${t.baseline!=null?pp(t.baseline):"–"}</td><td class="${sxc(t.edge)}">${pp(t.edge)}</td><td>${t.t??"–"}</td><td>${pf2(t.profit_factor)}</td><td>${pu(t.hit_target)} / ${pu(t.hit_stop)} / ${pu(t.hit_time)}</td><td>${pu(t.worst)}</td><td>${t.worst_streak}</td></tr>`:`<tr><td>${l}</td><td colspan="10" class="sx-mut" style="text-align:left">Too few trades</td></tr>`;
+ return `<div class="sx-w"><table class="sx2"><thead><tr><th>Period</th><th>Trades</th><th>Won</th><th>Avg / trade</th><th>Random entries</th><th>Edge</th><th>t</th><th>Profit factor</th><th>Target / stop / time</th><th>Worst</th><th>Losing run</th></tr></thead><tbody>${rows.map(x=>r(x[0],x[1])).join("")}</tbody></table></div>`}
+function sxDetail(s){const t=s.test||{},pm=s.params,td=s.today||{},src=s.source,up=(STRAT.market||{}).above_200;
+ const tile=(l,v,c)=>`<div class="sx-tile"><div class="l">${l}</div><div class="v ${c||""}">${v}</div></div>`;
+ const mood=(l,x)=>x?`<tr><td>${l}</td><td>${x.n.toLocaleString("en-IN")}</td><td>${pu(x.win_rate)}</td><td class="${sxc(x.avg_ret)}">${pp(x.avg_ret)}</td><td>${pf2(x.profit_factor)}</td><td>${pu(x.worst)}</td></tr>`:`<tr><td>${l}</td><td colspan="5" class="sx-mut" style="text-align:left">Too few trades</td></tr>`;
+ const sig=(td.buy||[]).length?`<div class="sx-w sx-sig"><table class="sx2" style="min-width:420px"><thead><tr><th>Stock</th><th>Close</th><th>Stop loss</th><th>Target</th></tr></thead><tbody>${td.buy.slice(0,30).map(x=>`<tr><td><a target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent("NSE:"+x.s)}">${esc(x.s)}</a></td><td>${inr(x.c)}</td><td>${inr(x.stop)}</td><td>${inr(x.target)}</td></tr>`).join("")}</tbody></table></div>${td.buy_n>30?`<p class="m" style="margin-top:6px">+${td.buy_n-30} more not shown</p>`:""}`:`<p class="m">No stock is signalling today.</p>`;
+ return `<div class="sx-panel"><div class="sx-tiles">${tile("Edge",pp(t.edge),sxc(t.edge))}${tile("Confidence (t)",t.t??"–")}${tile("Avg / trade",pp(t.avg_ret),sxc(t.avg_ret))}${tile("Random entries",t.baseline!=null?pp(t.baseline):"–")}${tile("Won",pu(t.win_rate))}${tile("Profit factor",pf2(t.profit_factor))}${tile("Trades",t.n!=null?t.n.toLocaleString("en-IN"):"–")}</div>
+ <div class="sx-cols"><div><h4>The rule</h4><p>${esc(s.rule)}</p></div>
+ <div><h4>How a trade ends</h4><p>Stop loss <b>${pm.stop}%</b> below your buy price. Target <b>${pm.target}%</b> above it (risk to reward 1 : ${(pm.target/pm.stop).toFixed(1)}). Otherwise sell at the close after <b>${pm.max_hold}</b> trading days.</p><p class="m" style="margin-top:4px">Picked from ${(s.grid||[]).length} combinations using only the earlier period.</p></div>
+ <div><h4>Where it comes from</h4><p>${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(src.url)}" style="color:var(--accent)">${esc(src.name)}</a>`:"A common technical-analysis rule. No single published source was checked."}</p>${src&&src.note?`<p class="m" style="margin-top:4px">${esc(src.note)}</p>`:""}</div></div>
+ <h4 class="sx-sub">Backtest</h4>${sxTbl([["Earlier (stop and target chosen here)",s.train],["Later (score is based on this)",s.test]])}
+ <h4 class="sx-sub">By market mood, later period</h4><div class="sx-w"><table class="sx2" style="min-width:480px"><thead><tr><th>Nifty at the signal</th><th>Trades</th><th>Won</th><th>Avg / trade</th><th>Profit factor</th><th>Worst</th></tr></thead><tbody>${mood("Above its 200-day average"+(up===true?" (today)":""),s.test_up)}${mood("Below its 200-day average"+(up===false?" (today)":""),s.test_down)}</tbody></table></div>
+ <div class="sx-cols" style="margin-top:16px"><div><h4>How the score was worked out</h4><ul class="sx-parts">${(s.score_parts||[]).map(x=>`<li><span>${esc(x[0])}</span><b class="${x[1]<0?"sx-neg":""}">${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}<li><span><b>Total</b></span><b>${(s.stars||0).toFixed(1)} of 5</b></li></ul></div>
+ <div><h4>Signals today (${td.buy_n||0})</h4>${sig}<p class="m" style="margin-top:6px">Stop and target are measured from your actual buy price (tomorrow’s open); these levels use today’s close as a guide.</p></div></div></div>`}
 function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div class="empty">Loading…</div>`;
- if(!S.strategies||!S.strategies.length||!S.strategies[0].params)return $("vStrat").innerHTML=`<div class="empty">No strategy results yet.<br>They are built by the “strategies” workflow on GitHub (Saturday morning, or run it by hand). The first full test takes a while.</div>`;
- const M=S.market||{},up=M.above_200,stars=n=>"★".repeat(Math.floor(n))+(n%1?"½":"")+"☆".repeat(5-Math.ceil(n));
- const fams=["All"].concat([...new Set(S.strategies.map(s=>s.family||"Other"))].sort());
- const val={score:s=>s.stars||0,avg:s=>s.test?s.test.avg_ret:-9,trades:s=>s.test?s.test.n:0,signals:s=>(s.today||{}).buy_n||0,name:s=>0};
- let list=S.strategies.filter(s=>SFAM==="All"||(s.family||"Other")===SFAM);
- list=list.slice().sort((a,b)=>SSORT==="name"?a.name.localeCompare(b.name):(val[SSORT](b)-val[SSORT](a))||(b.stars-a.stars));
- const cell=(t,k,f)=>t?f(t[k]):"–";
- const tr=s=>{const t=s.test,pm=s.params;return `<tr class="clk" onclick="toggleS('${s.id}')"><td><b>${(s.stars||0).toFixed(1)}</b></td><td style="text-align:left">${esc(s.name)}<div class="sub">${esc(s.family||"")}</div></td><td>−${pm.stop}% / +${pm.target}%</td><td>${t?t.n:"–"}</td><td>${cell(t,"win_rate",pc1)}</td><td><span class="${t?pcl(t.avg_ret):""}">${cell(t,"avg_ret",pc1)}</span></td><td><span class="${t&&t.edge!=null?pcl(t.edge):""}">${t&&t.edge!=null?pc1(t.edge):"–"}</span></td><td>${t?(t.profit_factor??"–"):"–"}</td><td>${(s.today||{}).buy_n||0}</td></tr>`};
- const row=(l,t)=>t?`<tr><td>${l}</td><td>${t.n}</td><td>${pc1(t.win_rate)}</td><td><span class="${pcl(t.avg_ret)}">${pc1(t.avg_ret)}</span></td><td>${t.profit_factor??"–"}</td><td>${t.baseline!=null?pc1(t.baseline):"–"}</td><td>${t.edge!=null?`<span class="${pcl(t.edge)}">${pc1(t.edge)}</span>`:"–"}</td><td>${t.t??"–"}</td><td>${pc1(t.avg_win)}</td><td>${pc1(t.avg_loss)}</td><td>${pc1(t.hit_target)} / ${pc1(t.hit_stop)} / ${pc1(t.hit_time)}</td><td>${t.median_days}d</td><td>${pc1(t.worst)}</td><td>${t.worst_streak}</td></tr>`:`<tr><td>${l}</td><td colspan="13" class="sub">Too few trades</td></tr>`;
- const hdr=`<thead><tr><th>Period</th><th>Trades</th><th>Won</th><th>Avg per trade</th><th>Profit factor</th><th>Random entries, same exits</th><th>Edge</th><th>Confidence (t)</th><th>Avg win</th><th>Avg loss</th><th>Target / stop / time</th><th>Typical hold</th><th>Worst trade</th><th>Losing streak</th></tr></thead>`;
- const sig=(a,n)=>!n?`<div class="sub">No stock is signalling today.</div>`:`<div class="tw"><table class="pt" style="min-width:0"><thead><tr><th>Stock</th><th>Close</th><th>Stop loss</th><th>Target</th></tr></thead><tbody>`+a.slice(0,30).map(x=>`<tr><td><a target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent("NSE:"+x.s)}">${esc(x.s)}</a></td><td>${inr(x.c)}</td><td>${inr(x.stop)}</td><td>${inr(x.target)}</td></tr>`).join("")+`</tbody></table></div>`+(n>30?`<div class="sub">+${n-30} more not shown</div>`:"");
- const card=s=>{const t=s.today||{},pm=s.params,src=s.source,open=SOPEN.has(s.id);
-  return `<details class="fm sc" id="sc_${s.id}" ${open?"open":""} ontoggle="if(this.open)SOPEN.add('${s.id}');else SOPEN.delete('${s.id}')"><summary><b>${esc(s.name)}</b> <span class="tag ex">${esc(s.family||"")}</span> <span class="sub">Score ${(s.stars||0).toFixed(1)} of 5 · ${(t.buy_n||0)} signal${t.buy_n===1?"":"s"} today</span></summary>
-  <div class="sgrid"><div><h4>The rule</h4><div class="sub">${esc(s.rule)}</div></div>
-  <div><h4>How a trade ends</h4><div class="sub">Stop loss ${pm.stop}% below your buy price. Target ${pm.target}% above it (risk to reward 1 : ${(pm.target/pm.stop).toFixed(1)}). If neither is hit, sell at the close after ${pm.max_hold} trading days. The stop and target were picked from ${(s.grid||[]).length} combinations using only the earlier period.</div></div>
-  <div><h4>Where it comes from</h4><div class="sub">${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(src.url)}">${esc(src.name)}</a>${src.note?`<br>${esc(src.note)}`:""}`:"A common technical-analysis rule. No single published source was checked for it."}</div></div></div>
-  <h4>Backtest</h4><div class="tw"><table class="pt" style="min-width:0">${hdr}<tbody>${row("Earlier (stop and target chosen here)",s.train)}${row("Later (the score is based on this)",s.test)}</tbody></table></div>
-  <h4>By market mood, later period</h4><div class="tw"><table class="pt" style="min-width:0">${hdr}<tbody>${row("Nifty above its 200-day average",s.test_up)}${row("Nifty below its 200-day average",s.test_down)}</tbody></table></div>
-  <div class="sub">Today Nifty is ${up===true?"above":up===false?"below":"–"} its 200-day average.${s.test&&s.test.years_n?` Profitable in ${s.test.years_pos} of ${s.test.years_n} calendar years of the later period.`:""}</div>
-  <details style="margin-top:8px"><summary class="sub" style="cursor:pointer">How this score was worked out</summary><ul class="sub" style="margin:6px 0 0 18px">${(s.score_parts||[]).map(x=>`<li>${esc(x[0])}: <b>${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}</ul></details>
-  <h4>Signals today (${t.buy_n||0})</h4>${sig(t.buy||[],t.buy_n||0)}
-  <div class="sub" style="margin-top:6px">Stop and target are measured from your actual buy price (tomorrow’s open). The levels above use today’s close as a guide.${(t.exit||[]).length?` Test trades that ended today at a stop or target: ${(t.exit||[]).slice(0,12).map(esc).join(", ")}.`:""}</div></details>`};
- $("vStrat").innerHTML=`<div class="fm"><h3>Strategy library</h3>
- <div class="sub">${S.strategies.length} written strategies, each with its own stop loss, profit target and time limit, tested on about ${S.years||6} years of adjusted prices for ${esc(S.universe||"")}. Prices as of ${esc(S.price_date||"–")}${S.stale?" (look stale)":""}. Nothing here is a recommendation: the numbers are what the rules produced in the past.</div>
- <div class="sub" style="margin-top:8px"><b>Market now:</b> Nifty ${M.nifty??"–"} is ${up===true?"<b class='pos'>above</b>":up===false?"<b class='neg'>below</b>":"–"} its 200-day average (${M.nifty_200dma??"–"})${M.month_ret!=null?"; last month "+pc1(M.month_ret):""}${M.breadth50!=null?"; "+pc1(M.breadth50)+" of stocks are above their 50-day average and "+pc1(M.breadth200)+" above their 200-day":""}.</div>
- <details style="margin-top:8px"><summary class="sub" style="cursor:pointer"><b>How the test and the score work</b></summary><div class="sub" style="margin-top:6px">
- <ul style="margin:0 0 0 18px"><li>A signal at the close is bought at the next day’s open. Every trade pays ${S.cost_pct??0.4}% in costs.</li><li>If a day touches both the stop and the target, the stop is assumed to hit first. A gap through either fills at the open.</li><li>History is split: the earlier 60% is used to pick the stop and target; the later 40% is used for the results and the score.</li><li>The score is plain arithmetic out of 5: up to 2.5 points for the edge over random entries (the same stocks bought on random days with the same stop, target and time limit), and 0.5 each for positive average profit, profit factor, number of trades, a positive edge in the earlier period and profit in most years. It is capped at 1 with no edge, at 1.5 if the edge is within luck (confidence t below 1) and at 2.5 if the edge is not yet statistically solid (t below 2). Each strategy’s page lists its own points.</li><li>${(S.caveats||[]).map(esc).join("</li><li>")}</li></ul></div></details>
- <div class="act" style="margin-top:10px;align-items:center"><label for="smin" class="sub">Show “Buy” on My Positions and the watchlist only for strategies scoring at least</label><select id="smin" class="always" onchange="setSmin(this.value)">${[0,1,1.5,2,2.5,3,3.5,4].map(v=>`<option value="${v}" ${v===SMINV?"selected":""}>${v}</option>`).join("")}</select></div></div>
- <div class="bar"><div class="chips">${fams.map(f=>`<button class="chip" aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span style="flex:1"></span><select class="always" aria-label="Sort strategies" onchange="SSORT=this.value;render()">${[["score","Sort: score"],["avg","Sort: average per trade"],["trades","Sort: number of trades"],["signals","Sort: signals today"],["name","Sort: name"]].map(o=>`<option value="${o[0]}" ${SSORT===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>
- <div class="fm"><div class="tw"><table class="pt" style="min-width:0"><thead><tr><th>Score</th><th>Strategy</th><th>Stop / target</th><th>Trades</th><th>Won</th><th>Avg per trade</th><th>Edge over random entries</th><th>Profit factor</th><th>Signals today</th></tr></thead><tbody>${list.map(tr).join("")}</tbody></table></div><div class="sub" style="margin-top:6px">Trades, won, average, edge and profit factor are for the later period. “Edge over random entries” is the average profit per trade minus the average of trades entered on random days in the same stocks with exactly the same stop, target and time limit; it removes the part that is just the market rising. Confidence (t) is the edge divided by its standard error; about 2 or more means it is unlikely to be luck. Tap a row to open the strategy.</div></div>
- ${list.map(card).join("")}`}
-function toggleS(id){SOPEN.add(id);render();const e=$("sc_"+id);if(e){e.open=true;e.scrollIntoView({behavior:"smooth",block:"start"})}}
+ if(!S.strategies||!S.strategies.length||!S.strategies[0].params)return $("vStrat").innerHTML=`<div class="empty">No strategy results yet.<br>They are built by the “strategies” workflow on GitHub (Saturday morning, or run it by hand).</div>`;
+ const M=S.market||{},up=M.above_200,all=S.strategies;
+ const fams=["All"].concat([...new Set(all.map(s=>s.family||"Other"))].sort());
+ const col=SCOLS.find(c=>c[0]===SSORT)||SCOLS[1],getv=col[3];
+ const list=all.filter(s=>SFAM==="All"||(s.family||"Other")===SFAM).slice().sort((a,b)=>{const x=getv(a),y=getv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;const c=(typeof x==="string"?x.localeCompare(y):x-y)*SDIR;return c||((b.stars||0)-(a.stars||0))||a.name.localeCompare(b.name)});
+ const solid=all.filter(s=>s.test&&s.test.t!=null&&s.test.t>=2&&s.test.edge>0).length,nSig=all.filter(s=>(s.stars||0)>=SMIN()).reduce((n,s)=>n+((s.today||{}).buy_n||0),0);
+ const dist=M.nifty&&M.nifty_200dma?(M.nifty/M.nifty_200dma-1):null;
+ const kpi=(l,v,s,c)=>`<div class="sx-kpi"><div class="l">${l}</div><div class="v ${c||""}">${v}</div><div class="s">${s}</div></div>`;
+ const th=SCOLS.map(c=>`<th class="${c[2]?"l":""}" onclick="sxSort('${c[0]}')">${c[1]}<span class="ar">${SSORT===c[0]?(SDIR>0?"▲":"▼"):""}</span></th>`).join("");
+ const rows=list.map((s,i)=>{const t=s.test,on=SOPEN.has(s.id),pm=s.params;
+  return `<tr class="r ${on?"on":""}" onclick="sxTog('${s.id}')"><td class="l nm"><div class="sx-nm">${esc(s.name)}</div><div class="sx-fam">${esc(s.family||"")}</div></td><td>${smeter(s.stars||0)}</td><td>−${pm.stop}% / +${pm.target}%</td><td>${t?t.n.toLocaleString("en-IN"):"–"}</td><td>${t?pu(t.win_rate):"–"}</td><td class="${t?sxc(t.avg_ret):""}">${t?pp(t.avg_ret):"–"}</td><td class="${t?sxc(t.edge):""}"><b>${t?pp(t.edge):"–"}</b></td><td>${tchip(t?t.t:null)}</td><td>${t?pf2(t.profit_factor):"–"}</td><td>${(s.today||{}).buy_n||0}</td></tr>${on?`<tr class="sx-d"><td colspan="${SCOLS.length}"><div class="sx-dw">${sxDetail(s)}</div></td></tr>`:""}`}).join("");
+ const cards=list.map(s=>{const t=s.test,on=SOPEN.has(s.id),pm=s.params;
+  return `<div class="sx-mc"><div class="tp" onclick="sxTog('${s.id}')"><div><div class="sx-nm">${esc(s.name)}</div><div class="sx-fam">${esc(s.family||"")} · −${pm.stop}% / +${pm.target}%</div></div>${smeter(s.stars||0)}</div>
+  <div class="mg"><div>Edge<b class="${t?sxc(t.edge):""}">${t?pp(t.edge):"–"}</b></div><div>Avg / trade<b class="${t?sxc(t.avg_ret):""}">${t?pp(t.avg_ret):"–"}</b></div><div>Confidence<b>${t&&t.t!=null?"t "+t.t.toFixed(1):"–"}</b></div><div>Trades<b>${t?t.n.toLocaleString("en-IN"):"–"}</b></div><div>Won<b>${t?pu(t.win_rate):"–"}</b></div><div>Signals today<b>${(s.today||{}).buy_n||0}</b></div></div>${on?sxDetail(s):""}</div>`}).join("");
+ $("vStrat").innerHTML=`<div class="sx-head"><div><h2>Strategy library</h2><p>${all.length} written strategies, each with its own stop loss, profit target and time limit, backtested on about ${S.years||6} years of adjusted prices (${esc(S.universe||"")}). The numbers describe what the rules did in the past; they are not recommendations.</p></div><span class="sx-asof">Prices as of ${esc(S.price_date||"–")}${S.stale?" (stale)":""}</span></div>
+ <div class="sx-kpis">${kpi("Nifty 50",M.nifty!=null?M.nifty.toLocaleString("en-IN"):"–",up===true?"Above its 200-day average":up===false?"Below its 200-day average":"–",up===true?"sx-pos":up===false?"sx-neg":"")}${kpi("Market breadth",M.breadth50!=null?pu(M.breadth50):"–","of stocks above their 50-day average")}${kpi("Solid edge",solid+" of "+all.length,"edge above zero with confidence t of 2 or more",solid?"sx-pos":"")}${kpi("Signals today",nSig,"from strategies scoring "+SMIN()+" or more")}</div>
+ <details class="sx-how"><summary>How the test and the score work</summary><div class="b"><div><b>Entries and exits.</b> A signal at the close is bought at the next open. Every trade pays ${S.cost_pct??0.4}% costs. If a day touches both stop and target, the stop is assumed to hit first; a gap fills at the open.</div><div><b>Honest split.</b> The earlier 60% of the history is used to pick each strategy’s stop and target. The later 40% gives the results and the score.</div><div><b>Edge.</b> Average profit per trade minus the average of trades entered on random days in the same stocks with exactly the same stop, target and time limit. It removes the part that is just the market rising.</div><div><b>Confidence (t).</b> The edge divided by its standard error. About 2 or more is unlikely to be luck. The score is capped at 1 with no edge, 1.5 below t of 1, and 2.5 below t of 2.</div><div><b>Score out of 5.</b> Up to 2.5 for edge, and 0.5 each for positive average profit, profit factor, number of trades, a positive edge in the earlier period and profit in most years. Every strategy lists its own points.</div><div><b>Limits.</b> ${(S.caveats||[]).slice(-3).map(esc).join(" ")}</div></div></details>
+ <div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
+ <label>Sort <select onchange="sxSort(this.value)">${SCOLS.map(c=>`<option value="${c[0]}" ${SSORT===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label>
+ <label>Buy label needs a score of <select onchange="setSmin(this.value)">${[0,1,1.5,2,2.5,3,3.5,4].map(v=>`<option value="${v}" ${v===SMINV?"selected":""}>${v}</option>`).join("")}</select></label></div>
+ <div class="sx-card"><div class="sx-t"><table class="sx"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div><div class="sx-m">${cards}</div></div>
+ <p class="sx-mut" style="font-size:12.5px;margin:8px 2px 0">Trades, won, average, edge, confidence and profit factor are for the later period. Click a column heading to sort and a row to open the strategy.</p>`}
+function sxTog(id){if(SOPEN.has(id))SOPEN.delete(id);else SOPEN.add(id);render()}
 
 normalize();
 
