@@ -280,12 +280,13 @@ footer{font-size:11.5px;margin-top:18px}
 <p class="sub">Delete account removes your positions and Telegram link. Enter your current password above first.</p></details></div>
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
-<div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Backup</button><button class="btn" onclick="exportTxns()">Transactions CSV</button><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
+<div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Backup</button><button class="btn" onclick="exportTxns()">Transactions CSV</button><label class="btn" style="cursor:pointer">Read screenshot<input type="file" id="pscr" accept="image/*" multiple hidden></label><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
 <div class="fm" id="szcard" hidden><details><summary><b>Position size calculator</b> <span class="sub">how many shares for the risk you can afford</span></summary>
 <div class="fg" style="margin-top:10px"><div><label for="sz-cap">Capital (₹)</label><input id="sz-cap" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-risk">Risk per trade (%)</label><input id="sz-risk" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div>
 <div><label for="sz-en">Entry price (₹)</label><input id="sz-en" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-sl">Stop loss (₹)</label><input id="sz-sl" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div></div>
 <div class="pprev" id="sz-out" style="display:block">Enter capital, entry price and stop loss to see the size.</div></details></div>
 <div class="bar" id="wbar" hidden><span class="sub" style="flex:1">Stocks you are watching but do not own. Alerts go to Telegram, once a day per condition.</span><button class="btn pri" onclick="openWatch()">＋ Add to watchlist</button></div>
+<div class="fm" id="scrcard" hidden></div>
 <div class="fm" id="wform" hidden><h3>Watchlist stock</h3><div class="fg">
 <div><label for="wsym">Symbol</label><input id="wsym" list="syms" placeholder="e.g. TATASTEEL" autocapitalize="characters" autocomplete="off"></div>
 <div><label for="wex">Exchange</label><select id="wex"><option>NSE</option><option>BSE</option></select></div>
@@ -331,7 +332,7 @@ footer{font-size:11.5px;margin-top:18px}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-09.11</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-09.12</span></footer>
 
 </main>
 <script>
@@ -652,6 +653,7 @@ function toggleH(id){EXP.has(id)?EXP.delete(id):EXP.add(id);render()}
 function exportPos(){dl("positions.json",JSON.stringify({holdings:POS},null,1),"application/json")}
 function exportTxns(){const rows=[["Symbol","Exchange","Type","Date","Quantity","Price","Value"]];POS.forEach(h=>h.txns.slice().sort((a,b)=>a.date<b.date?-1:1).forEach(t=>rows.push([h.symbol,h.exchange,t.type,t.date,t.qty,t.price,+(t.qty*t.price).toFixed(2)])));
  dl("transactions.csv",rows.map(r=>r.join(",")).join("\n"),"text/csv")}
+$("pscr").addEventListener("change",e=>{const f=[...e.target.files];e.target.value="";scrStart(f)});
 $("pimp").addEventListener("change",async e=>{try{const d=JSON.parse(await e.target.files[0].text()),a=Array.isArray(d)?d:(d.holdings||d.positions);
  const m=migrate(a),inc=(a||[]).filter(p=>p&&Array.isArray(p.txns)).concat(m.list.filter(x=>!(a||[]).includes(x)));
  inc.forEach(n=>{const cur=POS.find(x=>keyOf(x)===keyOf(n));if(!cur){POS.push(Object.assign({},n,{id:uidn()}));return}
@@ -811,6 +813,84 @@ function renderReports(){loadNifty();const pr=perfRows(),tx=taxReport(),f=cfg();
  <div class="fm"><h3>Charges and tax by financial year (indicative)</h3><div class="sub">Charges come from the settings below. Tax uses first-in first-out matching and a holding of more than 12 months for long-term, as the tax rules do, so gains can differ from the average-cost P&amp;L shown on holdings. It excludes surcharge, cess, other income and loss carry-forward. Check your broker's tax report and a tax adviser before filing.</div>
  ${tx.length?tbl(["Financial year","Charges paid","Short-term gain","Long-term gain","Estimated tax"],tx.map(r=>`<tr><td>${r.fy}</td><td>${inr(r.charges)}</td><td><span class="${pcl(r.stcg)}">${mny(r.stcg)}</span></td><td><span class="${pcl(r.ltcg)}">${mny(r.ltcg)}</span></td><td>${inr(r.tax)}</td></tr>`).join("")):`<div class="sub" style="margin-top:8px">No transactions yet.</div>`}</div>`}
 
+
+/* ---- read broker order screenshots (runs in this browser; nothing is uploaded) ---- */
+let SCR={rows:[],busy:false,msg:""},UNI=null,OCRW=null;
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function csvLine(l){const o=[];let c="",q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===","&&!q){o.push(c);c=""}else c+=ch}o.push(c);return o}
+async function loadUni(){if(UNI)return UNI;UNI={NSE:[],BSE:[]};for(const e of["NSE","BSE"]){try{const r=await fetch("/universe_"+e.toLowerCase()+".csv");if(!r.ok)continue;(await r.text()).split(/\r?\n/).slice(1).forEach(l=>{if(!l)return;const c=csvLine(l);if(c[0])UNI[e].push({s:c[0],n:c[1]||"",k:nameKey(c[1]||"")})})}catch(x){}}return UNI}
+const nameKey=s=>String(s).toLowerCase().replace(/&/g," and ").replace(/\b(limited|ltd|the|inc|corporation|corp|co|company)\b\.?/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+function findSym(raw,ex,U){const out=[];if(!raw)return out;const up=raw.trim().toUpperCase().replace(/[^A-Z0-9&\-]/g,"");const list=(U&&U[ex])||[];
+ if(up&&list.some(x=>x.s===up))out.push({s:up,n:(list.find(x=>x.s===up)||{}).n,sc:1});
+ const k=nameKey(raw);if(k){const kt=new Set(k.split(" "));list.forEach(x=>{if(!x.k||out.some(o=>o.s===x.s))return;let sc=0;if(x.k===k)sc=.98;else if(x.k.startsWith(k+" ")||k.startsWith(x.k+" "))sc=.85;else{const xt=new Set(x.k.split(" "));let i=0;kt.forEach(t=>{if(xt.has(t))i++});sc=i/(kt.size+xt.size-i)*.8}if(sc>=.4)out.push({s:x.s,n:x.n,sc})})}
+ return out.sort((a,b)=>b.sc-a.sc).slice(0,5)}
+/* Pull the fields out of the text of one order screen. Built for the Groww "Order Details" page; other layouts fill what they can and leave the rest for you. */
+function scrParse(text){const T=String(text||"").replace(/\r/g,""),L=T.split("\n").map(s=>s.trim()).filter(Boolean),r={side:"",ex:"",price:null,date:"",qty:null,name:"",warn:[]};
+ let m=/\b(buy|sell)\b[,\s]*(delivery|intraday|margin|mtf|cnc)?/i.exec(T);if(m)r.side=m[1].toLowerCase();
+ m=/Exchange\s*[:\-]?\s*(NSE|BSE)\b/i.exec(T)||/Order Placed with\s*(NSE|BSE)/i.exec(T);if(m)r.ex=m[1].toUpperCase();
+ m=/Avg\.?\s*price[^\d\n]{0,120}?([\d,]+(?:\.\d+)?)/i.exec(T);if(m)r.price=parseFloat(m[1].replace(/,/g,""));
+ if(r.price==null){m=/Order\s*price[^\d\n]{0,120}?(\d[\d,]*(?:\.\d+)?)/i.exec(T);if(m)r.price=parseFloat(m[1].replace(/,/g,""))}
+ const dre=/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})/ig;let ds=[],x;while(x=dre.exec(T))ds.push({i:x.index,v:`${x[3]}-${pad2(MON[x[2].toLowerCase()])}-${pad2(+x[1])}`});
+ const ei=T.search(/Order\s*Executed/i);const after=ei>=0?ds.find(d=>d.i>ei):null;const pl=T.search(/Order\s*Placed/i);const placed=pl>=0?ds.find(d=>d.i>pl):null;
+ const pick=after||placed||ds[ds.length-1];if(pick)r.date=pick.v;
+ const oi=L.findIndex(l=>/^order\s*type/i.test(l));if(oi>0){let nm=L[oi-1].replace(/[>›»)\]|]+\s*$/,"").trim();const q=/^(\d[\d,]*)\s*(qty|av|ov)?\s*$/i.exec(nm);if(q&&oi>1){r.qty=parseInt(q[1].replace(/,/g,""),10);nm=L[oi-2].replace(/[>›»)\]|]+\s*$/,"").trim()}r.name=nm;
+  if(r.qty==null&&oi>1){const q2=/^(\d[\d,]*)\s*(qty|av|ov|ty)?\b/i.exec(L[oi-2]);if(q2)r.qty=parseInt(q2[1].replace(/,/g,""),10)}}
+ const qm=/(\d[\d,]*)\s*Qty\b/i.exec(T);if(qm&&r.qty==null)r.qty=parseInt(qm[1].replace(/,/g,""),10);
+ if(/(rejected|cancel+ed|pending|open)\b/i.test((/Order\s*status[^\n]*/i.exec(T)||[""])[0]))r.warn.push("This order is not marked successful.");
+ return r}
+async function scrPrep(file){const bm=await createImageBitmap(file);const W=1600,s=W/bm.width,cv=document.createElement("canvas");cv.width=W;cv.height=Math.round(bm.height*s);const g=cv.getContext("2d",{willReadFrequently:true});g.drawImage(bm,0,0,cv.width,cv.height);
+ const im=g.getImageData(0,0,cv.width,cv.height),d=im.data;let sum=0;for(let i=0;i<d.length;i+=4){const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];d[i]=d[i+1]=d[i+2]=y;sum+=y}
+ if(sum/(d.length/4)<128)for(let i=0;i<d.length;i+=4){d[i]=d[i+1]=d[i+2]=255-d[i]}g.putImageData(im,0,0);return cv}
+async function scrWorker(){if(OCRW)return OCRW;if(!window.Tesseract){await new Promise((ok,no)=>{const s=document.createElement("script");s.src="/ocr/tesseract.min.js";s.onload=ok;s.onerror=()=>no(new Error("The reader could not be loaded. Check your connection."));document.head.appendChild(s)})}
+ OCRW=await Tesseract.createWorker("eng",1,{workerPath:"/ocr/worker.min.js",corePath:"/ocr/",langPath:"/ocr/",workerBlobURL:false,gzip:true});return OCRW}
+async function scrRead(file){const cv=await scrPrep(file),w=await scrWorker();await w.setParameters({tessedit_pageseg_mode:"4",tessedit_char_whitelist:"",preserve_interword_spaces:"1"});
+ const res=await w.recognize(cv,{},{text:true,blocks:true}),d=res.data,lines=d.lines||((d.blocks||[]).flatMap(b=>(b.paragraphs||[]).flatMap(p=>p.lines||[])));
+ const r=scrParse(d.text);
+ /* the big quantity is in a heavy font that the general pass often misreads: read just that strip as digits */
+ try{const oi=lines.findIndex(l=>/^\s*order\s*type/i.test(l.text));if(oi>0){const nameL=lines[oi-1],det=lines.find(l=>/order\s*details/i.test(l.text)),y1=nameL.bbox.y0,y0=det?det.bbox.y1+(y1-det.bbox.y1)*.55:Math.max(0,y1-260);
+   if(y1-y0>20){const reads=[];await w.setParameters({tessedit_pageseg_mode:"7",tessedit_char_whitelist:"0123456789"});
+    for(const sc of[.8,1,1.3,1.8])for(const bl of[0,1.2]){const pd=30,sw=cv.width*.55,c=document.createElement("canvas");c.width=Math.round(sw*sc)+pd*2;c.height=Math.round((y1-y0)*sc)+pd*2;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);if(bl)g.filter="blur("+bl+"px)";g.drawImage(cv,0,y0,sw,y1-y0,pd,pd,sw*sc,(y1-y0)*sc);
+     const q=await w.recognize(c);const v=(q.data.text||"").replace(/\D/g,"");if(v&&v.length<=7)reads.push(v)}
+    if(reads.length){const cnt={};reads.forEach(v=>cnt[v]=(cnt[v]||0)+1);const ks=Object.keys(cnt);if(ks.length===1)r.qty=parseInt(ks[0],10);else{r.qty=null;r.warn.push("The share count was hard to read (seen as "+ks.join(", ")+"). Please type it from your screenshot.")}}}}}catch(e){}
+ await w.setParameters({tessedit_pageseg_mode:"4",tessedit_char_whitelist:"",preserve_interword_spaces:"1"});return r}
+function scrDup(row){const h=POS.find(x=>keyOf(x)===keyOf({exchange:row.ex,symbol:row.sym}));if(!h)return false;const d=parseD(row.date);return h.txns.some(t=>t.type===row.side&&t.date===d&&t.qty===+row.qty&&Math.abs(t.price-+row.price)<.005)}
+async function scrStart(files){if(!files||!files.length||SCR.busy)return;if(!ME){alert("Log in first so the trades are saved to your account.");return}
+ SCR.busy=true;SCR.rows=[];$("scrcard").hidden=false;PVIEW=PVIEW==="open"||PVIEW==="closed"?PVIEW:"open";const U=await loadUni();
+ for(let i=0;i<files.length;i++){SCR.msg=`Reading screenshot ${i+1} of ${files.length}… the first one takes longer while the reader loads.`;scrDraw();
+  const row={file:files[i].name,side:"",ex:"NSE",sym:"",cands:[],qty:"",price:"",date:"",use:true,warn:[],name:""};
+  try{const r=await scrRead(files[i]);row.side=r.side;row.ex=r.ex||"NSE";row.qty=r.qty==null?"":r.qty;row.price=r.price==null?"":r.price;row.name=r.name;row.warn=r.warn;
+   if(r.date){const[y,m,d]=r.date.split("-");row.date=`${d}/${m}/${y}`}
+   row.cands=findSym(r.name,row.ex,U);row.sym=row.cands[0]&&row.cands[0].sc>=.6?row.cands[0].s:(/^[A-Z0-9&\-]{2,15}$/.test(r.name||"")?r.name:"");
+   if(!r.side&&!r.price&&!r.name)row.warn.push("Could not recognise an order screen in this picture.")}
+  catch(e){row.warn.push("Could not read this picture: "+(e.message||e))}
+  SCR.rows.push(row)}
+ SCR.rows.forEach(r=>{if(r.sym&&r.qty&&r.price&&r.date&&r.side&&scrDup(r)){r.use=false;r.warn.push("Already in your positions.")}});
+ try{if(OCRW){await OCRW.terminate();OCRW=null}}catch(e){}
+ SCR.busy=false;SCR.msg="";scrDraw()}
+function scrSet(i,k,v){const r=SCR.rows[i];if(!r)return;r[k]=k==="use"?!!v:v;if(k==="ex"||k==="sym"){if(k==="ex"&&UNI)r.cands=findSym(r.name,r.ex,UNI)}if(k!=="sym"&&k!=="qty"&&k!=="price"&&k!=="date")scrDraw()}
+function scrDraw(){const el=$("scrcard");if(!SCR.rows.length&&!SCR.busy){el.hidden=true;return}el.hidden=false;
+ const rows=SCR.rows.map((r,i)=>`<div class="pc" style="margin-top:10px"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" ${r.use?"checked":""} onchange="scrSet(${i},'use',this.checked)"><b>${esc(r.name||"Unrecognised")}</b><span class="sub">${esc(r.file)}</span></label>
+  <div class="fg" style="margin-top:8px">
+   <div><label>Side</label><select onchange="scrSet(${i},'side',this.value)"><option value="" ${r.side?"":"selected"}>Choose…</option><option value="buy" ${r.side==="buy"?"selected":""}>Buy</option><option value="sell" ${r.side==="sell"?"selected":""}>Sell</option></select></div>
+   <div><label>Exchange</label><select onchange="scrSet(${i},'ex',this.value)"><option ${r.ex==="NSE"?"selected":""}>NSE</option><option ${r.ex==="BSE"?"selected":""}>BSE</option></select></div>
+   <div><label>Symbol</label><input value="${esc(r.sym)}" list="scrl${i}" autocapitalize="characters" spellcheck="false" oninput="scrSet(${i},'sym',this.value.trim().toUpperCase())"><datalist id="scrl${i}">${r.cands.map(c=>`<option value="${esc(c.s)}">${esc(c.n)}</option>`).join("")}</datalist></div>
+   <div><label>Shares</label><input inputmode="numeric" value="${esc(r.qty)}" oninput="scrSet(${i},'qty',this.value.replace(/\\D/g,''))"></div>
+   <div><label>Price per share</label><input inputmode="decimal" value="${esc(r.price)}" oninput="scrSet(${i},'price',this.value.replace(/[^\\d.]/g,''))"></div>
+   <div><label>Date (DD/MM/YYYY)</label><input value="${esc(r.date)}" oninput="scrSet(${i},'date',this.value.trim())"></div></div>
+  ${r.cands.length>1?`<div class="sub" style="margin-top:6px">Other matches for “${esc(r.name)}”: ${r.cands.slice(0,4).map(c=>`<a href="#" onclick="scrSet(${i},'sym','${esc(c.s)}');scrDraw();return false">${esc(c.s)}</a>`).join(", ")}</div>`:""}
+  ${r.warn.map(w=>`<div class="sub" style="color:var(--warn,#b45309);margin-top:4px">${esc(w)}</div>`).join("")}</div>`).join("");
+ el.innerHTML=`<h3>Trades read from screenshots</h3><div class="sub">${esc(SCR.msg)||"Check every row against your screenshot before adding. Reading text from a picture is not always exact, especially the share count. Nothing is saved until you press Add."}</div>${rows}
+  ${SCR.busy?"":`<div class="act" style="margin-top:12px"><button class="btn pri" onclick="scrCommit()">Add ${SCR.rows.filter(r=>r.use).length} to my positions</button><button class="btn" onclick="SCR.rows=[];scrDraw()">Cancel</button></div><div class="msg" id="scrmsg" role="alert"></div>`}`}
+function scrCommit(){const m=t=>{$("scrmsg").textContent=t},use=SCR.rows.map((r,i)=>({r,i})).filter(x=>x.r.use);if(!use.length)return m("Nothing selected.");
+ const add=[];for(const{r,i}of use){const n=i+1,d=parseD(r.date),q=+r.qty,px=+r.price,sym=String(r.sym||"").toUpperCase();
+  if(!r.side)return m(`Row ${n}: choose Buy or Sell.`);if(!/^[A-Z0-9&\-.]{1,24}$/.test(sym))return m(`Row ${n}: enter the stock symbol.`);
+  if(!d)return m(`Row ${n}: enter the date as DD/MM/YYYY.`);if(d>todayStr())return m(`Row ${n}: the date is in the future.`);
+  if(!q||q<=0||Math.floor(q)!==q)return m(`Row ${n}: enter a whole number of shares.`);if(!px||px<=0)return m(`Row ${n}: enter the price per share.`);
+  add.push({sym,ex:r.ex==="BSE"?"BSE":"NSE",t:{id:uidn(),type:r.side,date:d,qty:q,price:px,note:"From screenshot",rule:""}})}
+ const snap=JSON.stringify(POS),touched=new Set();
+ for(const a of add){let h=POS.find(x=>keyOf(x)===keyOf({exchange:a.ex,symbol:a.sym}));if(!h){h={id:uidn(),symbol:a.sym,exchange:a.ex,sl:null,target:null,thesis:"",alertMa:true,alertSl:true,alertTg:true,txns:[]};POS.push(h)}h.txns.push(a.t);touched.add(h)}
+ for(const h of touched)if(ledger(h).bad){POS=JSON.parse(snap);return m(`${h.symbol}: a sale is larger than the shares you held on that date. Add the earlier buy first (you can read its screenshot together with this one).`)}
+ const last=[...touched][0];if(last){PVIEW=ledger(last).qty>0?"open":"closed";EXP.add(last.id)}SCR.rows=[];savePos();scrDraw();render()}
 
 /* ---- strategy library ---- */
 let STRAT=null;
