@@ -366,7 +366,7 @@ def run(mode, top, years, cost):
     out.update(updated=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=price_date, official_date=bhav_day, stale=price_date < bhav_day, market=market,
                universe=f"Top {len(data)} NSE stocks by traded value", order=[s["id"] for s in STRATS], states={f"NSE:{k[:-3]}": "".join(v) for k, v in states.items()})
     if mode == "full":
-        alld = pd.concat(daily); rd_tr = float(alld.loc[:split].mean()); rd_te = float(alld.loc[split:].mean())
+        alld = pd.concat(daily); sp = pd.Timestamp(split); rd_tr = float(alld[alld.index < sp].mean()); rd_te = float(alld[alld.index >= sp].mean())
         out.update(years=years, cost_pct=round(cost * 100, 2), split=split, strategies=[])
         for s in STRATS:
             best = None; table = []
