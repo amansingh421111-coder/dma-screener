@@ -426,14 +426,17 @@ def position_quotes(pos, c):
     return q
 
 def position_events(pos, quotes, c):
-    ev = []
-    seen = set()
+    """One alert set per distinct position. Two positions in the same stock (different buy price / stop) are both checked."""
+    ev = []; seen = set()
     for p in pos:
-        if not is_open(p) or pos_key(p) in seen: continue
-        seen.add(pos_key(p))
+        if not is_open(p): continue
+        ident = p.get("id") or "|".join(str(p.get(x)) for x in ("exchange", "symbol", "buy", "sl", "target", "qty", "date"))
+        if ident in seen: continue
+        seen.add(ident)
         q = quotes.get(pos_key(p))
         if not q: continue
-        px, k, s = q["price"], pos_key(p), p["symbol"]
+        px, s = q["price"], p["symbol"]
+        k = f"{pos_key(p)}#{ident}"
         if p.get("alertSl") and p.get("sl") and px <= p["sl"]:
             ev.append((k + ":sl", f"🛑 STOP LOSS hit: {s} ₹{px} (stop ₹{p['sl']})"))
         if p.get("alertTg") and p.get("target") and px >= p["target"]:
