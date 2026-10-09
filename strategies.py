@@ -21,6 +21,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 log = logging.getLogger("strat")
 MAX_HOLD = {"swing": 40, "short": 15}
+TRAIL = {"swing": (8, 12), "short": (4, 6)}
 GRID = {"swing": [(s, t) for s in (5, 8, 12) for t in (10, 15, 20, 30)], "short": [(s, t) for s in (4, 6) for t in (5, 8, 12)]}
 MOMSIG = {}   # filled by run(): cross-sectional momentum signals per stock
 
@@ -214,7 +215,7 @@ SOURCES = {
 SOURCES["mom6"]["note"] = "A student research project (not peer-reviewed); it reports momentum profits that peaked around 6 months and faded by 12, before trading costs."
 for _k in ("minervini", "holygrail", "pocketpivot", "turtle55", "donchian"): SOURCES[_k]["note"] = "The published method uses its own exits and position rules; this app tests only the entry rule with a stop, target and time limit."
 
-def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None):
+def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None, trail=None):
     """Buys at the next open after a signal. Leaves at the stop, the target, or the close of the last allowed day.
     Returns (closed trades, open trade or None)."""
     o, h, l, c = (df[k].to_numpy(float) for k in ("Open", "High", "Low", "Close"))
@@ -225,9 +226,12 @@ def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None):
         ei = s + 1; ep = o[ei]
         if not np.isfinite(ep) or ep <= 0: continue
         stop, tgt = ep * (1 - stop_pct / 100), ep * (1 + target_pct / 100); xk = xp = why = None
+        if trail: stop, tgt = ep * (1 - trail / 100), float("inf"); peak = ep
         last = ei + max_hold - 1
         for k in range(ei, min(n, last + 1)):
             if not (np.isfinite(l[k]) and np.isfinite(h[k]) and np.isfinite(o[k])): continue
+            if trail and k > ei:   # the stop follows the highest price reached up to the previous day
+                peak = max(peak, h[k - 1] if np.isfinite(h[k - 1]) else peak); stop = max(stop, peak * (1 - trail / 100))
             if k > ei and o[k] <= stop: xk, xp, why = k, o[k], "stop"; break
             if k > ei and o[k] >= tgt: xk, xp, why = k, o[k], "target"; break
             if l[k] <= stop: xk, xp, why = k, stop, "stop"; break
@@ -235,6 +239,7 @@ def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None):
             if k == last and np.isfinite(c[k]): xk, xp, why = k, c[k], "time"; break
         if xk is None:
             open_t = dict(entry=str(idx[ei].date()), entry_price=float(ep), stop=float(stop), target=float(tgt)); break
+        if trail and why == "stop": why = "trail"
         trades.append(dict(sig=str(idx[s].date()), entry=str(idx[ei].date()), exit=str(idx[xk].date()), days=int(xk - ei + 1), ret=float(xp / ep - 1 - cost), why=why,
                            up=None if reg is None else bool(reg[s])))
         i = xk
@@ -247,14 +252,14 @@ def stats(tr, base_tr=None):
     seq = np.array([t["ret"] for t in sorted(tr, key=lambda t: t["exit"])]); cum = np.cumsum(seq); dd = float((np.maximum.accumulate(cum) - cum).max())
     streak = cur = 0
     for x in seq: cur = cur + 1 if x <= 0 else 0; streak = max(streak, cur)
-    why = {k: sum(1 for t in tr if t["why"] == k) / len(tr) for k in ("target", "stop", "time")}
+    why = {k: sum(1 for t in tr if t["why"] == k) / len(tr) for k in ("target", "stop", "time", "trail")}
     yrs = {}
     for t in tr: yrs.setdefault(t["entry"][:4], []).append(t["ret"])
     ys = [np.mean(v) for v in yrs.values() if len(v) >= 10]
     d = dict(n=len(tr), win_rate=round(float((r > 0).mean()), 3), avg_ret=round(float(r.mean()), 4), avg_win=round(float(w.mean()), 4) if len(w) else None,
              avg_loss=round(float(lo.mean()), 4) if len(lo) else None, profit_factor=None if pf is None else round(pf, 2),
              median_days=int(np.median([t["days"] for t in tr])), worst=round(float(r.min()), 4), worst_streak=int(streak), max_drawdown=round(dd, 3),
-             hit_target=round(why["target"], 3), hit_stop=round(why["stop"], 3), hit_time=round(why["time"], 3),
+             hit_target=round(why["target"], 3), hit_stop=round(why["stop"], 3), hit_time=round(why["time"], 3), hit_trail=round(why["trail"], 3),
              years_pos=int(sum(1 for y in ys if y > 0)), years_n=len(ys))
     if base_tr:
         br = np.array([t["ret"] for t in base_tr]); e = float(r.mean() - br.mean()); se = float(np.sqrt(r.var(ddof=1) / len(r) + br.var(ddof=1) / len(br))) if len(r) > 1 and len(br) > 1 else None
@@ -286,6 +291,17 @@ def _m(x): return float(np.mean([t["ret"] for t in x]))
 def _edge(a, b, mn=30):
     if len(a) < mn or len(b) < mn: return None
     return _m(a) - _m(b)
+
+def trail_result(tr_by_tp, bt_by_tp, split, inper):
+    """Same entries, but the stop follows the highest price instead of a fixed target. Width picked on the earlier period, judged on the later."""
+    best = None
+    for tp, tr in tr_by_tp.items():
+        a = stats([t for t in tr if t["entry"] < split], inper(bt_by_tp[tp], "0000", split))
+        if a and a["n"] >= 60 and (best is None or a["edge"] > best[0]): best = (a["edge"], tp, tr)
+    if best is None: return None
+    _, tp, tr = best
+    b = stats([t for t in tr if t["entry"] >= split], inper(bt_by_tp[tp], split, "9999"))
+    return dict(trail=tp, test=b)
 
 def compute_robust(tr_by_g, bt_by_g, g, split, order, nsyms, cost):
     """Eight extra checks on one strategy. Every check is a fixed rule with a printed number; none is a judgement call."""
@@ -490,7 +506,8 @@ def run(mode, top, years, cost):
     for k, d in data.items():
         MOMSIG[k] = ((rank[k] >= 0.9) & firstday & (closes[k] > sma(closes[k], 200))).fillna(False)
     allt = {s["id"]: {g: [] for g in GRID[s["kind"]]} for s in STRATS}; daily = []
-    allb = {k: {g: [] for g in GRID[k]} for k in GRID}   # random-entry control trades: same exits, entry every 5th day
+    allb = {k: {g: [] for g in GRID[k]} for k in GRID}   # random-entry control trades
+    allbT = {k: {tp: [] for tp in TRAIL[k]} for k in TRAIL}; alltT = {s["id"]: {tp: [] for tp in TRAIL[s["kind"]]} for s in STRATS}   # trailing-stop variants: same exits, entry every 5th day
     states = {k: ["-"] * len(STRATS) for k in data}; todays = {s["id"]: dict(buy=[], hold=0, exit=[]) for s in STRATS}; opens = {}
     for key, df in data.items():
         sym = key[:-3]
@@ -501,8 +518,11 @@ def run(mode, top, years, cost):
             rnd = pd.Series(np.arange(len(df)) % 5 == 0, index=df.index)
             for k in GRID:
                 for g in GRID[k]:
-                    tr, _ = simulate(df, rnd, g[0], g[1], MAX_HOLD[k], cost, None)
+                    tr, _ = simulate(df, rnd, g[0], g[1], MAX_HOLD[k], cost, reg)
                     allb[k][g] += [dict(t, sym=sym) for t in tr]
+                for tp in TRAIL[k]:
+                    tr, _ = simulate(df, rnd, tp, 0, MAX_HOLD[k], cost, reg, trail=tp)
+                    allbT[k][tp] += [dict(t, sym=sym) for t in tr]
         for j, s in enumerate(STRATS):
             try: en = s["fn"](df)
             except Exception as e: log.warning("%s on %s: %s", s["id"], sym, str(e)[:60]); continue
@@ -511,6 +531,9 @@ def run(mode, top, years, cost):
                 for g in GRID[s["kind"]]:
                     tr, _ = simulate(df, en, g[0], g[1], mh, cost, reg)
                     allt[s["id"]][g] += [dict(t, sym=sym) for t in tr]
+                for tp in TRAIL[s["kind"]]:
+                    tr, _ = simulate(df, en, tp, 0, mh, cost, reg, trail=tp)
+                    alltT[s["id"]][tp] += [dict(t, sym=sym) for t in tr]
             else:
                 g = chosen.get(s["id"]) or GRID[s["kind"]][0]
             if mode == "states":
@@ -540,7 +563,7 @@ def run(mode, top, years, cost):
             stars, verdict, parts = rate(a, b)
             out["strategies"].append(dict(id=s["id"], name=s["name"], rule=s["rule"], kind=s["kind"], params=dict(stop=g[0], target=g[1], max_hold=MAX_HOLD[s["kind"]]),
                                           exit=f"Sell at the target (+{g[1]}%), the stop loss (-{g[0]}%), or after {MAX_HOLD[s['kind']]} trading days, whichever comes first.",
-                                          train=a, test=b, test_up=stats(ups), test_down=stats(dns), grid=table, robust=compute_robust(allt[s["id"]], allb[s["kind"]], g, split, order_idx, len(syms), cost), stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
+                                          train=a, test=b, test_up=stats(ups, [t for t in inper(bk, split, "9999") if t["up"]]), test_down=stats(dns, [t for t in inper(bk, split, "9999") if t["up"] is False]), trail=trail_result(alltT[s["id"]], allbT[s["kind"]], split, inper), grid=table, robust=compute_robust(allt[s["id"]], allb[s["kind"]], g, split, order_idx, len(syms), cost), stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
     for s in out.get("strategies", []):
         t = todays.get(s["id"], {}); p = s["params"]
         buys = sorted(t.get("buy", []), key=lambda x: x["s"])

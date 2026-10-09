@@ -17,6 +17,11 @@ o4=[100,100,100,112,100,100];h4=[100,101,101,113,100,100];l4=[100,99,99,111,99,9
 df=mk(o,[100.5]*6,[99.5]*6,c);tr,_=S.simulate(df,en,5,10,3,0.004);assert tr[0]["why"]=="time" and tr[0]["days"]==3,tr
 # open trade
 tr,op=S.simulate(df,en,5,10,40,0.004);assert tr==[] and op["stop"]==95,(tr,op)
+# trailing stop: rises to 120 on day 2, falls to 107 on day 3 -> stop at 120*0.9=108
+ot=[100,100,100,115,100,100];ht=[100,105,120,116,100,100];lt=[100,99,110,107,99,99];df=mk(ot,ht,lt,c);tr,_=S.simulate(df,en,10,0,20,0.004,None,trail=10)
+assert tr[0]["why"]=="trail" and abs(tr[0]["ret"]-(0.08-0.004))<1e-9,tr
+# same-day spike then fall does not raise the stop until the next day: high 120 and low 100 on one day, exit only at old stop
+ht2=[100,101,120,101,101,101];lt2=[100,99,100,99,99,99];df=mk([100]*6,ht2,lt2,c);tr,_=S.simulate(df,en,10,0,20,0.004,None,trail=10);assert tr[0]["why"]!="stop" or tr[0]["ret"]<0.0,tr
 # stats / rate
 trs=[dict(ret=0.1,exit="2025-01-0%d"%(i%9+1),entry="2025-0%d-01"%(i%9+1),days=5,why="target") for i in range(200)]+[dict(ret=-0.05,exit="2025-02-01",entry="2025-02-01",days=5,why="stop") for i in range(100)]
 st=S.stats(trs,0.0);print(st);r=S.rate(st,dict(st,edge=0.01));print(r[:2]);assert abs(sum(x[1] for x in r[2])-r[0])<=0.25 or r[0]==5.0
