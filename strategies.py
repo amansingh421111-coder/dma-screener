@@ -281,6 +281,94 @@ def rate(train, test):
     stars = round(min(5.0, pts) * 2) / 2
     return stars, ("reliable" if stars >= 3.5 else "mixed" if stars >= 2.5 else "unreliable"), parts
 
+
+def _m(x): return float(np.mean([t["ret"] for t in x]))
+def _edge(a, b, mn=30):
+    if len(a) < mn or len(b) < mn: return None
+    return _m(a) - _m(b)
+
+def compute_robust(tr_by_g, bt_by_g, g, split, order, nsyms, cost):
+    """Eight extra checks on one strategy. Every check is a fixed rule with a printed number; none is a judgement call."""
+    ST, BT = tr_by_g[g], bt_by_g[g]
+    test = [t for t in ST if t["entry"] >= split]; btest = [t for t in BT if t["entry"] >= split]
+    out = {}
+    # 1. walk-forward: for each year, pick the stop/target using only earlier years, then trade that year
+    years = sorted({t["entry"][:4] for t in ST + BT})
+    wf_a, wf_b, wf_years = [], [], []
+    for y in years:
+        if years.index(y) < 2: continue
+        cut = f"{y}-01-01"; best = None
+        for gg in tr_by_g:
+            a = [t for t in tr_by_g[gg] if t["entry"] < cut]; b = [t for t in bt_by_g[gg] if t["entry"] < cut]
+            e = _edge(a, b, 60)
+            if e is not None and (best is None or e > best[0]): best = (e, gg)
+        if not best: continue
+        gg = best[1]; a = [t for t in tr_by_g[gg] if t["entry"][:4] == y]; b = [t for t in bt_by_g[gg] if t["entry"][:4] == y]
+        wf_a += a; wf_b += b
+        wf_years.append(dict(year=y, stop=gg[0], target=gg[1], n=len(a), edge=None if _edge(a, b, 20) is None else round(_edge(a, b, 20), 4)))
+    wf = stats(wf_a, wf_b) if len(wf_a) >= 30 and len(wf_b) >= 30 else None
+    out["walk_forward"] = dict(stats=wf, years=wf_years)
+    # 2. calendar years with the chosen stop/target
+    yrs = []
+    for y in years:
+        a = [t for t in ST if t["entry"][:4] == y]; b = [t for t in BT if t["entry"][:4] == y]
+        e = _edge(a, b, 30)
+        yrs.append(dict(year=y, n=len(a), avg=round(_m(a), 4) if a else None, base=round(_m(b), 4) if b else None, edge=None if e is None else round(e, 4)))
+    out["years"] = yrs
+    # 3. every stop/target combination on the later period
+    sens = []
+    for gg in tr_by_g:
+        a = [t for t in tr_by_g[gg] if t["entry"] >= split]; b = [t for t in bt_by_g[gg] if t["entry"] >= split]
+        st = stats(a, b) if a and b else None
+        sens.append(dict(stop=gg[0], target=gg[1], n=len(a), avg=None if not st else st["avg_ret"], edge=None if not st else st["edge"], t=None if not st else st.get("t")))
+    out["sensitivity"] = sens
+    # 4. costs
+    base_avg = _m(test) if test else None
+    out["costs"] = [dict(cost=c, avg=None if base_avg is None else round(base_avg + cost - c, 4)) for c in (0.0, 0.002, 0.004, 0.008, 0.012)]
+    # 5. two random halves of the stock list, and 6. three liquidity groups
+    half = lambda t: sum(map(ord, t["sym"])) % 2
+    out["halves"] = []
+    for h, nm in ((0, "Stock group A"), (1, "Stock group B")):
+        a = [t for t in test if half(t) == h]; b = [t for t in btest if half(t) == h]; e = _edge(a, b)
+        out["halves"].append(dict(name=nm, n=len(a), edge=None if e is None else round(e, 4)))
+    grp = lambda t: min(2, int(3 * order.get(t["sym"], 0) / max(1, nsyms)))
+    out["liquidity"] = []
+    for k, nm in enumerate(("Most traded third", "Middle third", "Least traded third")):
+        a = [t for t in test if grp(t) == k]; b = [t for t in btest if grp(t) == k]; e = _edge(a, b)
+        out["liquidity"].append(dict(name=nm, n=len(a), edge=None if e is None else round(e, 4)))
+    # 7. month-by-month t: stocks that signal on the same day are not independent, so judge by monthly averages
+    months = sorted({t["entry"][:7] for t in test})
+    d = []
+    for mo in months:
+        a = [t for t in test if t["entry"][:7] == mo]; b = [t for t in btest if t["entry"][:7] == mo]
+        if len(a) >= 5 and len(b) >= 5: d.append(_m(a) - _m(b))
+    mt = None if len(d) < 6 or np.std(d, ddof=1) == 0 else float(np.mean(d) / (np.std(d, ddof=1) / np.sqrt(len(d))))
+    out["month"] = dict(months=len(d), t=None if mt is None else round(mt, 2), positive=int(sum(1 for x in d if x > 0)))
+    # 8. bootstrap interval of the edge
+    ra = np.array([t["ret"] for t in test]); rb = np.array([t["ret"] for t in btest]); lo = hi = None
+    if len(ra) >= 30 and len(rb) >= 30:
+        rng = np.random.default_rng(7)
+        bs = [ra[rng.integers(0, len(ra), len(ra))].mean() - rb[rng.integers(0, len(rb), len(rb))].mean() for _ in range(400)]
+        lo, hi = float(np.percentile(bs, 2.5)), float(np.percentile(bs, 97.5))
+    out["bootstrap"] = dict(lo=None if lo is None else round(lo, 4), hi=None if hi is None else round(hi, 4))
+    # the eight pass/fail rules
+    ys = [y for y in yrs if y["edge"] is not None]; yp = sum(1 for y in ys if y["edge"] > 0)
+    sp = [x for x in sens if x["edge"] is not None]; sg = sum(1 for x in sp if x["edge"] > 0)
+    hv = [x for x in out["halves"] if x["edge"] is not None]; lq = [x for x in out["liquidity"] if x["edge"] is not None]
+    fmt = lambda v: "n/a" if v is None else f"{v*100:+.2f}%"
+    ck = [
+      dict(id="wf", label="Walk-forward: picking the stop and target each year from earlier years only, the edge is positive and t is 2 or more", ok=bool(wf and wf["edge"] > 0 and (wf.get("t") or 0) >= 2), detail="not enough years" if not wf else f"edge {fmt(wf['edge'])}, t {wf.get('t')}, {wf['n']} trades"),
+      dict(id="years", label="The edge is positive in at least two thirds of the calendar years that have 30 or more trades (and at least 3 such years)", ok=bool(len(ys) >= 3 and yp / len(ys) >= 2 / 3), detail=f"{yp} of {len(ys)} years positive"),
+      dict(id="sens", label="The edge is positive for at least 70% of all stop and target combinations tried (later period)", ok=bool(sp and sg / len(sp) >= 0.7), detail=f"{sg} of {len(sp)} combinations positive"),
+      dict(id="halves", label="The edge is positive in both random halves of the stock list", ok=bool(len(hv) == 2 and all(x["edge"] > 0 for x in hv)), detail=", ".join(f"{x['name']} {fmt(x['edge'])}" for x in hv) or "n/a"),
+      dict(id="liq", label="The edge is positive in at least two of three liquidity groups (most, middle, least traded)", ok=bool(len(lq) >= 2 and sum(1 for x in lq if x["edge"] > 0) >= 2), detail=", ".join(f"{x['name']} {fmt(x['edge'])}" for x in lq) or "n/a"),
+      dict(id="month", label="Judged by monthly averages (stocks signalling on the same day are not independent), t is 2 or more", ok=bool(mt is not None and mt >= 2), detail="n/a" if mt is None else f"t {mt:.2f} over {len(d)} months, {out['month']['positive']} positive"),
+      dict(id="boot", label="Resampling the trades 400 times, the lower end of the 95% range of the edge is above zero", ok=bool(lo is not None and lo > 0), detail="n/a" if lo is None else f"95% range {fmt(lo)} to {fmt(hi)}"),
+      dict(id="cost", label="Still profitable on average if costs are doubled to 0.8% per trade", ok=bool(base_avg is not None and base_avg + cost - 0.008 > 0), detail="n/a" if base_avg is None else f"average {fmt(base_avg + cost - 0.008)} per trade at 0.8% costs"),
+    ]
+    out["checks"] = ck; out["passed"] = sum(1 for c in ck if c["ok"]); out["total"] = len(ck)
+    return out
+
 def adjusted_download(tickers, years, batch=50, budget=1500):
     import yfinance as yf
     out, t0 = {}, time.time()
@@ -316,12 +404,71 @@ def liquid_universe(top):
     rows = [(k, v[6] or 0, v[3] or 0) for k, v in b[1].items() if (v[3] or 0) >= 50]
     rows.sort(key=lambda x: -x[1]); return [k for k, _, _ in rows[:top]], str(b[0])
 
+FWD_CAP = 10        # at most this many signals per strategy per day are followed (the most traded stocks first)
+FWD_CTRL = 10       # random stocks followed per day for every stop/target combination, as the control group
+
+def _resolve(df, sig, stop, target, hold, cost):
+    """Replays one signal from its signal day: buy at the next open, then stop / target / time limit. Returns ('done', trade), ('open', None) or ('wait', None)."""
+    ts = pd.Timestamp(sig); pos = df.index.searchsorted(ts)
+    if pos >= len(df) or df.index[pos] != ts: return "lost", None
+    sub = df.iloc[pos:]
+    if len(sub) < 2: return "wait", None
+    en = pd.Series(False, index=sub.index); en.iloc[0] = True
+    tr, op = simulate(sub, en, stop, target, hold, cost)
+    if tr: return "done", tr[0]
+    return ("open", None) if op else ("wait", None)
+
+def update_forward(data, strategies, todays, price_date, order_idx, cost=0.004):
+    """Live record. Every day the signals of every strategy are logged and followed to their real outcome with the same rules as the backtest,
+    next to a control group of random stocks with the same stop, target and time limit. Nothing here is tuned: it is a plain diary."""
+    import random
+    path = ROOT / "forward.json"
+    try: F = json.loads(path.read_text())
+    except Exception: F = {}
+    F.setdefault("since", price_date); F.setdefault("agg", {}); F.setdefault("ctrl", {}); F.setdefault("open", [])
+    by = {s["id"]: s for s in strategies}
+    combos = {}
+    for s in strategies: combos[f"{s['params']['stop']}/{s['params']['target']}/{s['params']['max_hold']}"] = (s["params"]["stop"], s["params"]["target"], s["params"]["max_hold"])
+    if F.get("last_sig") != price_date:
+        for sid, t in todays.items():
+            if sid not in by: continue
+            sig = sorted(t.get("buy", []), key=lambda x: order_idx.get(x["s"], 9999))[:FWD_CAP]
+            F["open"] += [["s:" + sid, x["s"], price_date] for x in sig]
+        keys = sorted(data)
+        for cb in combos:
+            rnd = random.Random(f"{price_date}|{cb}")
+            F["open"] += [["c:" + cb, k[:-3], price_date] for k in rnd.sample(keys, min(FWD_CTRL, len(keys)))]
+        F["last_sig"] = price_date
+    keep = []; today = pd.Timestamp(price_date)
+    for tag, sym, sig in F["open"]:
+        df = data.get(sym + ".NS")
+        if df is None: continue
+        if tag.startswith("s:"):
+            sx = by.get(tag[2:]); 
+            if not sx: continue
+            stop, tgt, hold = sx["params"]["stop"], sx["params"]["target"], sx["params"]["max_hold"]; grp, key = F["agg"], tag[2:]
+        else:
+            stop, tgt, hold = combos.get(tag[2:], (None, None, None))
+            if stop is None: continue
+            grp, key = F["ctrl"], tag[2:]
+        st, tr = _resolve(df, sig, stop, tgt, hold, cost)
+        if st == "done":
+            b = grp.setdefault(key, {})
+            for k, v in (("n", 0), ("sum", 0.0), ("sumsq", 0.0), ("win", 0), ("target", 0), ("stop", 0), ("time", 0)): b.setdefault(k, v)
+            b["n"] += 1; b["sum"] = round(b["sum"] + tr["ret"], 6); b["sumsq"] = round(b["sumsq"] + tr["ret"] ** 2, 6); b["win"] += 1 if tr["ret"] > 0 else 0; b[tr["why"]] += 1
+            b["last"] = tr["exit"]; b.setdefault("first", sig)
+        elif (today - pd.Timestamp(sig)).days <= 100 and st != "lost": keep.append([tag, sym, sig])
+    F["open"] = keep; F["updated"] = dt.datetime.now(dt.timezone.utc).isoformat(); F["price_date"] = price_date
+    F["note"] = f"Up to {FWD_CAP} signals per strategy per day (most traded stocks first) and {FWD_CTRL} random stocks per stop/target combination per day are followed. Trades pay {cost*100:.1f}% costs."
+    path.write_text(json.dumps(F, separators=(",", ":")))
+    return F
+
 def run(mode, top, years, cost):
     old = {}
     try: old = json.loads((ROOT / "strategies.json").read_text())
     except Exception: pass
     if mode == "states" and not old.get("strategies"): mode = "full"
-    syms, bhav_day = liquid_universe(top)
+    syms, bhav_day = liquid_universe(top); order_idx = {x: i for i, x in enumerate(syms)}
     data = adjusted_download([s + ".NS" for s in syms], years if mode == "full" else 3)
     if len(data) < 100: raise SystemExit(f"only {len(data)} stocks downloaded; not updating")
     last_dates = pd.Series([d.index[-1].date() for d in data.values()]); price_date = str(last_dates.mode().iloc[0])
@@ -355,7 +502,7 @@ def run(mode, top, years, cost):
             for k in GRID:
                 for g in GRID[k]:
                     tr, _ = simulate(df, rnd, g[0], g[1], MAX_HOLD[k], cost, None)
-                    allb[k][g] += tr
+                    allb[k][g] += [dict(t, sym=sym) for t in tr]
         for j, s in enumerate(STRATS):
             try: en = s["fn"](df)
             except Exception as e: log.warning("%s on %s: %s", s["id"], sym, str(e)[:60]); continue
@@ -393,7 +540,7 @@ def run(mode, top, years, cost):
             stars, verdict, parts = rate(a, b)
             out["strategies"].append(dict(id=s["id"], name=s["name"], rule=s["rule"], kind=s["kind"], params=dict(stop=g[0], target=g[1], max_hold=MAX_HOLD[s["kind"]]),
                                           exit=f"Sell at the target (+{g[1]}%), the stop loss (-{g[0]}%), or after {MAX_HOLD[s['kind']]} trading days, whichever comes first.",
-                                          train=a, test=b, test_up=stats(ups), test_down=stats(dns), grid=table, stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
+                                          train=a, test=b, test_up=stats(ups), test_down=stats(dns), grid=table, robust=compute_robust(allt[s["id"]], allb[s["kind"]], g, split, order_idx, len(syms), cost), stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
     for s in out.get("strategies", []):
         t = todays.get(s["id"], {}); p = s["params"]
         buys = sorted(t.get("buy", []), key=lambda x: x["s"])
@@ -406,6 +553,9 @@ def run(mode, top, years, cost):
                       "The stock list is today's liquid stocks, so stocks that were delisted are missing and results look better than real life would have been.",
                       "News, results announcements and company events are not part of the test."]
     (ROOT / "strategies.json").write_text(json.dumps(out, separators=(",", ":")))
+    if mode == "states" and out.get("strategies"):
+        F = update_forward(data, out["strategies"], todays, price_date, order_idx, cost)
+        print("forward log: open", len(F["open"]), "| strategies with finished trades:", sum(1 for v in F["agg"].values() if v.get("n")))
     for s in out.get("strategies", []):
         t = s["test"] or {}; print(f"{s['name']:40s} {s['stars']:3.1f}* {s['verdict']:10s} stop {s['params']['stop']} tgt {s['params']['target']} test n={t.get('n')} avg={t.get('avg_ret')} pf={t.get('profit_factor')} win={t.get('win_rate')}")
     print("market:", market, "| stocks:", len(data), "| price date:", price_date, "| stale:", out["stale"])
