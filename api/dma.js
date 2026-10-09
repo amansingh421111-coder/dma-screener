@@ -5,7 +5,7 @@ const scrypt = promisify(crypto.scrypt);
 
 const E = Object.assign({}, process.env);
 // match bot settings regardless of capitalization (Bot_token, bot_token, BOT_TOKEN ...)
-for (const k of ["BOT_TOKEN", "BOT_USERNAME"]) {
+for (const k of ["BOT_TOKEN", "BOT_USERNAME", "YOUTUBE_API_KEY"]) {
   const name = Object.keys(process.env).find((n) => n.toUpperCase() === k);
   if (name && process.env[name]) E[k] = process.env[name].trim();
 }
@@ -199,12 +199,67 @@ module.exports = async (req, res) => {
       if (!sameHash(await hashPw(String(body.password || "").slice(0, 128), acct.salt), acct.hash)) return send(res, { error: "Password is wrong." }, 401);
       const chat = await redis(["GET", "chat:" + uid]);
       if (chat) await redis(["DEL", "uid:" + chat]);
-      for (const k of ["chat:" + uid, "pos:" + uid, "owner:" + uid, "acct:" + sess.name, "sess:" + sha(sess.token)]) await redis(["DEL", k]);
+      for (const k of ["chat:" + uid, "pos:" + uid, "ytnotes:" + uid, "owner:" + uid, "acct:" + sess.name, "sess:" + sha(sess.token)]) await redis(["DEL", k]);
       await redis(["SREM", "users", uid]);
       return send(res, { ok: true }, 200, cookieFor("", 0));
     }
 
     if (a === "status") return send(res, { connected: !!(await redis(["GET", "chat:" + uid])) });
+
+    // ---- channel video list (YouTube Data API v3, official) + personal notes ----
+    if (a === "yt") {
+      if (!E.YOUTUBE_API_KEY) return send(res, { error: "YOUTUBE_API_KEY is not set in Vercel yet." }, 503);
+      if (!(await rl("rl:yt:" + uid, 120, 3600))) return send(res, { error: "Too many requests this hour. Try again later." }, 429);
+      const api = async (path, params) => {
+        const u = new URL("https://www.googleapis.com/youtube/v3/" + path);
+        for (const [k, v] of Object.entries({ ...params, key: E.YOUTUBE_API_KEY })) u.searchParams.set(k, v);
+        const r = await fetch(u); const j = await r.json();
+        if (!r.ok) throw Object.assign(new Error((j.error && j.error.message) || "YouTube API error"), { yt: true, code: r.status });
+        return j;
+      };
+      try {
+        let cid = String(req.query.channel || "").trim().slice(0, 200), uploads = String(req.query.uploads || "");
+        if (!/^UU[\w-]{22}$/.test(uploads)) uploads = "";
+        let ch = null;
+        if (!uploads) {
+          if (!cid) return send(res, { error: "Enter a channel link, @handle or channel ID." }, 400);
+          let m;
+          if ((m = cid.match(/(UC[\w-]{22})/))) ch = (await api("channels", { part: "snippet,contentDetails,statistics", id: m[1] })).items;
+          else if ((m = cid.match(/@([\w.\-]{1,60})/))) ch = (await api("channels", { part: "snippet,contentDetails,statistics", forHandle: "@" + m[1] })).items;
+          else {
+            const sr = await api("search", { part: "snippet", type: "channel", q: cid.replace(/^https?:\/\/[^/]+\/(c\/|user\/)?/, ""), maxResults: 1 });
+            const id = sr.items && sr.items[0] && sr.items[0].snippet.channelId;
+            if (id) ch = (await api("channels", { part: "snippet,contentDetails,statistics", id })).items;
+          }
+          if (!ch || !ch[0]) return send(res, { error: "Channel not found. Try its @handle or the UC... channel ID." }, 404);
+          ch = ch[0]; uploads = ch.contentDetails.relatedPlaylists.uploads;
+        }
+        const pl = await api("playlistItems", { part: "contentDetails", playlistId: uploads, maxResults: 50, ...(req.query.page ? { pageToken: String(req.query.page).slice(0, 100) } : {}) });
+        const ids = pl.items.map((i) => i.contentDetails.videoId).filter((x) => /^[\w-]{11}$/.test(x));
+        const vd = ids.length ? (await api("videos", { part: "snippet,contentDetails,statistics", id: ids.join(",") })).items : [];
+        const videos = vd.map((v) => ({ id: v.id, title: v.snippet.title, published: v.snippet.publishedAt.slice(0, 10), duration: v.contentDetails.duration,
+          views: +v.statistics.viewCount || 0, description: String(v.snippet.description || "").slice(0, 2500) }));
+        return send(res, { channel: ch ? { id: ch.id, title: ch.snippet.title, uploads, videoCount: +ch.statistics.videoCount || 0 } : null, uploads, videos, next: pl.nextPageToken || null });
+      } catch (e) {
+        return send(res, { error: e.yt ? e.message : "Could not reach YouTube." }, e.yt && e.code === 403 ? 403 : 502);
+      }
+    }
+
+    if (a === "ytnotes") {
+      if (req.method === "GET") { const raw = await redis(["GET", "ytnotes:" + uid]); return send(res, raw ? JSON.parse(raw) : { notes: {} }); }
+      if (needPost()) return;
+      const n = body.notes;
+      if (!n || typeof n !== "object" || Array.isArray(n)) return send(res, { error: "Invalid notes." }, 400);
+      const clean = {}; let size = 0;
+      for (const [k, v] of Object.entries(n)) {
+        if (!/^[\w-]{11}$/.test(k)) continue;
+        const o = { title: String(v.title || "").slice(0, 200), text: String(v.text || "").slice(0, 60000) };
+        size += o.text.length + o.title.length; if (size > 900000) return send(res, { error: "Notes are too large (limit about 900 KB)." }, 413);
+        clean[k] = o;
+      }
+      await redis(["SET", "ytnotes:" + uid, JSON.stringify({ notes: clean })]);
+      return send(res, { saved: true });
+    }
 
     if (a === "positions") {
       if (req.method === "GET") {

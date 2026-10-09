@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Channel Notes</title>
+<link rel="icon" href="icon.svg">
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#101828;--mute:#667085;--line:#e4e7ec;--accent:#2563eb;--buy:#067647;--sell:#b42318;--sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0a0e17;--card:#111827;--ink:#eef2f7;--mute:#98a2b3;--line:#1f2a3d;--accent:#5b8def;--buy:#32d583;--sell:#f97066;--sh:0 1px 2px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:13.5px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:1100px;margin:0 auto;padding:14px 16px 40px}
+h1{font-size:17px;margin:0}a{color:var(--accent)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh);padding:12px;margin-bottom:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+input[type=text]{height:36px}textarea{min-height:140px;resize:vertical;line-height:1.4}
+.grow{flex:1;min-width:200px}
+.btn{height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}.btn:disabled{opacity:.5;cursor:default}
+.mute{color:var(--mute)}.msg{margin:8px 0 0;font-size:12.5px}.err{color:var(--sell)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.v:hover td{background:color-mix(in srgb,var(--accent) 6%,var(--card))}
+td.n,th.n{text-align:right;white-space:nowrap}
+td.t{max-width:520px}.t a{color:var(--ink);text-decoration:none;font-weight:600}.t a:hover{text-decoration:underline}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--buy);margin-right:6px}
+.exp td{background:color-mix(in srgb,var(--bg) 70%,var(--card));padding:12px 14px}
+.exp pre{white-space:pre-wrap;word-break:break-word;margin:0 0 10px;font:inherit;color:var(--mute);max-height:180px;overflow:auto}
+.sub{font-size:12px;color:var(--mute)}
+</style></head><body><main>
+<div class="top"><h1>Channel Notes</h1><a href="/">← Back to screener</a></div>
+
+<div id="gate" class="card" hidden>Please log in on the <a href="/#positions">main page</a> first, then come back here.</div>
+
+<div id="app" hidden>
+<div class="card">
+ <div class="row"><input class="grow" type="text" id="ch" placeholder="Channel link, @handle or channel ID" autocomplete="off" spellcheck="false">
+ <button class="btn pri" id="go" onclick="loadFirst()">Load videos</button></div>
+ <p class="sub" style="margin:8px 0 0">Uses YouTube's official data API: titles, dates, durations, views and descriptions. It does not download other people's captions. Paste a transcript into a video's note yourself if you want it kept here.</p>
+ <p class="msg" id="msg"></p>
+</div>
+
+<div id="res" hidden>
+ <div class="card">
+  <div class="row"><b id="cname"></b><span class="sub" id="cmeta"></span>
+   <span style="flex:1"></span><button class="btn" id="more" onclick="loadMore()">Load next 50</button><button class="btn" id="all" onclick="loadAll()">Load all</button></div>
+  <div class="row" style="margin-top:8px"><input class="grow" type="text" id="q" placeholder="Filter titles and descriptions" oninput="render()">
+   <button class="btn" onclick="selAll(true)">Select shown</button><button class="btn" onclick="selAll(false)">Clear</button>
+   <button class="btn" onclick="exp('md')">Export Markdown</button><button class="btn" onclick="exp('csv')">Export CSV</button><button class="btn" onclick="exp('json')">Export JSON</button><button class="btn" onclick="copyMd()">Copy text</button></div>
+  <p class="sub" id="sel" style="margin:8px 0 0"></p>
+ </div>
+ <div class="tw"><table><thead><tr><th style="width:30px"></th><th onclick="srt('title')">Title</th><th onclick="srt('published')">Date</th><th class="n" onclick="srt('dur')">Length</th><th class="n" onclick="srt('views')">Views</th></tr></thead><tbody id="tb"></tbody></table></div>
+</div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let V=[],CH=null,NEXT=null,UP="",NOTES={},SEL=new Set(),OPEN=null,SK="published",SD=-1,saveT=null,busy=false;
+async function api(a,params,method="GET",body){
+ const q=new URLSearchParams({a,...(params||{})});
+ const r=await fetch("/api/dma?"+q,{method,credentials:"same-origin",headers:{"x-dma":"1","content-type":"application/json"},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||("Error "+r.status)),{code:r.status});return j}
+const dur=iso=>{const m=/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso||"");if(!m)return 0;return (+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)};
+const fmtDur=s=>{const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")};
+const say=(t,bad)=>{$("msg").textContent=t||"";$("msg").className="msg"+(bad?" err":"")};
+async function init(){
+ try{await api("me");$("app").hidden=false;
+  try{NOTES=(await api("ytnotes")).notes||{}}catch(e){}
+  try{$("ch").value=localStorage.getItem("yt_last")||""}catch(e){}
+ }catch(e){$("gate").hidden=false}}
+function setBusy(b){busy=b;["go","more","all"].forEach(i=>$(i).disabled=b)}
+async function loadFirst(){
+ const c=$("ch").value.trim();if(!c){say("Enter a channel link, @handle or channel ID.",true);return}
+ setBusy(true);say("Loading…");V=[];SEL=new Set();NEXT=null;UP="";CH=null;
+ try{const j=await api("yt",{channel:c});CH=j.channel;UP=j.uploads;V=j.videos.map(prep);NEXT=j.next;try{localStorage.setItem("yt_last",c)}catch(e){}
+  $("res").hidden=false;say("");render()}
+ catch(e){say(e.message,true);$("res").hidden=true}
+ setBusy(false)}
+const prep=v=>Object.assign(v,{dur:dur(v.duration)});
+async function loadMore(){if(!NEXT||busy)return;setBusy(true);
+ try{const j=await api("yt",{uploads:UP,page:NEXT});V=V.concat(j.videos.map(prep));NEXT=j.next;say("");render()}catch(e){say(e.message,true)}setBusy(false)}
+async function loadAll(){if(busy)return;setBusy(true);
+ try{while(NEXT){const j=await api("yt",{uploads:UP,page:NEXT});V=V.concat(j.videos.map(prep));NEXT=j.next;say("Loaded "+V.length+" videos…");render()}say("")}catch(e){say(e.message,true)}setBusy(false)}
+function srt(k){SD=SK===k?-SD:(k==="title"?1:-1);SK=k;render()}
+function shown(){const q=$("q").value.trim().toLowerCase();
+ let a=V.filter(v=>!q||v.title.toLowerCase().includes(q)||v.description.toLowerCase().includes(q));
+ a.sort((x,y)=>{const p=x[SK],r=y[SK];return (typeof p==="string"?p.localeCompare(r):p-r)*SD});return a}
+function render(){
+ $("cname").textContent=CH?CH.title:"";$("cmeta").textContent=CH?` · ${CH.videoCount.toLocaleString("en-IN")} videos on the channel · ${V.length.toLocaleString("en-IN")} loaded`:"";
+ $("more").hidden=$("all").hidden=!NEXT;
+ const a=shown();
+ $("tb").innerHTML=a.map(v=>{const o=OPEN===v.id,n=NOTES[v.id];
+  return `<tr class="v"><td><input type="checkbox" ${SEL.has(v.id)?"checked":""} onchange="tg('${v.id}',this.checked)" aria-label="Select"></td>
+  <td class="t">${n&&n.text?'<span class="dot" title="Has your notes"></span>':""}<a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener noreferrer">${esc(v.title)}</a> <button class="btn" style="height:24px;padding:0 8px;font-size:11.5px" onclick="op('${v.id}')">${o?"Close":"Details / notes"}</button></td>
+  <td>${esc(v.published)}</td><td class="n">${fmtDur(v.dur)}</td><td class="n">${v.views.toLocaleString("en-IN")}</td></tr>`+(o?`<tr class="exp"><td></td><td colspan="4"><div class="sub">Description</div><pre>${esc(v.description||"(none)")}</pre>
+  <div class="sub">Your notes or pasted transcript (saved to your account)</div><textarea oninput="note('${v.id}',this.value)" placeholder="Paste the transcript or write notes here">${esc(n?n.text:"")}</textarea></td></tr>`:"")}).join("")||`<tr><td colspan="5" class="mute" style="padding:20px">No videos match.</td></tr>`;
+ $("sel").textContent=SEL.size?`${SEL.size} selected`:"Tick videos to export them, or export everything shown if none are ticked."}
+function tg(id,on){on?SEL.add(id):SEL.delete(id);$("sel").textContent=SEL.size?`${SEL.size} selected`:"Tick videos to export them, or export everything shown if none are ticked."}
+function selAll(on){shown().forEach(v=>on?SEL.add(v.id):SEL.delete(v.id));render()}
+function op(id){OPEN=OPEN===id?null:id;render()}
+function note(id,t){const v=V.find(x=>x.id===id);NOTES[id]={title:v?v.title:"",text:t};if(!t)delete NOTES[id];clearTimeout(saveT);saveT=setTimeout(async()=>{try{await api("ytnotes",null,"POST",{notes:NOTES});say("Notes saved.")}catch(e){say(e.message,true)}},900)}
+const chosen=()=>{const a=shown();return SEL.size?a.filter(v=>SEL.has(v.id)):a};
+function build(kind){const a=chosen();
+ if(kind==="json")return JSON.stringify(a.map(v=>({id:v.id,url:"https://www.youtube.com/watch?v="+v.id,title:v.title,published:v.published,duration_seconds:v.dur,views:v.views,description:v.description,notes:(NOTES[v.id]||{}).text||""})),null,1);
+ if(kind==="csv"){const q=s=>'"'+String(s).replace(/"/g,'""')+'"';return ["id,url,title,published,duration_seconds,views"].concat(a.map(v=>[v.id,"https://www.youtube.com/watch?v="+v.id,q(v.title),v.published,v.dur,v.views].join(","))).join("\n")}
+ return `# ${CH?CH.title:"Channel"}\n\n`+a.map(v=>`## ${v.title}\n${v.published} · ${fmtDur(v.dur)} · ${v.views.toLocaleString("en-IN")} views\nhttps://www.youtube.com/watch?v=${v.id}\n\n${v.description?v.description+"\n\n":""}${NOTES[v.id]&&NOTES[v.id].text?"### Notes / transcript\n"+NOTES[v.id].text+"\n\n":""}`).join("---\n\n")}
+function exp(k){const t=build(k),f=(CH?CH.title:"channel").replace(/[^\w]+/g,"-").slice(0,40)+"."+(k==="md"?"md":k);
+ const b=new Blob([t],{type:"text/plain"}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=f;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+async function copyMd(){try{await navigator.clipboard.writeText(build("md"));say("Copied. Paste it into your chat with Claude.")}catch(e){say("Could not copy. Use Export Markdown instead.",true)}}
+init();
+</script></body></html>
