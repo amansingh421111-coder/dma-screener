@@ -482,7 +482,7 @@ def notify(text):
     return sent
 
 def in_market_hours(now):
-    return now.weekday() < 5 and dt.time(9, 15) <= now.time() <= dt.time(15, 45)
+    return now.weekday() < 5 and dt.time(9, 15) <= now.time() <= dt.time(16, 30)
 
 def read_json(name, default):
     try: return json.loads((ROOT / name).read_text())
@@ -578,10 +578,8 @@ def main():
         # stop loss / target alerts repeat on every run while the price stays beyond the level; other alerts once a day
         last = st["pos_sent"].get(k)
         return last is None or k.endswith((":sl", ":tg"))
-    if a.summary:
-        notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])); return
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
-    new = [s for s in sigs if sk(s) not in st["sent"]]
+    new = [] if a.summary else [s for s in sigs if sk(s) not in st["sent"]]
     if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
         st["sent"] += [sk(s) for s in new]
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
@@ -591,6 +589,7 @@ def main():
         uev = [e for e in position_events(u["positions"], quotes, c) if due(f"{u['uid']}:{e[0]}")]
         if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in uev)) + "\n\nResearch alert only, not financial advice."):
             st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
+    if a.summary: notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"]))
     (ROOT / "state.json").write_text(json.dumps(st))
     try:
         sj = json.loads((ROOT / "signals.json").read_text()); sj["cloud"] = CLOUD

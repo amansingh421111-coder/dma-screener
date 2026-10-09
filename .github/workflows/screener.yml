@@ -1,8 +1,8 @@
 name: screener
 on:
   schedule:
-    - cron: "*/15 3-9 * * 1-5"   # 08:30-15:15 IST (script only acts 09:15-15:45)
-    - cron: "0 10 * * 1-5"       # 15:30 IST
+    - cron: "*/15 3-9 * * 1-5"   # 08:30-15:15 IST (script only acts 09:15-16:30)
+    - cron: "0,15 10 * * 1-5"    # 15:30 and 15:45 IST (after close: final closing price)
     - cron: "30 10 * * 1-5"      # 16:00 IST daily summary
   workflow_dispatch:
     inputs:
