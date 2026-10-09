@@ -333,7 +333,7 @@ footer{font-size:11.5px;margin-top:18px}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.2</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.3</span></footer>
 
 </main>
 <script>
@@ -896,7 +896,7 @@ function scrCommit(){const m=t=>{$("scrmsg").textContent=t},use=SCR.rows.map((r,
 /* ---- strategy library ---- */
 let STRAT=null;
 async function loadStrat(){if(STRAT!==null)return;STRAT={strategies:[],states:{},order:[]};try{const r=await fetch("/strategies.json",{cache:"no-cache"});if(r.ok)STRAT=await r.json()}catch(e){}render()}
-let SFAM="All",SSORT="score",SOPEN=new Set();let SMINV=2.5;try{const v=parseFloat(localStorage.getItem("dma_smin"));if(v>=0&&v<=5)SMINV=v}catch(e){}
+let SFAM="All",SSORT="score",SOPEN=new Set();let SMINV=3;try{const v=parseFloat(localStorage.getItem("dma_smin"));if(v>=0&&v<=5)SMINV=v}catch(e){}
 const SMIN=()=>SMINV;
 function setSmin(v){SMINV=+v;try{localStorage.setItem("dma_smin",String(v))}catch(e){}render()}
 /* Label for one stock. Holding: Sell when your own stop or target is reached, else Hold. Not holding: Buy when a strategy at or above the minimum score you chose signals today, else Wait. */
@@ -916,7 +916,7 @@ function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div cl
  let list=S.strategies.filter(s=>SFAM==="All"||(s.family||"Other")===SFAM);
  list=list.slice().sort((a,b)=>SSORT==="name"?a.name.localeCompare(b.name):(val[SSORT](b)-val[SSORT](a))||(b.stars-a.stars));
  const cell=(t,k,f)=>t?f(t[k]):"–";
- const tr=s=>{const t=s.test,pm=s.params;return `<tr class="clk" onclick="toggleS('${s.id}')"><td><b>${(s.stars||0).toFixed(1)}</b></td><td>${esc(s.name)}<div class="sub">${esc(s.family||"")}</div></td><td>−${pm.stop}% / +${pm.target}%</td><td>${t?t.n:"–"}</td><td>${cell(t,"win_rate",pc1)}</td><td><span class="${t?pcl(t.avg_ret):""}">${cell(t,"avg_ret",pc1)}</span></td><td><span class="${t&&t.edge!=null?pcl(t.edge):""}">${t&&t.edge!=null?pc1(t.edge):"–"}</span></td><td>${t?(t.profit_factor??"–"):"–"}</td><td>${(s.today||{}).buy_n||0}</td></tr>`};
+ const tr=s=>{const t=s.test,pm=s.params;return `<tr class="clk" onclick="toggleS('${s.id}')"><td><b>${(s.stars||0).toFixed(1)}</b></td><td style="text-align:left">${esc(s.name)}<div class="sub">${esc(s.family||"")}</div></td><td>−${pm.stop}% / +${pm.target}%</td><td>${t?t.n:"–"}</td><td>${cell(t,"win_rate",pc1)}</td><td><span class="${t?pcl(t.avg_ret):""}">${cell(t,"avg_ret",pc1)}</span></td><td><span class="${t&&t.edge!=null?pcl(t.edge):""}">${t&&t.edge!=null?pc1(t.edge):"–"}</span></td><td>${t?(t.profit_factor??"–"):"–"}</td><td>${(s.today||{}).buy_n||0}</td></tr>`};
  const row=(l,t)=>t?`<tr><td>${l}</td><td>${t.n}</td><td>${pc1(t.win_rate)}</td><td><span class="${pcl(t.avg_ret)}">${pc1(t.avg_ret)}</span></td><td>${t.profit_factor??"–"}</td><td>${t.baseline!=null?pc1(t.baseline):"–"}</td><td>${t.edge!=null?`<span class="${pcl(t.edge)}">${pc1(t.edge)}</span>`:"–"}</td><td>${t.t??"–"}</td><td>${pc1(t.avg_win)}</td><td>${pc1(t.avg_loss)}</td><td>${pc1(t.hit_target)} / ${pc1(t.hit_stop)} / ${pc1(t.hit_time)}</td><td>${t.median_days}d</td><td>${pc1(t.worst)}</td><td>${t.worst_streak}</td></tr>`:`<tr><td>${l}</td><td colspan="13" class="sub">Too few trades</td></tr>`;
  const hdr=`<thead><tr><th>Period</th><th>Trades</th><th>Won</th><th>Avg per trade</th><th>Profit factor</th><th>Random entries, same exits</th><th>Edge</th><th>Confidence (t)</th><th>Avg win</th><th>Avg loss</th><th>Target / stop / time</th><th>Typical hold</th><th>Worst trade</th><th>Losing streak</th></tr></thead>`;
  const sig=(a,n)=>!n?`<div class="sub">No stock is signalling today.</div>`:`<div class="tw"><table class="pt" style="min-width:0"><thead><tr><th>Stock</th><th>Close</th><th>Stop loss</th><th>Target</th></tr></thead><tbody>`+a.slice(0,30).map(x=>`<tr><td><a target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent("NSE:"+x.s)}">${esc(x.s)}</a></td><td>${inr(x.c)}</td><td>${inr(x.stop)}</td><td>${inr(x.target)}</td></tr>`).join("")+`</tbody></table></div>`+(n>30?`<div class="sub">+${n-30} more not shown</div>`:"");
