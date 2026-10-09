@@ -256,23 +256,24 @@ def stats(tr, baseline_ret=None):
              median_days=int(np.median([t["days"] for t in tr])), worst=round(float(r.min()), 4), worst_streak=int(streak), max_drawdown=round(dd, 3),
              hit_target=round(why["target"], 3), hit_stop=round(why["stop"], 3), hit_time=round(why["time"], 3),
              years_pos=int(sum(1 for y in ys if y > 0)), years_n=len(ys))
-    if baseline_ret is not None: d["edge"] = round(d["avg_ret"] - baseline_ret, 4)
+    if baseline_ret is not None: d["baseline"] = round(baseline_ret, 4); d["edge"] = round(d["avg_ret"] - baseline_ret, 4)
     return d
 
 def rate(train, test):
-    """Score out of 5 from fixed, published arithmetic (no judgement calls). Uses the later (unseen) period, with the earlier one as a check.
+    """Score out of 5 from fixed arithmetic (no judgement calls). The main measure is the EDGE: average profit per trade minus what a randomly
+    chosen stock earned over the same number of days in the same period. Without that, a rising market makes every strategy look good.
     Returns (stars, label, parts) where parts lists every point awarded."""
     if not test or test["n"] < 60: return 0.0, "unproven", [["Fewer than 60 trades in the later period: no score", 0]]
-    parts = []; a = test["avg_ret"]; pf = test["profit_factor"] or 0
+    parts = []; a = test["avg_ret"]; e = test.get("edge", 0) or 0; pf = test["profit_factor"] or 0
     def add(label, pts): parts.append([label, pts])
-    add("Average profit per trade after costs: 2 points at 1.5% or more, 1.5 at 0.8%, 1 at 0.4%, 0.5 above 0", 2.0 if a >= 0.015 else 1.5 if a >= 0.008 else 1.0 if a >= 0.004 else 0.5 if a > 0 else 0)
-    add("Profit factor (money won / money lost): 1 point at 1.5 or more, 0.75 at 1.3, 0.4 at 1.15", 1.0 if pf >= 1.5 else 0.75 if pf >= 1.3 else 0.4 if pf >= 1.15 else 0)
+    add("Edge over a random stock held for the same days (later period): 2.5 points at +1.5% or more, 2 at +0.8%, 1.5 at +0.4%, 1 at +0.1%, 0.5 above 0", 2.5 if e >= 0.015 else 2.0 if e >= 0.008 else 1.5 if e >= 0.004 else 1.0 if e >= 0.001 else 0.5 if e > 0 else 0)
+    add("Average profit per trade after costs is above zero: 0.5 point", 0.5 if a > 0 else 0)
+    add("Profit factor (money won / money lost): 0.5 point at 1.3 or more, 0.25 at 1.15", 0.5 if pf >= 1.3 else 0.25 if pf >= 1.15 else 0)
     add("Number of trades: 0.5 point at 300 or more, 0.25 at 150", 0.5 if test["n"] >= 300 else 0.25 if test["n"] >= 150 else 0)
-    add("Also profitable in the earlier period: 0.5 point", 0.5 if train and train["avg_ret"] > 0 else 0)
-    add("Beat buying a random stock for the same days: 0.5 point", 0.5 if test.get("edge", 0) > 0 else 0)
-    add("Profitable in at least 75% of calendar years: 0.5 point", 0.5 if test["years_n"] >= 2 and test["years_pos"] / test["years_n"] >= 0.75 else 0)
+    add("Edge over a random stock was also positive in the earlier period: 0.5 point", 0.5 if train and (train.get("edge", 0) or 0) > 0 else 0)
+    add("Profitable in at least 75% of calendar years of the later period: 0.5 point", 0.5 if test["years_n"] >= 2 and test["years_pos"] / test["years_n"] >= 0.75 else 0)
     pts = sum(x[1] for x in parts)
-    if a <= 0 and pts > 1.0: add("Cap: a strategy with zero or negative average profit cannot score above 1", 1.0 - pts); pts = 1.0
+    if e <= 0 and pts > 2.0: add("Cap: with no edge over a random stock the score cannot exceed 2", 2.0 - pts); pts = 2.0
     stars = round(min(5.0, pts) * 2) / 2
     return stars, ("reliable" if stars >= 3.5 else "mixed" if stars >= 2.5 else "unreliable"), parts
 
@@ -343,7 +344,7 @@ def run(mode, top, years, cost):
         sym = key[:-3]
         df.attrs["key"] = key
         reg = nok.reindex(df.index, method="ffill").fillna(False).to_numpy(bool) if len(nok) else None
-        if mode == "full": daily.append(df["Close"].pct_change().dropna().loc[split:])
+        if mode == "full": daily.append(df["Close"].pct_change().dropna())
         for j, s in enumerate(STRATS):
             try: en = s["fn"](df)
             except Exception as e: log.warning("%s on %s: %s", s["id"], sym, str(e)[:60]); continue
@@ -365,19 +366,19 @@ def run(mode, top, years, cost):
     out.update(updated=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=price_date, official_date=bhav_day, stale=price_date < bhav_day, market=market,
                universe=f"Top {len(data)} NSE stocks by traded value", order=[s["id"] for s in STRATS], states={f"NSE:{k[:-3]}": "".join(v) for k, v in states.items()})
     if mode == "full":
-        rd = float(pd.concat(daily).mean())
+        alld = pd.concat(daily); rd_tr = float(alld.loc[:split].mean()); rd_te = float(alld.loc[split:].mean())
         out.update(years=years, cost_pct=round(cost * 100, 2), split=split, strategies=[])
         for s in STRATS:
             best = None; table = []
+            btr = lambda x, rd: ((1 + rd) ** np.mean([t["days"] for t in x]) - 1 - cost) if x else None
             for g, tr in allt[s["id"]].items():
                 train = [t for t in tr if t["entry"] < split]; test = [t for t in tr if t["entry"] >= split]
-                a = stats(train); table.append(dict(stop=g[0], target=g[1], train_n=len(train), train_avg=None if not a else a["avg_ret"], train_pf=None if not a else a["profit_factor"]))
-                if a and a["n"] >= 60 and (best is None or a["avg_ret"] > best[0]): best = (a["avg_ret"], g, train, test)
+                a = stats(train, btr(train, rd_tr)); table.append(dict(stop=g[0], target=g[1], train_n=len(train), train_avg=None if not a else a["avg_ret"], train_edge=None if not a else a["edge"], train_pf=None if not a else a["profit_factor"]))
+                if a and a["n"] >= 60 and (best is None or a["edge"] > best[0]): best = (a["edge"], g, train, test)
             if best is None:
                 g = GRID[s["kind"]][0]; tr = allt[s["id"]][g]; best = (0, g, [t for t in tr if t["entry"] < split], [t for t in tr if t["entry"] >= split])
             _, g, train, test = best
-            base = lambda x: ((1 + rd) ** np.mean([t["days"] for t in x]) - 1 - cost) if x else None
-            a, b = stats(train, base(train)), stats(test, base(test))
+            a, b = stats(train, btr(train, rd_tr)), stats(test, btr(test, rd_te))
             ups, dns = [t for t in test if t["up"]], [t for t in test if t["up"] is False]
             stars, verdict, parts = rate(a, b)
             out["strategies"].append(dict(id=s["id"], name=s["name"], rule=s["rule"], kind=s["kind"], params=dict(stop=g[0], target=g[1], max_hold=MAX_HOLD[s["kind"]]),
@@ -389,8 +390,9 @@ def run(mode, top, years, cost):
         s["today"] = dict(buy=[dict(x, stop=round(x["c"] * (1 - p["stop"] / 100), 2), target=round(x["c"] * (1 + p["target"] / 100), 2)) for x in buys[:60]], buy_n=len(buys),
                           exit=sorted(t.get("exit", []))[:40] if mode == "states" else s.get("today", {}).get("exit", []), hold_n=t.get("hold", 0) if mode == "states" else s.get("today", {}).get("hold_n", 0))
     out["caveats"] = ["A signal is bought at the next day's open; every trade pays 0.4% round-trip costs; the stop is assumed to hit first if a day touches both stop and target.",
-                      "The stop and target for each strategy were chosen on the earlier 60% of the history and judged on the later 40% only.",
+                      "The stop and target for each strategy were chosen on the earlier 60% of the history (by edge over a random stock) and judged on the later 40% only.",
                       "Past results do not predict the future. Testing many strategies means some will look good by luck: trust the ones with many trades, a clear edge and profits in most years.",
+                      "Edge means profit per trade minus what a randomly chosen stock earned over the same number of days. In a rising market most strategies show a profit that is mostly the market itself; the edge is the part the rule added.",
                       "The stock list is today's liquid stocks, so stocks that were delisted are missing and results look better than real life would have been.",
                       "News, results announcements and company events are not part of the test."]
     (ROOT / "strategies.json").write_text(json.dumps(out, separators=(",", ":")))
