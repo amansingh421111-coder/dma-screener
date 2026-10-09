@@ -340,7 +340,9 @@ def mcap_cat(cr, c):
     return "Large" if cr >= c["mcap_large_cr"] else "Mid" if cr >= c["mcap_mid_cr"] else "Small" if cr >= c["mcap_small_cr"] else "Micro"
 
 # ---- positions (positions.json exported from the website) ----
-def is_open(p): return not (p.get("sellDate") and (p.get("sellPrice") or 0) > 0)
+def is_open(p):
+    if "txns" in p: return (p.get("qty") or 0) > 0          # holding: still has shares
+    return not (p.get("sellDate") and (p.get("sellPrice") or 0) > 0)   # older single-lot record
 
 def load_positions():
     f = ROOT / "positions.json"
@@ -437,10 +439,12 @@ def position_events(pos, quotes, c):
         if not q: continue
         px, s = q["price"], p["symbol"]
         k = f"{pos_key(p)}#{ident}"
+        avg, qn = p.get("avg"), p.get("qty")
+        pl = f" · avg ₹{avg:g}, P&L {'+' if px >= avg else '−'}₹{abs(px - avg) * qn:,.0f} ({(px / avg - 1) * 100:+.1f}%)" if avg and qn else ""
         if p.get("alertSl") and p.get("sl") and px <= p["sl"]:
-            ev.append((k + ":sl", f"🛑 STOP LOSS hit: {s} ₹{px} (stop ₹{p['sl']})"))
+            ev.append((k + ":sl", f"🛑 STOP LOSS hit: {s} ₹{px} (stop ₹{p['sl']}){pl}"))
         if p.get("alertTg") and p.get("target") and px >= p["target"]:
-            ev.append((k + ":tg", f"🎯 TARGET reached: {s} ₹{px} (target ₹{p['target']})"))
+            ev.append((k + ":tg", f"🎯 TARGET reached: {s} ₹{px} (target ₹{p['target']}){pl}"))
         if p.get("alertMa") and q["pct"] is not None:
             if q["pct"] < 0: ev.append((k + ":below", f"⚠️ {s} closed below its {c['ma_period']}-DMA ({q['pct']:+}%)"))
             elif q["pct"] <= c["near_pct"]: ev.append((k + ":near", f"👀 {s} is approaching its {c['ma_period']}-DMA from above ({q['pct']:+}%)"))

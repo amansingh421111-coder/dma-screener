@@ -267,15 +267,47 @@ module.exports = async (req, res) => {
         return send(res, raw ? JSON.parse(raw) : { positions: [], ts: 0 });
       }
       const list = body.positions;
-      if (!Array.isArray(list) || list.length > 200) return send(res, { error: "Invalid positions." }, 400);
-      const clean = list.filter((p) => p && typeof p.symbol === "string").map((p) => ({
-        id: String(p.id || "").replace(/[^a-z0-9]/gi, "").slice(0, 24),
-        symbol: p.symbol.slice(0, 24).toUpperCase(), exchange: p.exchange === "BSE" ? "BSE" : "NSE",
-        sellDate: /^\d{4}-\d{2}-\d{2}$/.test(String(p.sellDate || "")) ? String(p.sellDate) : "",
-        sellPrice: +p.sellPrice > 0 ? +p.sellPrice : null,
-        qty: +p.qty || 0, buy: +p.buy || 0, sl: p.sl == null ? null : +p.sl, target: p.target == null ? null : +p.target,
-        date: String(p.date || "").slice(0, 10), thesis: String(p.thesis || "").slice(0, 120),
-        alertMa: p.alertMa !== false, alertSl: p.alertSl !== false, alertTg: p.alertTg !== false }));
+      if (!Array.isArray(list) || list.length > 300) return send(res, { error: "Invalid positions." }, 400);
+      const DATE = /^\d{4}-\d{2}-\d{2}$/;
+      const id16 = (x) => String(x || "").replace(/[^a-z0-9]/gi, "").slice(0, 24);
+      const num = (x) => (x == null || x === "" || !(+x > 0) ? null : +x);
+      // one record per share: replay the buys and sells with the average-cost method
+      const replay = (txns) => {
+        const t = txns.map((x, i) => [x, i]).sort((a, b) => (a[0].date < b[0].date ? -1 : a[0].date > b[0].date ? 1 : a[1] - b[1]));
+        let qty = 0, avg = 0, real = 0;
+        for (const [x] of t) {
+          if (x.type === "buy") { avg = (qty * avg + x.qty * x.price) / (qty + x.qty); qty += x.qty; }
+          else if (x.qty <= qty) { real += (x.price - avg) * x.qty; qty -= x.qty; if (!qty) avg = 0; }
+        }
+        return { qty, avg: Math.round(avg * 100) / 100, realised: Math.round(real * 100) / 100 };
+      };
+      const byKey = new Map();
+      for (const p of list) {
+        if (!p || typeof p.symbol !== "string") continue;
+        const exchange = p.exchange === "BSE" ? "BSE" : "NSE", symbol = p.symbol.slice(0, 24).toUpperCase();
+        let txns;
+        if (Array.isArray(p.txns)) {
+          txns = p.txns.slice(0, 400).map((x) => ({ id: id16(x && x.id), type: x && x.type === "sell" ? "sell" : "buy",
+            date: DATE.test(String(x && x.date)) ? String(x.date) : "", qty: Math.floor(+(x && x.qty)) || 0, price: +(x && x.price) || 0 }))
+            .filter((x) => x.date && x.qty > 0 && x.price > 0);
+        } else {   // older single-lot format
+          txns = [];
+          if (+p.qty > 0 && +p.buy > 0) txns.push({ id: id16(p.id), type: "buy", date: DATE.test(String(p.date)) ? String(p.date) : new Date().toISOString().slice(0, 10), qty: Math.floor(+p.qty), price: +p.buy });
+          if (txns.length && DATE.test(String(p.sellDate || "")) && +p.sellPrice > 0) txns.push({ id: id16(p.id) + "s", type: "sell", date: String(p.sellDate), qty: txns[0].qty, price: +p.sellPrice });
+        }
+        if (!txns.length) continue;
+        const h = { id: id16(p.id), symbol, exchange, sl: num(p.sl), target: num(p.target), thesis: String(p.thesis || "").slice(0, 120),
+          alertMa: p.alertMa !== false, alertSl: p.alertSl !== false, alertTg: p.alertTg !== false, txns };
+        const k = exchange + ":" + symbol, prev = byKey.get(k);
+        if (!prev) byKey.set(k, h);
+        else {
+          prev.txns = prev.txns.concat(h.txns).slice(0, 400);
+          if (h.sl && (!prev.sl || h.sl > prev.sl)) prev.sl = h.sl;
+          if (h.target && (!prev.target || h.target < prev.target)) prev.target = h.target;
+          prev.alertMa = prev.alertMa || h.alertMa; prev.alertSl = prev.alertSl || h.alertSl; prev.alertTg = prev.alertTg || h.alertTg;
+        }
+      }
+      const clean = [...byKey.values()].map((h) => Object.assign(h, replay(h.txns)));
       await redis(["SET", "pos:" + uid, JSON.stringify({ positions: clean, ts: +body.ts || Date.now() })]);
       await redis(["SADD", "users", uid]);
       return send(res, { saved: true });
