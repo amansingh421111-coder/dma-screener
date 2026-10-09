@@ -408,7 +408,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.11</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.12</span></footer>
 
 </main>
 <script>
@@ -935,10 +935,20 @@ async function scrRead(file){const cv=await scrPrep(file),w=await scrWorker();aw
  const r=scrParse(d.text);
  /* the big quantity is in a heavy font that the general pass often misreads: read just that strip as digits */
  try{const oi=lines.findIndex(l=>/^\s*order\s*type/i.test(l.text));if(oi>0){const nameL=lines[oi-1],det=lines.find(l=>/order\s*details/i.test(l.text)),y1=nameL.bbox.y0,y0=det?det.bbox.y1+(y1-det.bbox.y1)*.55:Math.max(0,y1-260);
-   if(y1-y0>20){const reads=[];await w.setParameters({tessedit_pageseg_mode:"7",tessedit_char_whitelist:"0123456789"});
+   if(y1-y0>20){const reads=[],tight=[];await w.setParameters({tessedit_pageseg_mode:"7",tessedit_char_whitelist:"0123456789"});
+    {const sw0=Math.round(cv.width*.5),im0=cv.getContext("2d").getImageData(0,Math.round(y0),sw0,Math.round(y1-y0)),D=im0.data,Wd=im0.width,Hd=im0.height,ink=(x,y)=>D[(y*Wd+x)*4]<140;
+     const rowInk=[];for(let y=0;y<Hd;y++){let n=0;for(let x=0;x<Wd;x++)if(ink(x,y))n++;rowInk.push(n)}
+     /* tallest ink band = the big number's rows */
+     let bands=[],st=-1;rowInk.forEach((n,y)=>{if(n>0&&st<0)st=y;if((n===0||y===Hd-1)&&st>=0){bands.push([st,y]);st=-1}});bands=bands.filter(x=>x[1]-x[0]>12);
+     const band=bands.sort((m,n)=>(n[1]-n[0])-(m[1]-m[0]))[0];
+     if(band){const bh=band[1]-band[0],cols=[];for(let x=0;x<Wd;x++){let k=false;for(let y=band[0];y<band[1]&&!k;y++)if(ink(x,y))k=true;cols.push(k)}
+      let x0=cols.indexOf(true),x1=x0;if(x0>=0){let gap=0;for(let x=x0;x<Wd;x++){if(cols[x]){x1=x;gap=0}else{gap++;if(gap>bh*.3)break}}
+       const gw=x1-x0+1,pd=40;for(const sc of[1,1.6,2.4,3.2])for(const bin of[0,1]){const c=document.createElement("canvas");c.width=Math.round(gw*sc)+pd*2;c.height=Math.round(bh*sc)+pd*2;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.imageSmoothingQuality="high";g.drawImage(cv,x0,Math.round(y0)+band[0],gw,bh,pd,pd,gw*sc,bh*sc);
+        if(bin){const im=g.getImageData(0,0,c.width,c.height),dd=im.data;for(let i=0;i<dd.length;i+=4){const v=dd[i]<150?0:255;dd[i]=dd[i+1]=dd[i+2]=v}g.putImageData(im,0,0)}
+        for(const mode of["7","8"]){await w.setParameters({tessedit_pageseg_mode:mode,tessedit_char_whitelist:"0123456789"});const q=await w.recognize(c),v=(q.data.text||"").replace(/\D/g,"");if(v&&v.length<=7)tight.push(v)}}}}}
     for(const sc of[.8,1,1.3,1.8])for(const bl of[0,1.2]){const pd=30,sw=cv.width*.55,c=document.createElement("canvas");c.width=Math.round(sw*sc)+pd*2;c.height=Math.round((y1-y0)*sc)+pd*2;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);if(bl)g.filter="blur("+bl+"px)";g.drawImage(cv,0,y0,sw,y1-y0,pd,pd,sw*sc,(y1-y0)*sc);
      const q=await w.recognize(c);const v=(q.data.text||"").replace(/\D/g,"");if(v&&v.length<=7)reads.push(v)}
-    if(reads.length){const cnt={};reads.forEach(v=>cnt[v]=(cnt[v]||0)+1);const ks=Object.keys(cnt);if(ks.length===1)r.qty=parseInt(ks[0],10);else{r.qty=null;r.warn.push("The share count was hard to read (seen as "+ks.join(", ")+"). Please type it from your screenshot.")}}}}}catch(e){}
+    r.dbg=[tight,reads];if(tight.length>=4){const tc={};tight.forEach(v=>tc[v]=(tc[v]||0)+1);const top=Object.entries(tc).sort((m,n)=>n[1]-m[1]);if(top[0][1]>=Math.ceil(tight.length*.6)&&top[0][1]>=3){reads.length=0;reads.push(top[0][0],top[0][0],top[0][0])}}if(reads.length){const cnt={};reads.forEach(v=>cnt[v]=(cnt[v]||0)+1);const ks=Object.keys(cnt);if(ks.length===1)r.qty=parseInt(ks[0],10);else{r.qty=null;r.warn.push("The share count was hard to read (seen as "+ks.join(", ")+"). Please type it from your screenshot.")}}}}}catch(e){}
  await w.setParameters({tessedit_pageseg_mode:"4",tessedit_char_whitelist:"",preserve_interword_spaces:"1"});return r}
 function scrDup(row){const h=POS.find(x=>keyOf(x)===keyOf({exchange:row.ex,symbol:row.sym}));if(!h)return false;const d=parseD(row.date);return h.txns.some(t=>t.type===row.side&&t.date===d&&t.qty===+row.qty&&Math.abs(t.price-+row.price)<.005)}
 async function scrStart(files){if(!files||!files.length||SCR.busy)return;if(!ME){alert("Log in first so the trades are saved to your account.");return}
