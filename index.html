@@ -121,6 +121,10 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .bk{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
 .modal{position:fixed;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;margin:0;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .modal[hidden],.bk[hidden]{display:none}
+.szg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px}.szg label{font-size:12.5px;color:var(--mute);display:block;margin-bottom:4px}.szg .qf{margin-top:5px}
+.szo{margin-top:8px;padding:12px;border-radius:10px;background:var(--bg);font-size:14px}.szbig{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}.szbig span{display:block;font-size:12.5px;color:var(--mute)}.szbig b{font-size:30px;line-height:1.1}
+.szgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px 18px;margin-top:10px}.szk span{display:block;font-size:12px;color:var(--mute)}.szk b{font-size:15px}.szk small{font-weight:400;color:var(--mute);font-size:12px}
+.szw{margin:10px 0 0;padding:8px 10px 8px 26px;border-radius:8px;background:var(--near-bg,rgba(245,158,11,.12));font-size:13px}.szwhat{margin-top:12px;font-size:13px}.szwhat tr.on td{font-weight:700}
 .pprev{margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:13px;min-height:0}.pprev:empty{display:none}
 #pmig ul{margin:6px 0 8px 18px;padding:0}#pmig{border-color:var(--accent)}
 .hrow td:first-child b{cursor:pointer}
@@ -357,10 +361,21 @@ table.sx th{vertical-align:bottom}
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
 <div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Backup</button><button class="btn" onclick="exportTxns()">Transactions CSV</button><label class="btn" style="cursor:pointer">Read screenshot<input type="file" id="pscr" accept="image/*" multiple hidden></label><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
-<div class="fm" id="szcard" hidden><details><summary><b>Position size calculator</b> <span class="sub">how many shares for the risk you can afford</span></summary>
-<div class="fg" style="margin-top:10px"><div><label for="sz-cap">Capital (₹)</label><input id="sz-cap" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-risk">Risk per trade (%)</label><input id="sz-risk" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div>
-<div><label for="sz-en">Entry price (₹)</label><input id="sz-en" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-sl">Stop loss (₹)</label><input id="sz-sl" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div></div>
-<div class="pprev" id="sz-out" style="display:block">Enter capital, entry price and stop loss to see the size.</div></details></div>
+<div class="fm" id="szcard" hidden><details id="szdet" open><summary><b>Position size calculator</b> <span class="sub">how many shares to buy so a stop-out costs only what you chose to risk</span></summary>
+<div class="sz">
+<div class="szg">
+<div><label for="sz-sym">Stock (optional)</label><input id="sz-sym" list="syms" placeholder="e.g. RELIANCE" autocapitalize="characters" autocomplete="off" oninput="szPick()"></div>
+<div><label for="sz-ex">Exchange</label><select id="sz-ex" onchange="szPick()"><option>NSE</option><option>BSE</option></select></div>
+<div><label for="sz-cap">Trading capital (₹) <button type="button" class="lk" id="sz-usepf" onclick="szUsePf()" hidden>use my holdings</button></label><input id="sz-cap" type="number" step="any" min="0" inputmode="decimal" oninput="sizeCalc()" onchange="szSave()"></div>
+<div><label for="sz-risk">Risk per trade (% of capital)</label><input id="sz-risk" type="number" step="any" min="0" inputmode="decimal" oninput="sizeCalc()" onchange="szSave()"><div class="qf" id="sz-rq"></div></div>
+<div><label for="sz-max">Largest single position (% of capital)</label><input id="sz-max" type="number" step="any" min="0" inputmode="decimal" oninput="sizeCalc()" onchange="szSave()"></div>
+<div><label for="sz-en">Entry price (₹)</label><input id="sz-en" type="number" step="any" min="0" inputmode="decimal" oninput="szTouch('en');sizeCalc()"></div>
+<div><label for="sz-sl">Stop loss (₹)</label><input id="sz-sl" type="number" step="any" min="0" inputmode="decimal" oninput="sizeCalc()"><div class="qf" id="sz-sq"></div><div class="qf" id="sz-sx"></div></div>
+<div><label for="sz-tg">Target (₹, optional)</label><input id="sz-tg" type="number" step="any" min="0" inputmode="decimal" oninput="sizeCalc()"><div class="qf" id="sz-tq"></div></div>
+</div>
+<div class="sub" id="sz-q" style="margin:6px 0"></div>
+<div id="sz-out" class="szo" aria-live="polite">Enter your capital, the entry price and a stop loss. The calculator then works out the number of shares, including brokerage and tax charges.</div>
+</div></details></div>
 <div class="bar" id="wbar" hidden><span class="sub" style="flex:1">Stocks you are watching but do not own. Alerts go to Telegram, once a day per condition.</span><button class="btn pri" onclick="openWatch()">＋ Add to watchlist</button></div>
 <div class="fm" id="scrcard" hidden></div>
 <div class="fm" id="wform" hidden><h3>Watchlist stock</h3><div class="fg">
@@ -408,7 +423,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.13</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.14</span></footer>
 
 </main>
 <script>
@@ -819,8 +834,8 @@ function renderPos(){
  if(al&&CLOUD.ok===false)n+=`<b>To get alerts without the server:</b> tap Export, then upload <b>positions.json</b> to your GitHub repo.`;
  $("psync").hidden=!open.length||!n;$("psync").innerHTML=n}
 /* ---- fees, tax, risk sizing, watchlist, reports ---- */
-const FEE0={capital:0,riskPct:1,brokeragePct:0,brokerageFlat:0,sttPct:.1,exchPct:.00297,sebiPct:.0001,stampPct:.015,gstPct:18,dpFlat:15.34,stcgPct:20,ltcgPct:12.5,ltcgExempt:125000};
-const FEE_LABELS=[["capital","Trading capital (₹)"],["riskPct","Risk per trade (% of capital)"],["brokeragePct","Brokerage (% of value)"],["brokerageFlat","Brokerage (₹ per order)"],["sttPct","STT (% of value, buy and sell)"],["exchPct","Exchange charges (%)"],["sebiPct","SEBI charges (%)"],["stampPct","Stamp duty (% on buys)"],["gstPct","GST on brokerage and charges (%)"],["dpFlat","Depository charge (₹ per sale)"],["stcgPct","Short-term gains tax (%)"],["ltcgPct","Long-term gains tax (%)"],["ltcgExempt","Long-term exemption per year (₹)"]];
+const FEE0={capital:0,riskPct:1,maxPosPct:25,brokeragePct:0,brokerageFlat:0,sttPct:.1,exchPct:.00297,sebiPct:.0001,stampPct:.015,gstPct:18,dpFlat:15.34,stcgPct:20,ltcgPct:12.5,ltcgExempt:125000};
+const FEE_LABELS=[["capital","Trading capital (₹)"],["riskPct","Risk per trade (% of capital)"],["maxPosPct","Largest single position (% of capital)"],["brokeragePct","Brokerage (% of value)"],["brokerageFlat","Brokerage (₹ per order)"],["sttPct","STT (% of value, buy and sell)"],["exchPct","Exchange charges (%)"],["sebiPct","SEBI charges (%)"],["stampPct","Stamp duty (% on buys)"],["gstPct","GST on brokerage and charges (%)"],["dpFlat","Depository charge (₹ per sale)"],["stcgPct","Short-term gains tax (%)"],["ltcgPct","Long-term gains tax (%)"],["ltcgExempt","Long-term exemption per year (₹)"]];
 const cfg=()=>Object.assign({},FEE0,SET);
 function charges(t){const f=cfg(),v=t.qty*t.price,br=f.brokerageFlat+f.brokeragePct/100*v,ex=f.exchPct/100*v,sb=f.sebiPct/100*v;
  return br+ex+sb+f.sttPct/100*v+f.gstPct/100*(br+ex+sb)+(t.type==="buy"?f.stampPct/100*v:f.dpFlat)}
@@ -838,14 +853,68 @@ function taxReport(){const rows={};
 /* settings card (static form, so typing is never interrupted by a refresh) */
 function buildSettings(){$("setgrid").innerHTML=FEE_LABELS.map(([k,l])=>`<div><label for="s-${k}">${l}</label><input id="s-${k}" type="number" step="any" min="0" inputmode="decimal" onchange="saveSettings()"></div>`).join("")}
 function fillSettings(){const f=cfg();FEE_LABELS.forEach(([k])=>{const e=$("s-"+k);if(e&&document.activeElement!==e)e.value=f[k]||f[k]===0?+f[k]:""});
- const cap=$("sz-cap"),rk=$("sz-risk");if(cap&&!cap.value&&f.capital)cap.value=f.capital;if(rk&&!rk.value)rk.value=f.riskPct}
-function saveSettings(){FEE_LABELS.forEach(([k])=>{const v=parseFloat($("s-"+k).value);if(isFinite(v)&&v>=0)SET[k]=v;else delete SET[k]});savePos();$("sz-cap").value="";fillSettings();render()}
-function resetSettings(){if(confirm("Reset all fee, tax and risk settings to the defaults?")){SET={};savePos();$("sz-cap").value="";fillSettings();render()}}
-function sizeCalc(){const f=cfg(),cap=num("sz-cap")||f.capital,risk=num("sz-risk")||f.riskPct,en=num("sz-en"),sl=num("sz-sl"),o=$("sz-out");
- if(!cap||!en||!sl){o.textContent="Enter capital, entry price and stop loss to see the size.";return}
- if(sl>=en){o.innerHTML=`<span class="neg">The stop must be below the entry price.</span>`;return}
- const rs=cap*risk/100,q=Math.floor(rs/(en-sl)),v=q*en;
- o.innerHTML=q<1?`A risk of ${inr(rs)} is too small for this stop distance.`:`You risk <b>${inr(rs)}</b> (${risk}% of ${inr(cap)}). Size: <b>${q}</b> shares, position <b>${inr(v)}</b> (${(v/cap*100).toFixed(1)}% of capital). Stop distance ${((en-sl)/en*100).toFixed(1)}%.${v>cap?` <span class="neg">That is more than your capital.</span>`:""}`}
+ szFill()}
+function saveSettings(){FEE_LABELS.forEach(([k])=>{const v=parseFloat($("s-"+k).value);if(isFinite(v)&&v>=0)SET[k]=v;else delete SET[k]});savePos();szFill(true);fillSettings();render()}
+function resetSettings(){if(confirm("Reset all fee, tax and risk settings to the defaults?")){SET={};savePos();szFill(true);fillSettings();render()}}
+const SZ={auto:{en:true}};
+function szTouch(k){SZ.auto[k]=false}
+function szFill(force){const f=cfg(),set=(id,v)=>{const e=$(id);if(e&&(force||(!e.value&&document.activeElement!==e)))e.value=v||v===0?v:""};
+ set("sz-cap",f.capital||"");set("sz-risk",f.riskPct);set("sz-max",f.maxPosPct);
+ const pf=openPos().reduce((t,h)=>{const q=quote(h),L=ledger(h);return t+L.qty*((q&&q.price)||L.avg)},0);$("sz-usepf").hidden=!(pf>0)||!!+$("sz-cap").value;$("sz-usepf").dataset.v=Math.round(pf);
+ const chip=(fn,arr,fmt)=>arr.map(x=>`<button type="button" class="chip" onclick="${fn}(${x})">${fmt(x)}</button>`).join("");
+ if(!$("sz-rq").innerHTML){$("sz-rq").innerHTML=chip("szRisk",[.5,1,1.5,2],x=>x+"%");$("sz-sq").innerHTML=chip("szStopPct",[3,5,8,12],x=>"−"+x+"%");$("sz-tq").innerHTML=chip("szRR",[1.5,2,3],x=>x+"× risk")}
+ if(!$("sz-ex")||document.activeElement&&/^sz-/.test(document.activeElement.id))return;if(SZ.q||$("sz-sym").value)szPick();else sizeCalc()}
+function szUsePf(){$("sz-cap").value=$("sz-usepf").dataset.v;szSave();sizeCalc()}
+function szSave(){const c=num("sz-cap"),r=num("sz-risk"),m=num("sz-max");if(c!=null&&c>=0)SET.capital=c;if(r!=null&&r>0&&r<=100)SET.riskPct=r;if(m!=null&&m>0&&m<=100)SET.maxPosPct=m;savePos();fillSettings();$("sz-usepf").hidden=!!+$("sz-cap").value||!+$("sz-usepf").dataset.v}
+function szRisk(x){$("sz-risk").value=x;szSave();sizeCalc()}
+function szStopPct(x){const en=num("sz-en");if(!en)return $("sz-out").textContent="Enter the entry price first.";$("sz-sl").value=(en*(1-x/100)).toFixed(2);sizeCalc()}
+function szRR(x){const en=num("sz-en"),sl=num("sz-sl");if(!en||!sl||sl>=en)return $("sz-out").textContent="Enter the entry price and a stop below it first.";$("sz-tg").value=(en+(en-sl)*x).toFixed(2);sizeCalc()}
+function szPick(){const sym=$("sz-sym").value.trim().toUpperCase(),ex=$("sz-ex").value,q=sym?quote({exchange:ex,symbol:sym}):null,m=$("sz-q");SZ.q=q;
+ if(!q){m.textContent=sym?"No price found for that symbol on "+ex+" yet. Type the entry price yourself.":"";$("sz-sx").innerHTML="";sizeCalc();return}
+ const lo=q.spark&&q.spark.length?Math.min(...q.spark.slice(-20)):null;
+ m.innerHTML=`<b>${esc(q.name||sym)}</b> · last price <b>${inr(q.price)}</b>${q.ma?` · ${data.ma_period}-DMA ${inr(q.ma)}`:""}${q.lo52?` · 52-week range ${inr(q.lo52)} to ${inr(q.hi52)}`:""}`;
+ if(SZ.auto.en||!$("sz-en").value){$("sz-en").value=q.price;SZ.auto.en=true}
+ const btn=[];if(q.ma&&q.ma<q.price)btn.push(`<button type="button" class="chip" onclick="szAbs(${(q.ma*.99).toFixed(2)})">just below ${data.ma_period}-DMA</button>`);if(lo&&lo<q.price)btn.push(`<button type="button" class="chip" onclick="szAbs(${(lo*.99).toFixed(2)})">below 20-day low</button>`);
+ $("sz-sx").innerHTML=btn.join("");sizeCalc()}
+function szAbs(v){$("sz-sl").value=v;sizeCalc()}
+function szCalc(cap,risk,maxp,en,sl,tg){ // pure arithmetic: returns the size and every number shown
+ const buyC=q=>charges({type:"buy",qty:q,price:en}),sellC=(q,pr)=>charges({type:"sell",qty:q,price:pr}),lossAt=q=>q*(en-sl)+buyC(q)+sellC(q,sl),rs=cap*risk/100;
+ let qr=Math.floor(rs/(en-sl));while(qr>0&&lossAt(qr)>rs)qr--;
+ const qm=Math.floor(cap*maxp/100/en);
+ let qc=Math.floor(cap/en);while(qc>0&&qc*en+buyC(qc)>cap)qc--;
+ const q=Math.max(0,Math.min(qr,qm,qc)),lim=q===qr?"risk":q===qm?"max":"cap";
+ const r={q,qr,qm,qc,lim,rs,value:q*en,buy:buyC(q),lossStop:lossAt(q),sellStop:sellC(q,sl)};
+ r.be=q?(q*en+r.buy+sellC(q,en))/q:null; // price to sell at to recover all charges (sell charge approximated at the entry price)
+ if(tg&&tg>en){r.gain=q*(tg-en)-buyC(q)-sellC(q,tg);r.rr=r.gain/lossAt(Math.max(q,1))}
+ return r}
+function sizeCalc(){const f=cfg(),cap=num("sz-cap"),risk=num("sz-risk"),maxp=num("sz-max")||100,en=num("sz-en"),sl=num("sz-sl"),tg=num("sz-tg"),o=$("sz-out");
+ const say=h=>{o.innerHTML=h};
+ if(!cap||!risk)return say("Enter your trading capital and the percentage of it you are willing to lose on one trade (1% is a common choice).");
+ if(!en||!sl)return say("Enter the entry price and a stop loss. Tip: pick a stock above, then tap a stop chip.");
+ if(sl>=en)return say(`<span class="neg">The stop loss must be below the entry price.</span>`);
+ if(tg&&tg<=en)return say(`<span class="neg">The target must be above the entry price.</span>`);
+ const r=szCalc(cap,risk,maxp,en,sl,tg),dist=(en-sl)/en*100,W=[];
+ if(r.q<1)return say(`<span class="neg">Not even one share fits.</span> ${r.qr<1?`A risk of ${inr(r.rs)} is smaller than the loss on one share (${inr(en-sl)} plus charges). Use a tighter stop or a higher risk percentage.`:r.qc<1?`One share costs ${inr(en)}, which is more than your capital.`:`One share is more than ${maxp}% of your capital.`}`);
+ const why={risk:`limited by your risk limit (${risk}% of capital)`,max:`limited by the largest-position rule (${maxp}% of capital)`,cap:"limited by your capital"}[r.lim];
+ const h=!!SZ.q&&openPos().find(x=>keyOf(x)===keyOf({exchange:$("sz-ex").value,symbol:$("sz-sym").value.trim().toUpperCase()})),hv=h?ledger(h):null;
+ if(hv&&hv.qty)W.push(`You already hold <b>${hv.qty}</b> shares of ${esc(h.symbol)} (${inr(hv.qty*en)} at this price). After this buy you would hold ${hv.qty+r.q} shares, ${((hv.qty+r.q)*en/cap*100).toFixed(0)}% of your capital in one stock.`);
+ if(dist<1)W.push(`The stop is only ${dist.toFixed(2)}% below the entry. Normal daily movement can hit it, and a very tight stop makes the size look huge.`);
+ if(dist>15)W.push(`The stop is ${dist.toFixed(1)}% below the entry, which is a wide stop; the size is correspondingly small.`);
+ if(r.lim==="max"||r.lim==="cap")W.push(`If the stop is hit you lose ${inr(r.lossStop)}, which is less than the ${inr(r.rs)} you allowed, because the position cap was reached first.`);
+ const kv=(k,v,c)=>`<div class="szk"><span>${k}</span><b${c?` class="${c}"`:""}>${v}</b></div>`;
+ const rr=r.gain!=null?r.gain/r.lossStop:null;
+ o.innerHTML=`<div class="szbig"><div><span>Shares to buy</span><b>${r.q.toLocaleString("en-IN")}</b></div><div class="sub">${why}</div></div>
+ <div class="szgrid">${kv("Cost of the position",inr(r.value)+` <small>(${(r.value/cap*100).toFixed(1)}% of capital)</small>`)}${kv("Charges on the buy",inr(r.buy))}
+ ${kv("If the stop is hit",`−${inr(r.lossStop)} <small>(${(r.lossStop/cap*100).toFixed(2)}% of capital, charges included)</small>`,"neg")}
+ ${tg?kv("If the target is hit",`+${inr(r.gain)} <small>(${(r.gain/cap*100).toFixed(2)}% of capital, after charges)</small>`,"pos"):""}
+ ${rr!=null?kv("Reward to risk",`${rr.toFixed(2)} to 1`+(rr<1.5?` <small>(below 1.5 to 1)</small>`:"")):""}
+ ${kv("Stop distance",dist.toFixed(2)+"% below the entry")}${kv("Break-even sale price",inr(r.be)+` <small>(covers all charges)</small>`)}</div>
+ ${rr!=null?`<div class="sub" style="margin-top:6px">At ${(1/(1+rr)*100).toFixed(0)}% winning trades or better, this reward-to-risk ratio breaks even before tax.</div>`:""}
+ ${W.length?`<ul class="szw">${W.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
+ <div class="szwhat"><b>Same trade at other risk levels</b><div class="sx-w"><table class="sx2" style="min-width:0"><thead><tr><th>Risk per trade</th><th>Shares</th><th>Position cost</th><th>Loss at stop</th></tr></thead><tbody>${[.5,1,1.5,2].map(x=>{const z=szCalc(cap,x,maxp,en,sl,tg);return `<tr${Math.abs(x-risk)<1e-9?' class="on"':""}><td>${x}%</td><td>${z.q}</td><td>${inr(z.value)}</td><td>−${inr(z.lossStop)}</td></tr>`}).join("")}</tbody></table></div></div>
+ <div style="margin-top:10px"><button class="btn pri" onclick="szUse()">Add this as a position</button></div>`}
+function szUse(){const en=num("sz-en"),sl=num("sz-sl"),tg=num("sz-tg"),r=szCalc(num("sz-cap"),num("sz-risk"),num("sz-max")||100,en,sl,tg);if(r.q<1)return;
+ const sym=$("sz-sym").value.trim().toUpperCase();openForm({symbol:sym,exchange:$("sz-ex").value,qty:r.q,price:en,sl:sl,target:tg||""})}
 /* watchlist */
 let WEDIT=null;
 function wstat(q){const n=data.near_pct||2,b=data.buy_max_pct||5;if(!q)return["Awaiting price","",0];if(q.pct==null)return["No average yet","",0];
