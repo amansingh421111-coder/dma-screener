@@ -32,6 +32,7 @@ h1{font-size:20px;margin:0;font-weight:700}
 .tile[aria-pressed=true]{background:var(--cb);border-color:var(--c)}
 .wrap{display:block}
 #filters{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;font-size:13.5px}
+.bar[hidden],.fm[hidden],.wgrid[hidden]{display:none!important}
 #filters[hidden]{display:none}
 #filters h2{font-size:12.5px;margin:14px 0 6px;color:var(--mute);font-weight:600}#filters h2:first-child{margin-top:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -82,7 +83,7 @@ tr.dt td:first-child{position:static}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px 12px;margin:12px 0}.facts b{display:block;color:var(--ink);font-weight:600}
 .dtl a{color:var(--accent);font-weight:600;text-decoration:none;margin-right:14px}
 .empty{text-align:center;color:var(--mute);padding:36px 12px}
-.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px}
 .sc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.sc span{font-size:12.5px;color:var(--mute)}.sc b{display:block;font-size:21px;line-height:1.2}.sc small{font-size:12px;color:var(--mute)}
 .fm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .fm h3{margin:0 0 10px;font-size:16px}
@@ -129,6 +130,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
 .lt{min-width:0!important;width:100%}.lt td,.lt th{padding:5px 8px!important;font-size:12.5px}
 .hr .tw{max-height:260px;overflow:auto}.hd>*{min-width:0}.hd .st{width:auto;margin:0;min-width:0}.pc .hd{display:block}.pc .hr{margin-top:12px}.pc .tw{overflow-x:auto}
 @media(max-width:900px){.hd{grid-template-columns:1fr}.stg{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}.wgrid .pc{margin:0}
+.why{max-width:240px;white-space:normal;font-size:12px}
+#health{font-size:11.5px}
 footer{color:var(--mute);font-size:12px;margin-top:18px}
 details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 @media(min-width:1180px){.wrap{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}#filters{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;display:block!important}#ft{display:none}}
@@ -219,6 +223,7 @@ footer{font-size:11.5px;margin-top:18px}
 </style></head><body><main>
 <header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
 <div class="meta" id="meta"></div>
+<div class="meta" id="health" style="margin-top:2px"></div>
 <div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
 <div id="warn" class="warn" hidden></div>
 <nav class="nav" id="nav"></nav>
@@ -255,6 +260,7 @@ footer{font-size:11.5px;margin-top:18px}
 </section></div>
 </section>
 
+<section id="vStrat" hidden></section>
 <section id="vPos" hidden>
 <div class="fm" id="authcard" hidden>
 <h3 id="atitle">Log in to see your positions</h3>
@@ -275,6 +281,20 @@ footer{font-size:11.5px;margin-top:18px}
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
 <div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Backup</button><button class="btn" onclick="exportTxns()">Transactions CSV</button><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
+<div class="fm" id="szcard" hidden><details><summary><b>Position size calculator</b> <span class="sub">how many shares for the risk you can afford</span></summary>
+<div class="fg" style="margin-top:10px"><div><label for="sz-cap">Capital (₹)</label><input id="sz-cap" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-risk">Risk per trade (%)</label><input id="sz-risk" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div>
+<div><label for="sz-en">Entry price (₹)</label><input id="sz-en" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div><div><label for="sz-sl">Stop loss (₹)</label><input id="sz-sl" type="number" step="any" inputmode="decimal" oninput="sizeCalc()"></div></div>
+<div class="pprev" id="sz-out" style="display:block">Enter capital, entry price and stop loss to see the size.</div></details></div>
+<div class="bar" id="wbar" hidden><span class="sub" style="flex:1">Stocks you are watching but do not own. Alerts go to Telegram, once a day per condition.</span><button class="btn pri" onclick="openWatch()">＋ Add to watchlist</button></div>
+<div class="fm" id="wform" hidden><h3>Watchlist stock</h3><div class="fg">
+<div><label for="wsym">Symbol</label><input id="wsym" list="syms" placeholder="e.g. TATASTEEL" autocapitalize="characters" autocomplete="off"></div>
+<div><label for="wex">Exchange</label><select id="wex"><option>NSE</option><option>BSE</option></select></div>
+<div><label for="wabove">Alert at or above (₹, optional)</label><input id="wabove" type="number" step="any" inputmode="decimal"></div>
+<div><label for="wbelow">Alert at or below (₹, optional)</label><input id="wbelow" type="number" step="any" inputmode="decimal"></div>
+<div><label for="wnote">Note</label><input id="wnote" maxlength="120" placeholder="Why am I watching it?"></div></div>
+<div class="ck"><input type="checkbox" id="wa1" checked><label for="wa1">Alert when it is in the buy zone (0 to 5% above the 44-DMA)</label></div>
+<div class="ck"><input type="checkbox" id="wa2"><label for="wa2">Alert when it falls below the 44-DMA</label></div>
+<div class="act"><button class="btn pri" onclick="saveWatch()">Save</button><button class="btn" onclick="$('wform').hidden=true;WEDIT=null">Cancel</button></div><div class="msg" id="wmsg"></div></div>
 <div class="note" id="pmig" hidden></div>
 <div class="bk" id="pbk" hidden onclick="closeForm()"></div>
 <div class="fm modal" id="pform" hidden role="dialog" aria-modal="true" aria-labelledby="ptitle">
@@ -289,6 +309,7 @@ footer{font-size:11.5px;margin-top:18px}
 <div><label for="pqty">Quantity</label><input id="pqty" type="number" inputmode="numeric" placeholder="100"></div>
 <div><label for="ppx">Price per share (₹)</label><input id="ppx" type="number" inputmode="decimal" placeholder="2500"></div>
 </div><div class="pprev" id="pprev" aria-live="polite"></div></div>
+<div id="sec-journal"><div class="fh">Journal (optional)</div><div class="fg"><div><label for="pnote">Why this trade?</label><input id="pnote" maxlength="200" placeholder="e.g. 44-DMA bounce, volume 2x"></div><div><label for="prule">Followed my rule?</label><select id="prule"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div></div>
 <div id="sec-risk"><div class="fh">Risk levels (for the whole holding)</div>
 <div class="fg">
 <div><label for="psl">Stop loss (₹)</label><input id="psl" type="number" inputmode="decimal" placeholder="2350"><div class="qf" id="slq"></div></div>
@@ -303,11 +324,14 @@ footer{font-size:11.5px;margin-top:18px}
 <div class="msg" id="pmsg"></div>
 </div>
 <div id="plist"></div>
+<div class="fm" id="setcard" hidden><details><summary><b>Fees, tax and risk settings</b> <span class="sub">used for charges, tax estimates and position size</span></summary>
+<div class="sub" style="margin:8px 0">Defaults are typical rates for delivery trades on a discount broker. They change over time and differ by broker, so compare with one of your contract notes and edit them here.</div>
+<div class="fg" id="setgrid"></div><div class="act"><button class="btn sm" onclick="resetSettings()">Reset to defaults</button></div></details></div>
 <div class="note" id="psync" hidden></div>
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-09.10</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-09.11</span></footer>
 
 </main>
 <script>
@@ -382,7 +406,7 @@ function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.vo
  return `<div class="dg"><div class="dl"><div class="dh"><b>${esc(s.name||s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span></div>${chart(s)}${rng(s)}</div>
  <div class="dr"><div class="stg">${st("Price",inr(s.price))}${st("Today",s.chg==null?"–":sg(s.chg)+"%",s.chg>0?"pos":s.chg<0?"neg":"")}${s.open!=null?st("Open",inr(s.open)):""}${s.prev_close!=null?st("Previous close",inr(s.prev_close)):""}${s.low!=null&&s.high!=null?st("Day range",inr(s.low)+" – "+inr(s.high)):""}${st(data.ma_period+"-DMA",inr(s.ma))}${st("Vs average",sg(s.pct)+"%",s.pct>0?"pos":"neg")}${st("Market cap",cr(s.mcap)+(s.mcap_cat?" · "+s.mcap_cat:""))}${st("Volume",vol)}${s.value_cr!=null?st("Value traded","₹"+Number(s.value_cr).toLocaleString("en-IN",{maximumFractionDigits:1})+" Cr"):""}${s.deliv_pct!=null?st("Delivery",s.deliv_pct.toFixed(1)+"%"):""}${s.trades!=null?st("Trades",Number(s.trades).toLocaleString("en-IN")):""}${st("Volume vs avg",s.vol_x!=null?s.vol_x+"×":"–")}${st("RSI (14)",s.rsi??"–")}${st("200-DMA",s.above200==null?"–":s.above200?"Above":"Below")}${st("Days "+(s.pct>=0?"above":"below"),s.since??"–")}</div>
  <div class="why"><b>What this means</b>${esc(reading(s))}</div>
- <div class="acts"><button class="btn sm pri" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" data-px="${s.price}" onclick="event.stopPropagation();track(this)">＋ Add to My Positions</button><a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tv)}">Open full chart ↗</a></div>
+ <div class="acts"><button class="btn sm pri" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" data-px="${s.price}" onclick="event.stopPropagation();track(this)">＋ Add to My Positions</button><button class="btn sm" data-ex="${ex(s)}" data-sym="${esc(s.symbol)}" onclick="event.stopPropagation();watchFrom(this)">Watch</button><a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tv)}">Open full chart ↗</a></div>
  <p class="src">Closing prices, volume, value and delivery % come from the official NSE and BSE end-of-day files; prices during market hours are Yahoo Finance (about 15 minutes delayed). Research alert only, not investment advice.</p></div></div>`}
 const LAB={buy:"Buy",sell:"Sell",near:"Near"},COL={buy:"var(--buy)",sell:"var(--sell)",near:"var(--near)"},COLB={buy:"var(--buy-bg)",sell:"var(--sell-bg)",near:"var(--near-bg)"};
 const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
@@ -430,19 +454,23 @@ async function copyList(){const t=view().map(s=>ex(s)+":"+s.symbol).join(",");tr
 
 /* ---------- My Positions ---------- */
 let POS=[];try{POS=JSON.parse(rd("dma_positions")||"[]")}catch(e){}
+let WL=[];try{WL=JSON.parse(rd("dma_watch")||"[]")}catch(e){}
+let SET={};try{SET=JSON.parse(rd("dma_settings")||"{}")}catch(e){}
+let PENDINGW=null;
+function wipeLocal(){POS=[];WL=[];SET={};wr("dma_positions","[]");wr("dma_watch","[]");wr("dma_settings","{}");TS=0;wr("dma_pos_ts","0")}
 let ME=null,PENDING=null,AUTHMODE="login",TS=+rd("dma_pos_ts")||0,CLOUD={ok:null,connected:false,link:null,err:"",diag:""},pushT=null,pollT=null,POLL=3000;
 async function api(a,body,method){const r=await fetch("/api/dma?a="+a,{method:method||(body?"POST":"GET"),headers:{"content-type":"application/json","x-dma":"1"},credentials:"same-origin",body:body?JSON.stringify(body):undefined});
  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||("HTTP "+r.status)),{code:r.status});return j}
 const stamp=()=>{TS=Date.now();wr("dma_pos_ts",String(TS))};
-const savePos=()=>{wr("dma_positions",JSON.stringify(POS));stamp();if(ME){clearTimeout(pushT);pushT=setTimeout(push,400)}};
-async function push(){pushT=null;try{await api("positions",{positions:POS,ts:TS});CLOUD.ok=true}catch(e){if(e.code===401){ME=null}else{CLOUD.ok=false;CLOUD.err=e.message}}render()}
+const savePos=()=>{wr("dma_positions",JSON.stringify(POS));wr("dma_watch",JSON.stringify(WL));wr("dma_settings",JSON.stringify(SET));stamp();if(ME){clearTimeout(pushT);pushT=setTimeout(push,400)}};
+async function push(){pushT=null;try{await api("positions",{positions:POS,watchlist:WL,settings:SET,ts:TS});CLOUD.ok=true}catch(e){if(e.code===401){ME=null}else{CLOUD.ok=false;CLOUD.err=e.message}}render()}
 async function initAuth(){
  try{ME=(await api("me",null,"GET")).username;CLOUD.ok=true;await initSync()}
  catch(e){ME=null;if(e.code===401)CLOUD.ok=true;else{CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}}
  render()}
 async function initSync(){
  try{const s=await api("positions",null,"GET");CLOUD.ok=true;
-  if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;const ch=normalize();wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS));if(ch)savePos()}
+  if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;WL=Array.isArray(s.watchlist)?s.watchlist:[];SET=s.settings&&typeof s.settings==="object"?s.settings:{};wr("dma_watch",JSON.stringify(WL));wr("dma_settings",JSON.stringify(SET));const ch=normalize();wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS));if(ch)savePos()}
   else if(TS>s.ts||(!s.ts&&POS.length)){if(!TS)stamp();await push()}
   CLOUD.connected=(await api("status",null,"GET")).connected}
  catch(e){if(e.code===401)ME=null;else{CLOUD.ok=false;CLOUD.err=e.message}}
@@ -461,19 +489,19 @@ async function submitAuth(){const u=$("au").value.trim(),p=$("ap").value,m=t=>{$
  try{let legacy="";try{legacy=localStorage.getItem("dma_uid")||""}catch(e){}
   const r=await api(reg?"register":"login",reg?{username:u,password:p,legacy_uid:legacy}:{username:u,password:p});
   ME=r.username;CLOUD.ok=true;$("ap").value="";
-  if(reg){try{localStorage.removeItem("dma_uid")}catch(e){}}else{POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0")}
-  await initSync();if(PENDING){const p=PENDING;PENDING=null;openForm("new",p)}}
+  if(reg){try{localStorage.removeItem("dma_uid")}catch(e){}}else{wipeLocal()}
+  await initSync();if(PENDING){const p=PENDING;PENDING=null;openForm("new",p)}else if(PENDINGW){const w=PENDINGW;PENDINGW=null;openWatch(w)}}
  catch(e){m(e.message)}
  $("abtn").disabled=false;render()}
 async function logout(){if(pushT){clearTimeout(pushT);await push()}
  try{await api("logout",{})}catch(e){}
- ME=null;POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0");clearTimeout(pollT);CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";closeForm();render()}
+ ME=null;wipeLocal();clearTimeout(pollT);CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";closeForm();render()}
 async function changePw(){const m=t=>{$("pwmsg").textContent=t};m("");
  try{await api("passwd",{old:$("pw0").value,new:$("pw1").value});$("pw0").value=$("pw1").value="";m("Password changed. Other devices were logged out.")}catch(e){m(e.message)}}
 async function deleteAcct(){const m=t=>{$("pwmsg").textContent=t};
  if(!$("pw0").value)return m("Enter your current password above first.");
  if(!confirm("Delete your account, positions and Telegram link? This cannot be undone."))return;
- try{await api("delete",{password:$("pw0").value});$("pw0").value="";ME=null;POS=[];wr("dma_positions","[]");TS=0;wr("dma_pos_ts","0");CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";render()}catch(e){m(e.message)}}
+ try{await api("delete",{password:$("pw0").value});$("pw0").value="";ME=null;wipeLocal();CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";render()}catch(e){m(e.message)}}
 async function connectTg(){CLOUD.err="";CLOUD.diag="";CLOUD.link=null;render();
  try{const j=await api("link",{});CLOUD.link=j.url;pollTg(Date.now());render();try{window.open(j.url,"_blank")}catch(e){}}
  catch(e){CLOUD.err=e.message;try{const d=await (await fetch("/api/dma?a=health")).json();
@@ -568,14 +596,14 @@ function openForm(mode,ctx){
  if(mode==="edit"){h=POS.find(x=>x.id===ctx.hid);t=h&&h.txns.find(x=>x.id===ctx.tid)}
  if(mode!=="new"&&!h)return;if(mode==="edit"&&!t)return;
  FORM={mode,hid:h?h.id:null,tid:t?t.id:null,type:mode==="sell"?"sell":t?t.type:"buy"};
- show("sec-id",mode==="new");show("sec-trade",mode!=="levels");show("sec-risk",mode==="new"||mode==="levels");show("sec-alerts",mode==="new"||mode==="levels");
+ show("sec-id",mode==="new");show("sec-trade",mode!=="levels");show("sec-journal",mode!=="levels");show("sec-risk",mode==="new"||mode==="levels");show("sec-alerts",mode==="new"||mode==="levels");
  $("ptype").hidden=mode==="new"||mode==="levels";
  const q=h?quote(h):null,L=h?ledger(h):null;
  if(mode==="new"){const d=ctx||{};set("psym",d.symbol);set("pex",d.exchange==="BSE"?"BSE":"NSE");setDate("pdate",todayStr());set("pqty",d.qty);set("ppx",d.price);set("psl",d.sl);set("ptg",d.target);set("pth",d.thesis);$("a1").checked=$("a2").checked=$("a3").checked=true}
  else if(mode==="levels"){set("psl",h.sl);set("ptg",h.target);set("pth",h.thesis);$("a1").checked=h.alertMa!==false;$("a2").checked=h.alertSl!==false;$("a3").checked=h.alertTg!==false}
  else if(mode==="edit"){setDate("pdate",t.date);set("pqty",t.qty);set("ppx",t.price)}
  else{setDate("pdate",todayStr());set("pqty",mode==="sell"?L.qty:"");set("ppx",q?q.price:"")}
- $("pmsg").textContent="";renderType();quickFill();$("pform").hidden=false;$("pbk").hidden=false;document.body.style.overflow="hidden";$("pform").scrollTop=0;previewForm();
+ set("pnote",mode==="edit"?t.note:"");set("prule",mode==="edit"?t.rule:"");$("pmsg").textContent="";renderType();quickFill();$("pform").hidden=false;$("pbk").hidden=false;document.body.style.overflow="hidden";$("pform").scrollTop=0;previewForm();
  setTimeout(()=>{try{$(mode==="levels"?"psl":mode==="new"?"psym":"pqty").focus({preventScroll:true})}catch(e){}},60)}
 function closeForm(){$("pform").hidden=true;$("pbk").hidden=true;document.body.style.overflow="";FORM.hid=FORM.tid=null}
 addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("pform").hidden)closeForm()});
@@ -591,15 +619,16 @@ function previewForm(){const el=$("pprev");el.textContent="";if(FORM.mode==="lev
  const r=trialTxns();if(!r)return;const L=ledger({txns:r.tx});
  if(L.bad){el.innerHTML=`<span class="neg">You can't sell more than you hold on that date.</span>`;return}
  const row=L.rows.find(x=>x.x===r.t);
- if(r.t.type==="buy")el.innerHTML=`Cost of this buy <b>${inr(r.t.qty*r.t.price)}</b> · New average cost <b>${inr(L.avg)}</b> on <b>${L.qty}</b> shares`;
- else el.innerHTML=`Proceeds <b>${inr(r.t.qty*r.t.price)}</b> · Realised P&amp;L <b class="${pcl(row.r)}">${mny(row.r)}</b> (${sg(+(row.r/(r.t.qty*row.avg)*100).toFixed(2))}%) · <b>${L.qty}</b> shares left`}
-["psym","pex","pqty","ppx"].forEach(i=>$(i).addEventListener("input",previewForm));
+ if(r.t.type==="buy"){const f=cfg(),h0=FORM.mode==="new"?null:POS.find(x=>x.id===FORM.hid),sl0=FORM.mode==="new"?num("psl"):(h0||{}).sl;
+  el.innerHTML=`Cost of this buy <b>${inr(r.t.qty*r.t.price)}</b> (charges about ${inr(charges(r.t))}) · New average cost <b>${inr(L.avg)}</b> on <b>${L.qty}</b> shares`+(f.capital&&sl0&&sl0<r.t.price?` · Risk-based size at ${f.riskPct}%: up to <b>${Math.floor(f.capital*f.riskPct/100/(r.t.price-sl0))}</b> shares`:"")}
+ else el.innerHTML=`Proceeds <b>${inr(r.t.qty*r.t.price)}</b> (charges about ${inr(charges(r.t))}) · Realised P&amp;L <b class="${pcl(row.r)}">${mny(row.r)}</b> (${sg(+(row.r/(r.t.qty*row.avg)*100).toFixed(2))}%) · <b>${L.qty}</b> shares left`}
+["psym","pex","pqty","ppx","psl"].forEach(i=>$(i).addEventListener("input",previewForm));
 function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,price:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),thesis:"From screener"};go("pos");if(!ME){PENDING=draft;return}openForm("new",draft)}
 function savePosition(){const m=t=>{$("pmsg").textContent=t};
  const mode=FORM.mode,sl=num("psl"),tg=num("ptg"),th=$("pth").value.trim();
  const alerts={alertMa:$("a1").checked,alertSl:$("a2").checked,alertTg:$("a3").checked};
  if(mode==="levels"){const h=POS.find(x=>x.id===FORM.hid);if(!h)return closeForm();Object.assign(h,{sl,target:tg,thesis:th},alerts);savePos();closeForm();render();return}
- const d=parseD($("pdate").value),q=num("pqty"),px=num("ppx");
+ const d=parseD($("pdate").value),q=num("pqty"),px=num("ppx"),note=$("pnote").value.trim().slice(0,200),rule=$("prule").value;
  if(d===null||d==="")return m("Enter the date as DD/MM/YYYY, for example 09/10/2026.");
  if(d>todayStr())return m("The date cannot be in the future.");
  if(!q||q<=0||Math.floor(q)!==q)return m("Enter a whole number of shares.");if(!px||px<=0)return m("Enter the price per share.");
@@ -611,9 +640,9 @@ function savePosition(){const m=t=>{$("pmsg").textContent=t};
  if(mode==="new"){
   if(!h){h={id:uidn(),symbol:sym,exchange:$("pex").value==="BSE"?"BSE":"NSE",sl,target:tg,thesis:th,txns:[]};Object.assign(h,alerts);POS.push(h)}
   else{if(sl)h.sl=sl;if(tg)h.target=tg;if(th&&!h.thesis)h.thesis=th}
-  h.txns.push(Object.assign(r.t,{id:uidn()}))}
- else if(mode==="edit"){h.txns=r.tx;const e=h.txns.find(x=>x.id===FORM.tid);if(e)Object.assign(e,{type:r.t.type,date:d,qty:Math.floor(q),price:px})}
- else h.txns.push(Object.assign(r.t,{id:uidn()}));
+  h.txns.push(Object.assign(r.t,{id:uidn(),note,rule}))}
+ else if(mode==="edit"){h.txns=r.tx;const e=h.txns.find(x=>x.id===FORM.tid);if(e)Object.assign(e,{type:r.t.type,date:d,qty:Math.floor(q),price:px,note,rule})}
+ else h.txns.push(Object.assign(r.t,{id:uidn(),note,rule}));
  PVIEW=ledger(h).qty>0?"open":"closed";EXP.add(h.id);savePos();closeForm();render()}
 function delTxn(hid,tid){const h=POS.find(x=>x.id===hid);if(!h)return;if(!confirm("Delete this transaction?"))return;
  const keep=h.txns.filter(x=>x.id!==tid);if(ledger({txns:keep}).bad){alert("Deleting it would leave a later sale without enough shares. Delete or edit the later sale first.");return}
@@ -641,17 +670,17 @@ function pbar(p,avg,px){const lo=p.sl||avg*.9,hi=p.target||avg*1.2,at=v=>Math.ma
 const tvLink=p=>`<a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(p.exchange+":"+p.symbol)}">Chart ↗</a>`;
 const acts=(p,c)=>c.open?`<button class="btn sm pri" onclick="openForm('buy','${p.id}')">Buy</button><button class="btn sm" onclick="openForm('sell','${p.id}')">Sell</button><button class="btn sm" onclick="toggleH('${p.id}')">${EXP.has(p.id)?"Hide":"Details"}</button>`
  :`<button class="btn sm pri" onclick="openForm('buy','${p.id}')">Buy again</button><button class="btn sm" onclick="toggleH('${p.id}')">${EXP.has(p.id)?"Hide":"Details"}</button>`;
-function pdetail(p,c){const L=c.L,rowOf=new Map(L.rows.map(r=>[r.x.id,r]));
+function pdetail(p,c){const L=c.L,N=ledgerNet(p),rowOf=new Map(L.rows.map(r=>[r.x.id,r]));
  const st=(l,v)=>`<div class="st"><span>${l}</span><b>${v}</b></div>`;
  const tx=p.txns.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).map(t=>{const r=rowOf.get(t.id)||{};
-  return `<tr><td>${fdate(t.date)}</td><td><span class="tag ${t.type}" style="margin:0">${t.type==="buy"?"Buy":"Sell"}</span></td><td>${t.qty}</td><td>${inr(t.price)}</td><td>${inr(t.qty*t.price)}</td><td>${t.type==="buy"?"":(r.ok===false?"–":`<span class="${pcl(r.r)}">${mny(r.r)}</span>`)}</td>
+  return `<tr><td>${fdate(t.date)}</td><td><span class="tag ${t.type}" style="margin:0">${t.type==="buy"?"Buy":"Sell"}</span></td><td>${t.qty}</td><td>${inr(t.price)}</td><td>${inr(t.qty*t.price)}</td><td>${t.type==="buy"?"":(r.ok===false?"–":`<span class="${pcl(r.r)}">${mny(r.r)}</span>`)}</td><td class="why">${t.rule?`<span class="tag ${t.rule==="yes"?"buy":"sell"}" style="margin:0">${t.rule==="yes"?"Followed rule":"Broke rule"}</span> `:""}${t.note?esc(t.note):""}</td>
   <td class="ac"><button class="btn sm" onclick="openForm('edit',{hid:'${p.id}',tid:'${t.id}'})">Edit</button><button class="btn sm danger" onclick="delTxn('${p.id}','${t.id}')" aria-label="Delete transaction">✕</button></td></tr>`}).join("");
- return `<div class="hd"><div class="hl"><div class="stg">${st("Quantity",L.qty||"0")}${st("Average cost",L.qty?inr(L.avg):"–")}${st("Invested",L.qty?inr(c.invested):"–")}${st("Break-even",L.qty?inr(L.avg):"–")}
+ return `<div class="hd"><div class="hl"><div class="stg">${L.qty?st("Strategy view",stratChip(p.exchange+":"+p.symbol,true)):""}${st("Quantity",L.qty||"0")}${st("Average cost",L.qty?inr(L.avg):"–")}${st("Invested",L.qty?inr(c.invested):"–")}${st("Break-even",L.qty?inr(L.avg):"–")}
   ${st("Unrealised P&amp;L",c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`)}${st("Realised P&amp;L",L.sold?`<span class="${pcl(L.real)}">${mny(L.real)}</span>`:"–")}
-  ${st("First bought",fdate(L.first))}${st(c.open?"Holding for":"Held for",held(c.days))}</div>
+  ${st("First bought",fdate(L.first))}${st(c.open?"Holding for":"Held for",held(c.days))}${st("Avg cost after charges",L.qty?inr(N.avg):"–")}${st("Realised after charges",L.sold?`<span class="${pcl(N.real)}">${mny(N.real)}</span>`:"–")}</div>
   ${c.open?pbar(p,L.avg,c.px):""}<div class="sub" style="margin-top:8px">${p.thesis?esc(p.thesis)+" · ":""}Average cost = total paid for the shares you still hold ÷ quantity. Sales don't change it. Brokerage and taxes are not included.</div>
   <div class="act"><button class="btn sm" onclick="openForm('levels','${p.id}')">Stop loss, target &amp; alerts</button>${tvLink(p)}<button class="btn sm danger" onclick="delHolding('${p.id}')">Delete holding</button></div></div>
-  <div class="hr"><div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
+  <div class="hr"><div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
 function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%":"–",nm=q&&q.name?`<small>${esc(q.name)}</small>`:"",L=c.L;
  let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer"><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span>${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b>":"–"}</td>
  <td>${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td>${inr(c.invested)}</td><td>${inr(c.value)}</td><td>${c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`}</td><td>${pcs(c.unrealPct)}</td><td>${w}</td>
@@ -677,16 +706,20 @@ function renderPos(){
  $("who").textContent=ME;renderTg();
  $("pmig").hidden=!MIG.length;$("pmig").innerHTML=MIG.length?`<b>Your positions were reorganised: one holding per share.</b><ul>${MIG.map(n=>`<li>${esc(n)}</li>`).join("")}</ul><button class="btn sm" onclick="dismissMig()">Got it</button>`:"";
  const all=POS.map(p=>({p,c:calc(p)})),oc=all.filter(x=>x.c.open),cc=all.filter(x=>!x.c.open);
- let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0;oc.forEach(({c})=>{inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
+ let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;oc.forEach(({p,c})=>{if(p.sl)riskAmt+=Math.max(0,c.L.qty*(c.L.avg-p.sl));else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
  all.forEach(({c})=>{re+=c.L.real});const un=val-inv,unp=inv?un/inv*100:0,sells=all.filter(x=>x.c.L.sold>0).length;
  $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}${dayBase?` · Today <span class="${pcl(day)}">${mny(day)}</span>`:""}</small></div>
  <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
  <div class="sc"><span>Realised P&amp;L</span><b class="${pcl(re)}">${sells?mny(re):"₹0"}</b><small>${sells?"From "+sells+" holding"+(sells>1?"s":"")+" with sales":"No sales yet"}</small></div>
- <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" with a price"}</small></div>`;
- $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button>`;
+ <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" with a price"}</small></div>
+ <div class="sc"><span>At risk if all stops hit</span><b>${nostop===oc.length&&oc.length?"–":inr(riskAmt)}</b><small>${val&&riskAmt?(riskAmt/val*100).toFixed(1)+"% of value":""}${nostop?(riskAmt?" · ":"")+nostop+" without a stop":""}</small></div>`;
+ $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button><button aria-pressed="${PVIEW==="watch"}" onclick="PVIEW='watch';render()">Watchlist (${WL.length})</button><button aria-pressed="${PVIEW==="reports"}" onclick="PVIEW='reports';render()">Reports</button>`;
+ $("szcard").hidden=PVIEW!=="open";$("setcard").hidden=PVIEW!=="reports";if(PVIEW!=="watch")$("wform").hidden=true;$("wbar").hidden=PVIEW!=="watch";fillSettings();
  $("psort").value=PSORT;
  let out="";
- if(PVIEW==="open"){const rows=sortRows(oc,false);
+ if(PVIEW==="watch"){out=renderWatch()}
+ else if(PVIEW==="reports"){out=renderReports()}
+ else if(PVIEW==="open"){const rows=sortRows(oc,false);
   if(!rows.length)out=`<div class="empty">No holdings yet.<br>Add your first purchase with ＋ Add position, or tap Track on any stock in the Screener.<br>Buying the same share again adds to the same holding and updates its average cost.</div>`;
   else out=`<div class="ptable"><div class="tw"><table class="pt"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th>LTP</th><th>Day</th><th>Invested</th><th>Value</th><th>P&amp;L</th><th>P&amp;L %</th><th>Weight</th><th>Stop loss</th><th>Target</th><th>vs ${data.ma_period}-DMA</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>openRow(p,c,val)).join("")}
   <tr class="tot"><td>Total</td><td></td><td></td><td></td><td>${dayBase?`<span class="${pcl(day)}">${mny(day)}</span>`:""}</td><td>${inr(inv)}</td><td>${inr(val)}</td><td><span class="${pcl(un)}">${mny(un)}</span></td><td>${pcs(unp)}</td><td>100%</td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div>
@@ -707,21 +740,121 @@ function renderPos(){
   else if(!cl.connected)n+=`The last screener run did not see your Telegram link. Run the screener once more. `}
  if(al&&CLOUD.ok===false)n+=`<b>To get alerts without the server:</b> tap Export, then upload <b>positions.json</b> to your GitHub repo.`;
  $("psync").hidden=!open.length||!n;$("psync").innerHTML=n}
+/* ---- fees, tax, risk sizing, watchlist, reports ---- */
+const FEE0={capital:0,riskPct:1,brokeragePct:0,brokerageFlat:0,sttPct:.1,exchPct:.00297,sebiPct:.0001,stampPct:.015,gstPct:18,dpFlat:15.34,stcgPct:20,ltcgPct:12.5,ltcgExempt:125000};
+const FEE_LABELS=[["capital","Trading capital (₹)"],["riskPct","Risk per trade (% of capital)"],["brokeragePct","Brokerage (% of value)"],["brokerageFlat","Brokerage (₹ per order)"],["sttPct","STT (% of value, buy and sell)"],["exchPct","Exchange charges (%)"],["sebiPct","SEBI charges (%)"],["stampPct","Stamp duty (% on buys)"],["gstPct","GST on brokerage and charges (%)"],["dpFlat","Depository charge (₹ per sale)"],["stcgPct","Short-term gains tax (%)"],["ltcgPct","Long-term gains tax (%)"],["ltcgExempt","Long-term exemption per year (₹)"]];
+const cfg=()=>Object.assign({},FEE0,SET);
+function charges(t){const f=cfg(),v=t.qty*t.price,br=f.brokerageFlat+f.brokeragePct/100*v,ex=f.exchPct/100*v,sb=f.sebiPct/100*v;
+ return br+ex+sb+f.sttPct/100*v+f.gstPct/100*(br+ex+sb)+(t.type==="buy"?f.stampPct/100*v:f.dpFlat)}
+const netTxns=h=>h.txns.map(t=>Object.assign({},t,{price:t.type==="buy"?t.price+charges(t)/t.qty:t.price-charges(t)/t.qty}));
+const ledgerNet=h=>ledger({txns:netTxns(h)});
+const fyOf=d=>{const y=+d.slice(0,4),m=+d.slice(5,7),a=m>=4?y:y-1;return a+"-"+String((a+1)%100).padStart(2,"0")};
+function taxReport(){const rows={};
+ POS.forEach(h=>{const lots=[];h.txns.map((x,i)=>({x,i})).sort((a,b)=>a.x.date<b.x.date?-1:a.x.date>b.x.date?1:a.i-b.i).forEach(({x})=>{
+  const ch=charges(x),fy=fyOf(x.date),r=rows[fy]=rows[fy]||{fy,charges:0,stcg:0,ltcg:0,sells:0};r.charges+=ch;
+  if(x.type==="buy"){lots.push({date:x.date,qty:x.qty,cps:x.price+ch/x.qty});return}
+  r.sells++;let rem=x.qty;const net=x.price-ch/x.qty;
+  while(rem>0&&lots.length){const l=lots[0],q=Math.min(rem,l.qty),days=dd(l.date,x.date)||0,g=(net-l.cps)*q;if(days>365)r.ltcg+=g;else r.stcg+=g;l.qty-=q;rem-=q;if(l.qty<=0)lots.shift()}})});
+ const f=cfg();return Object.values(rows).sort((a,b)=>a.fy<b.fy?1:-1).map(r=>{let s=r.stcg,l=r.ltcg;if(s<0&&l>0){l+=s;s=0}
+  return Object.assign(r,{tax:Math.max(s,0)*f.stcgPct/100+Math.max(l-f.ltcgExempt,0)*f.ltcgPct/100})})}
+/* settings card (static form, so typing is never interrupted by a refresh) */
+function buildSettings(){$("setgrid").innerHTML=FEE_LABELS.map(([k,l])=>`<div><label for="s-${k}">${l}</label><input id="s-${k}" type="number" step="any" min="0" inputmode="decimal" onchange="saveSettings()"></div>`).join("")}
+function fillSettings(){const f=cfg();FEE_LABELS.forEach(([k])=>{const e=$("s-"+k);if(e&&document.activeElement!==e)e.value=f[k]||f[k]===0?+f[k]:""});
+ const cap=$("sz-cap"),rk=$("sz-risk");if(cap&&!cap.value&&f.capital)cap.value=f.capital;if(rk&&!rk.value)rk.value=f.riskPct}
+function saveSettings(){FEE_LABELS.forEach(([k])=>{const v=parseFloat($("s-"+k).value);if(isFinite(v)&&v>=0)SET[k]=v;else delete SET[k]});savePos();$("sz-cap").value="";fillSettings();render()}
+function resetSettings(){if(confirm("Reset all fee, tax and risk settings to the defaults?")){SET={};savePos();$("sz-cap").value="";fillSettings();render()}}
+function sizeCalc(){const f=cfg(),cap=num("sz-cap")||f.capital,risk=num("sz-risk")||f.riskPct,en=num("sz-en"),sl=num("sz-sl"),o=$("sz-out");
+ if(!cap||!en||!sl){o.textContent="Enter capital, entry price and stop loss to see the size.";return}
+ if(sl>=en){o.innerHTML=`<span class="neg">The stop must be below the entry price.</span>`;return}
+ const rs=cap*risk/100,q=Math.floor(rs/(en-sl)),v=q*en;
+ o.innerHTML=q<1?`A risk of ${inr(rs)} is too small for this stop distance.`:`You risk <b>${inr(rs)}</b> (${risk}% of ${inr(cap)}). Size: <b>${q}</b> shares, position <b>${inr(v)}</b> (${(v/cap*100).toFixed(1)}% of capital). Stop distance ${((en-sl)/en*100).toFixed(1)}%.${v>cap?` <span class="neg">That is more than your capital.</span>`:""}`}
+/* watchlist */
+let WEDIT=null;
+function wstat(q){const n=data.near_pct||2,b=data.buy_max_pct||5;if(!q)return["Awaiting price","",0];if(q.pct==null)return["No average yet","",0];
+ if(q.pct<0&&q.pct>=-n)return["Approaching","near",2];if(q.pct<0)return["Below "+data.ma_period+"-DMA","sell",1];if(q.pct<=b)return["In buy zone","buy",3];return["Above range","",0]}
+function openWatch(w){w=w||{};WEDIT=w.id||null;PVIEW="watch";const set=(i,v)=>$(i).value=v??"";
+ set("wsym",w.symbol);set("wex",w.exchange==="BSE"?"BSE":"NSE");set("wnote",w.note);set("wabove",w.above);set("wbelow",w.below);
+ $("wa1").checked=w.alertBuy!==false;$("wa2").checked=!!w.alertBelow;$("wmsg").textContent="";$("wform").hidden=false;render();$("wform").scrollIntoView({block:"nearest"})}
+function saveWatch(){const m=t=>{$("wmsg").textContent=t},sym=$("wsym").value.trim().toUpperCase().replace(/[^A-Z0-9&.\-]/g,"");
+ if(!sym)return m("Enter a symbol.");const ex=$("wex").value==="BSE"?"BSE":"NSE";
+ if(WL.some(x=>x.symbol===sym&&x.exchange===ex&&x.id!==WEDIT))return m("That stock is already on your watchlist.");
+ const w={id:WEDIT||uidn(),symbol:sym,exchange:ex,note:$("wnote").value.trim().slice(0,120),alertBuy:$("wa1").checked,alertBelow:$("wa2").checked,above:num("wabove"),below:num("wbelow")};
+ const i=WL.findIndex(x=>x.id===w.id);if(i>=0)WL[i]=w;else WL.push(w);WEDIT=null;$("wform").hidden=true;savePos();render()}
+function editWatch(id){const w=WL.find(x=>x.id===id);if(w)openWatch(w)}
+function delWatch(id){const w=WL.find(x=>x.id===id);if(w&&confirm("Remove "+w.symbol+" from your watchlist?")){WL=WL.filter(x=>x!==w);savePos();render()}}
+function watchFrom(btn){const w={symbol:btn.dataset.sym,exchange:btn.dataset.ex};go("pos");if(!ME){PENDINGW=w;return}openWatch(w)}
+function renderWatch(){
+ if(!WL.length)return `<div class="empty">Your watchlist is empty.<br>Add stocks you do not own yet. You get a Telegram alert when one enters the buy zone, falls below its ${data.ma_period}-DMA, or reaches a price you set.</div>`;
+ return `<div class="wgrid">`+WL.map(w=>{const q=quote(w),st=wstat(q),al=[w.alertBuy?"buy zone":"",w.alertBelow?"below average":"",w.above?"≥ "+inr(w.above):"",w.below?"≤ "+inr(w.below):""].filter(Boolean).join(", ");
+  return `<article class="pc"><div class="ph"><div><b>${esc(w.symbol)}</b><span class="tag ex">${w.exchange}</span><span class="tag ${st[1]}">${st[0]}</span>${stratChip(w.exchange+":"+w.symbol,false)}${w.note?`<div class="sub">${esc(w.note)}</div>`:""}</div>
+  <div style="text-align:right"><b>${q?inr(q.price):"–"}</b>${q&&q.pct!=null?`<div>${pcs(q.pct)} <span class="sub">vs ${data.ma_period}-DMA</span></div>`:""}</div></div>
+  <div class="sub" style="margin-top:6px">Alerts: ${al||"none"}</div>
+  <div class="act"><button class="btn sm pri" onclick="openForm('new',{symbol:'${esc(w.symbol)}',exchange:'${w.exchange}',price:${q?q.price:"''"}})">Buy</button><button class="btn sm" onclick="editWatch('${w.id}')">Edit</button>${tvLink(w)}<button class="btn sm danger" onclick="delWatch('${w.id}')" aria-label="Remove">✕</button></div></article>`}).join("")+`</div>`}
+/* reports: performance vs Nifty, journal, monthly, tax */
+let NIFTY=null,NK=[];
+async function loadNifty(){if(NIFTY!==null)return;NIFTY={};try{const r=await fetch("/nifty.json",{cache:"no-cache"});if(r.ok){NIFTY=(await r.json()).close||{};NK=Object.keys(NIFTY).sort()}}catch(e){}render()}
+function niftyOn(d){if(!NK.length)return null;let lo=0,hi=NK.length-1,r=-1;while(lo<=hi){const m=(lo+hi)>>1;if(NK[m]<=d){r=m;lo=m+1}else hi=m-1}return r<0?null:NIFTY[NK[r]]}
+function perfRows(){const rows=[];POS.forEach(h=>{const c=calc(h),L=c.L;if(!L.first)return;const end=c.open?todayStr():L.last,a=niftyOn(L.first),b=niftyOn(end),mine=c.open?c.unrealPct:c.realPct;if(mine==null)return;
+ rows.push({h,from:L.first,to:end,open:c.open,mine,nifty:a&&b?(b/a-1)*100:null})});return rows.sort((x,y)=>x.from<y.from?1:-1)}
+function renderReports(){loadNifty();const pr=perfRows(),tx=taxReport(),f=cfg();
+ const sells=[];POS.forEach(h=>ledger(h).rows.forEach(r=>{if(r.x.type==="sell"&&r.ok)sells.push({r:r.r,rule:r.x.rule||"",d:r.x.date})}));
+ const grp=(arr,key,name)=>{const g={};arr.forEach(s=>{const k=key(s);(g[k]=g[k]||{n:0,w:0,t:0}).n++;g[k].w+=s.r>0?1:0;g[k].t+=s.r});return Object.entries(g).sort((a,b)=>a[0]<b[0]?1:-1).map(([k,v])=>`<tr><td>${name(k)}</td><td>${v.n}</td><td>${Math.round(v.w/v.n*100)}%</td><td><span class="${pcl(v.t)}">${mny(v.t)}</span></td></tr>`).join("")};
+ const have=pr.filter(x=>x.nifty!=null),avg=have.length?have.reduce((s,x)=>s+x.mine-x.nifty,0)/have.length:null;
+ const buys=POS.reduce((n,h)=>n+h.txns.filter(t=>t.type==="buy"&&t.rule).length,0),yes=POS.reduce((n,h)=>n+h.txns.filter(t=>t.type==="buy"&&t.rule==="yes").length,0);
+ const th=h=>`<thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead>`,tbl=(h,b)=>`<div class="tw"><table class="pt" style="min-width:0">${th(h)}<tbody>${b}</tbody></table></div>`;
+ return `<div class="fm"><h3>Your returns vs the Nifty 50</h3><div class="sub">Return on each holding from its first purchase to its last sale (or today), against the Nifty 50 over the same dates. It uses average cost and ignores the timing of extra buys, so treat it as a guide.</div>
+ ${pr.length?tbl(["Holding","From","To","You","Nifty","Difference"],pr.map(x=>`<tr><td><b>${esc(x.h.symbol)}</b>${x.open?` <span class="tag near" style="margin:0">open</span>`:""}</td><td>${fdate(x.from)}</td><td>${x.open?"today":fdate(x.to)}</td><td>${pcs(x.mine)}</td><td>${x.nifty==null?"–":pcs(x.nifty)}</td><td>${x.nifty==null?"–":pcs(x.mine-x.nifty)}</td></tr>`).join(""))+(avg!=null?`<div class="sub" style="margin-top:8px">Average difference per holding: <b class="${pcl(avg)}">${sg(+avg.toFixed(2))} percentage points</b> across ${have.length} holding${have.length>1?"s":""}.</div>`:`<div class="sub" style="margin-top:8px">${NK.length?"Not enough index history for these dates.":"Index history loads after the next end-of-day screener run."}</div>`):`<div class="sub" style="margin-top:8px">Add holdings to see this.</div>`}</div>
+ <div class="fm"><h3>Journal review</h3><div class="sub">Based on the “Followed my rule?” answer you give on each trade.</div>
+ ${sells.length?tbl(["Followed my rule?","Sales","Winners","Realised P&amp;L"],grp(sells,s=>s.rule||"none",k=>k==="yes"?"Yes":k==="no"?"No":"Not answered")):`<div class="sub" style="margin-top:8px">No sales yet.</div>`}
+ ${buys?`<div class="sub" style="margin-top:8px">Purchases that followed your rule: <b>${Math.round(yes/buys*100)}%</b> of ${buys} answered.</div>`:""}</div>
+ <div class="fm"><h3>Realised P&amp;L by month</h3>${sells.length?tbl(["Month","Sales","Winners","Realised P&amp;L"],grp(sells,s=>s.d.slice(0,7),k=>new Date(k+"-01T00:00:00").toLocaleDateString("en-IN",{month:"short",year:"numeric"}))):`<div class="sub" style="margin-top:8px">No sales yet.</div>`}</div>
+ <div class="fm"><h3>Charges and tax by financial year (indicative)</h3><div class="sub">Charges come from the settings below. Tax uses first-in first-out matching and a holding of more than 12 months for long-term, as the tax rules do, so gains can differ from the average-cost P&amp;L shown on holdings. It excludes surcharge, cess, other income and loss carry-forward. Check your broker's tax report and a tax adviser before filing.</div>
+ ${tx.length?tbl(["Financial year","Charges paid","Short-term gain","Long-term gain","Estimated tax"],tx.map(r=>`<tr><td>${r.fy}</td><td>${inr(r.charges)}</td><td><span class="${pcl(r.stcg)}">${mny(r.stcg)}</span></td><td><span class="${pcl(r.ltcg)}">${mny(r.ltcg)}</span></td><td>${inr(r.tax)}</td></tr>`).join("")):`<div class="sub" style="margin-top:8px">No transactions yet.</div>`}</div>`}
+
+
+/* ---- strategy library ---- */
+let STRAT=null;
+async function loadStrat(){if(STRAT!==null)return;STRAT={strategies:[],states:{},order:[]};try{const r=await fetch("/strategies.json",{cache:"no-cache"});if(r.ok)STRAT=await r.json()}catch(e){}render()}
+const VMAP={reliable:["Held up on unseen data","buy"],mixed:["Mixed evidence","ex"],unreliable:["Did not hold up","sell"],unproven:["Too few trades to judge","ex"]};
+/* Combine every strategy for one stock into a single label: Sell if any exit signal while held, Buy if a reliable or mixed one fires, Hold if held, else nothing */
+function stratLabel(key){if(!STRAT||!STRAT.states)return null;const str=STRAT.states[key];if(!str)return null;const ok=new Set((STRAT.strategies||[]).map((s,i)=>s.verdict==="reliable"||s.verdict==="mixed"?i:-1));
+ let b=[],h=[],x=[];for(let i=0;i<str.length;i++){const sx=STRAT.strategies[i];if(!sx)continue;if(str[i]==="b"&&ok.has(i))b.push(sx.name);else if(str[i]==="h")h.push(sx.name);else if(str[i]==="s")x.push(sx.name)}
+ if(x.length)return{l:"Sell",c:"sell",why:"Exit signal: "+x.join(", ")};if(b.length)return{l:"Buy",c:"buy",why:"Entry signal: "+b.join(", ")};if(h.length)return{l:"Hold",c:"ex",why:"Still inside: "+h.join(", ")};return{l:"No signal",c:"ex",why:"No strategy is signalling"}}
+function stratChip(key,full){const r=stratLabel(key);if(!r)return "";const t=`<span class="tag ${r.c}" title="${esc(r.why)}">${r.l}</span>`;return full?t+`<span class="sub" style="display:block;margin-top:2px">${esc(r.why)}</span>`:t}
+const pc1=v=>v==null?"–":(v*100).toFixed(1)+"%";
+function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div class="empty">Loading…</div>`;
+ if(!S.strategies||!S.strategies.length)return $("vStrat").innerHTML=`<div class="empty">No strategy results yet.<br>They are built by the “strategies” workflow on GitHub (Saturday morning, or run it by hand). The first full test takes a while.</div>`;
+ const row=(l,t)=>t?`<tr><td>${l}</td><td>${t.n}</td><td>${pc1(t.win_rate)}</td><td><span class="${pcl(t.avg_ret)}">${pc1(t.avg_ret)}</span></td><td>${t.profit_factor??"–"}</td><td>${pc1(t.worst)}</td><td>${t.worst_streak}</td><td>${t.median_days}d</td></tr>`:`<tr><td>${l}</td><td colspan="7" class="sub">Too few trades</td></tr>`;
+ const list=(a,n)=>!n?`<span class="sub">none</span>`:a.slice(0,40).map(x=>{const[e,sy]=x.includes(":")?x.split(":"):["NSE",x];return `<a class="tag ex" style="margin:2px 4px 2px 0;text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(e+":"+sy)}">${esc(sy)}</a>`}).join("")+(n>40?` <span class="sub">+${n-40} more</span>`:"");
+ $("vStrat").innerHTML=`<div class="fm"><h3>Strategy library</h3><div class="sub">Each strategy is a written rule, tested on about ${S.years||6} years of adjusted prices. A signal at the close is bought at the next open, with an ${S.stop_pct||8}% stop, a ${S.max_hold_days||120}-day limit and ${S.cost_pct??0.4}% costs per trade. The rule is judged on the later part of the history that it was not tuned on. Results as of ${esc(S.price_date||"–")}${S.stale?" (prices look stale)":""}.</div>
+ <div class="sub" style="margin-top:6px"><b>Caveats:</b> ${(S.caveats||["The test uses today's stocks, so companies that failed are missing and results look better than real life."]).map(esc).join(" ")}</div></div>
+ <div class="wgrid">`+S.strategies.map(s=>{const v=VMAP[s.verdict]||VMAP.unproven,t=s.today||{};return `<article class="pc"><div class="ph"><div><b>${esc(s.name)}</b><span class="tag ${v[1]}">${v[0]}</span></div></div>
+ <div class="sub" style="margin-top:6px"><b>Buy when:</b> ${esc(s.rule)}<br><b>Exit when:</b> ${esc(s.exit)}</div>
+ <div class="tw"><table class="pt" style="min-width:0"><thead><tr><th>Period</th><th>Trades</th><th>Won</th><th>Avg per trade</th><th>Profit factor</th><th>Worst</th><th>Losing streak</th><th>Typical hold</th></tr></thead><tbody>${row("Earlier (tuning)",s.train)}${row("Later (judged)",s.test)}</tbody></table></div>
+ <div style="margin-top:8px"><b>Buy signals today (${t.buy_n||0})</b><div>${list(t.buy||[],t.buy_n||0)}</div></div>
+ <div style="margin-top:6px"><b>Exit signals today (${t.sell_n||0})</b><div>${list(t.sell||[],t.sell_n||0)}</div></div>
+ <div class="sub" style="margin-top:6px">${t.hold_n||0} stocks currently inside this strategy’s trade.</div></article>`}).join("")+`</div>`}
+
 normalize();
 
 /* ---------- navigation & render ---------- */
+function healthLine(H){const n=v=>Number(v||0).toLocaleString("en-IN"),x=H.xcheck,parts=[`Source: ${H.source==="official"?"official NSE/BSE close":"exchange data, intraday (about 15 minutes delayed)"}`,`${n(H.scanned)} stocks scanned, ${n(H.skipped)} skipped (no data)`];
+ if(H.checked)parts.push(`${n(H.corrected)} price${H.corrected===1?"":"s"} corrected against official files (${n(H.checked)} checked)`);
+ if(x)parts.push(`NSE vs BSE cross-check: ${n(x.pairs)} stocks, ${x.mismatch?`<b class="neg">${x.mismatch} differ by over 0.5%</b>`:"all within 0.5%"}`);
+ return parts.join(" · ")}
 let view_="screen";
-function go(v){location.hash=v==="pos"?"#positions":"#screener";route()}
-function route(){view_=location.hash==="#positions"?"pos":"screen";render()}
+function go(v){location.hash=v==="pos"?"#positions":v==="strat"?"#strategies":"#screener";route()}
+function route(){view_=location.hash==="#positions"?"pos":location.hash==="#strategies"?"strat":"screen";if(view_==="strat")loadStrat();render()}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · ${data.price_date?`prices as of ${new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"})} · `:""}updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
- $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button>`;
- $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";
- if(view_==="screen")renderScreen();else renderPos()}
+ $("health").innerHTML=data.health?healthLine(data.health):"";
+ $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button>`;
+ $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";
+ if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else renderStrat()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 $("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
 addEventListener("hashchange",route);matchMedia("(max-width:760px)").addEventListener("change",render);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
-route();load();initAuth();setInterval(load,3e5);
+buildSettings();route();load();initAuth();setInterval(load,3e5);
 </script></body></html>

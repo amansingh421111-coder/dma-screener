@@ -117,6 +117,7 @@ def _num(x):
     try: return float(str(x).replace(",", "").strip())
     except Exception: return None
 
+BSE_ISIN = {}   # ISIN -> BSE scrip code (from the official BSE file; used to compare NSE and BSE closes)
 BHAV = {}   # exchange -> (date, {key: (open, high, low, close, volume)}) from the official end-of-day files
 
 def load_bhav():
@@ -129,6 +130,8 @@ def load_bhav():
                 for r in df.to_dict("records")}
     def bse_parse(df):
         g = lambda r, k: _num(r.get(k))
+        for r in df.to_dict("records"):
+            if str(r.get("ISIN", "")).startswith("IN"): BSE_ISIN[str(r["ISIN"]).strip()] = str(r["FinInstrmId"]).strip()
         return {str(r["FinInstrmId"]).strip(): (g(r, "OpnPric"), g(r, "HghPric"), g(r, "LwPric"), g(r, "ClsPric"), g(r, "TtlTradgVol"),
                                                 g(r, "PrvsClsgPric"), (g(r, "TtlTrfVal") / 1e7 if g(r, "TtlTrfVal") is not None else None), None, g(r, "NoOfTrades"))
                 for r in df.to_dict("records")}
@@ -371,8 +374,8 @@ def cloud_users():
         for uid in uids:
             chat, raw = redis(["GET", f"chat:{uid}"]), redis(["GET", f"pos:{uid}"])
             if not chat or not raw: continue
-            d = json.loads(raw); d = d["positions"] if isinstance(d, dict) else d
-            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol") and is_open(p)]))
+            full = json.loads(raw); full = full if isinstance(full, dict) else {"positions": full}; d = full.get("positions") or []
+            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol") and is_open(p)], watchlist=[w for w in (full.get("watchlist") or []) if w.get("symbol")]))
         CLOUD["users"] = len(uids); CLOUD["connected"] = len(out)
         return out
     except Exception as e:
@@ -426,6 +429,49 @@ def position_quotes(pos, c):
                              pct=None if pd.isna(m) else round((px / float(m) - 1) * 100, 2),
                              chg=round((px / float(close.iloc[-2]) - 1) * 100, 2))
     return q
+
+def xcheck(nse_items):
+    """Independent accuracy check: the same company's official closing price on NSE and on BSE must agree.
+    Only liquid pairs are compared. Returns None when both official files are not for the same day."""
+    n, b = BHAV.get("NSE"), BHAV.get("BSE")
+    if not n or not b or n[0] != b[0] or not BSE_ISIN: return None
+    pairs, bad = 0, []
+    for u in nse_items:
+        code = BSE_ISIN.get(u.get("isin") or "")
+        a, v = n[1].get(u["symbol"]), b[1].get(code) if code else None
+        if not a or not v or not a[3] or not v[3] or (a[4] or 0) < 50000 or (v[4] or 0) < 5000: continue
+        pairs += 1; d = abs(a[3] / v[3] - 1) * 100
+        if d > 0.5: bad.append(dict(symbol=u["symbol"], nse=round(a[3], 2), bse=round(v[3], 2), diff_pct=round(d, 2)))
+    bad.sort(key=lambda x: -x["diff_pct"])
+    return dict(date=str(n[0]), pairs=pairs, mismatch=len(bad), worst=bad[:5])
+
+def update_nifty(force=False):
+    """Daily closes of the Nifty 50 index (for comparing your trades with the market). Kept in nifty.json."""
+    f = ROOT / "nifty.json"
+    try:
+        old = json.loads(f.read_text()) if f.exists() else {}
+        if not force and old.get("updated") == str(dt.date.today()): return
+        import yfinance as yf
+        d = yf.download("^NSEI", period="6y", interval="1d", progress=False, auto_adjust=False)
+        close = d["Close"].squeeze().dropna()
+        if len(close) < 200: return
+        f.write_text(json.dumps({"updated": str(dt.date.today()), "close": {str(i.date()): round(float(v), 2) for i, v in close.items()}}))
+    except Exception as e: log.warning("nifty history unavailable: %s", str(e)[:100])
+
+def watch_events(wl, quotes, c):
+    """Alerts for stocks on the watchlist (stocks you do not own yet). Each condition alerts once a day."""
+    ev = []
+    for w in wl or []:
+        q = quotes.get(pos_key(w))
+        if not q: continue
+        px, s, k = q["price"], w["symbol"], f"W:{pos_key(w)}#{w.get('id') or ''}"
+        if w.get("alertBuy") and q["pct"] is not None and 0 <= q["pct"] <= c["buy_max_pct"]:
+            ev.append((k + ":w1", f"👁 WATCH: {s} is in the buy zone, {q['pct']:+}% from its {c['ma_period']}-DMA (₹{px})"))
+        if w.get("alertBelow") and q["pct"] is not None and q["pct"] < 0:
+            ev.append((k + ":w2", f"👁 WATCH: {s} is below its {c['ma_period']}-DMA ({q['pct']:+}%, ₹{px})"))
+        if w.get("above") and px >= w["above"]: ev.append((k + ":w3", f"👁 WATCH: {s} reached ₹{px} (your level ₹{w['above']} or higher)"))
+        if w.get("below") and px <= w["below"]: ev.append((k + ":w4", f"👁 WATCH: {s} fell to ₹{px} (your level ₹{w['below']} or lower)"))
+    return ev
 
 def position_events(pos, quotes, c):
     """One alert set per distinct position. Two positions in the same stock (different buy price / stop) are both checked."""
@@ -561,12 +607,17 @@ def main():
         sigs += [s for s in old.get("signals", []) if s.get("exchange") == "BSE"]
     pos, users = load_positions(), cloud_users()
     allpos = {pos_key(p): p for p in pos + [p for u in users for p in u["positions"]] if is_open(p)}
+    for u in users:
+        for w in u.get("watchlist", []): allpos.setdefault(pos_key(w), w)
     quotes = position_quotes(list(allpos.values()), c)
+    official = bool(BHAV.get("NSE") and str(BHAV["NSE"][0]) == str(latest))
+    health = dict(run_at=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=str(latest), source="official" if official else "intraday",
+                  scanned=len(data), skipped=len(items) - len(todo), checked=RECON["checked"], corrected=RECON["mismatch"] + RECON["added"], xcheck=xcheck(nse))
     (ROOT / "signals.json").write_text(json.dumps(
         {"updated": dt.datetime.now(dt.timezone.utc).isoformat(), "ma_period": c["ma_period"], "ma_type": c["ma_type"],
          "near_pct": c["near_pct"], "buy_max_pct": c["buy_max_pct"], "universe": "NSE + BSE" if c["include_bse"] else "NSE",
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
-         "cloud": CLOUD, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
+         "cloud": CLOUD, "health": health, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
          "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
@@ -585,10 +636,15 @@ def main():
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
     if ev and notify("📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in ev)) + "\n\nResearch alert only, not financial advice."):
         st["pos_sent"].update({k: t_now for k, _ in ev})
+    xc = health.get("xcheck")
+    if xc and xc["pairs"] >= 100 and xc["mismatch"] > max(3, 0.05 * xc["pairs"]) and not st.get("xwarn") and not a.summary:
+        w = ", ".join(f"{x['symbol']} NSE {x['nse']} vs BSE {x['bse']}" for x in xc["worst"][:3])
+        if notify(f"⚠️ Data check: {xc['mismatch']} of {xc['pairs']} dual-listed stocks have NSE and BSE closes that differ by more than 0.5% ({w}). Treat prices with care until it clears."): st["xwarn"] = 1
     for u in users:
-        uev = [e for e in position_events(u["positions"], quotes, c) if due(f"{u['uid']}:{e[0]}")]
+        uev = [e for e in position_events(u["positions"], quotes, c) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
         if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in uev)) + "\n\nResearch alert only, not financial advice."):
             st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
+    if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()
     if a.summary: notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"]))
     (ROOT / "state.json").write_text(json.dumps(st))
     try:

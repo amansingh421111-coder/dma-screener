@@ -288,7 +288,8 @@ module.exports = async (req, res) => {
         let txns;
         if (Array.isArray(p.txns)) {
           txns = p.txns.slice(0, 400).map((x) => ({ id: id16(x && x.id), type: x && x.type === "sell" ? "sell" : "buy",
-            date: DATE.test(String(x && x.date)) ? String(x.date) : "", qty: Math.floor(+(x && x.qty)) || 0, price: +(x && x.price) || 0 }))
+            date: DATE.test(String(x && x.date)) ? String(x.date) : "", qty: Math.floor(+(x && x.qty)) || 0, price: +(x && x.price) || 0,
+            note: String((x && x.note) || "").slice(0, 200), rule: x && (x.rule === "yes" || x.rule === "no") ? x.rule : "" }))
             .filter((x) => x.date && x.qty > 0 && x.price > 0);
         } else {   // older single-lot format
           txns = [];
@@ -308,7 +309,24 @@ module.exports = async (req, res) => {
         }
       }
       const clean = [...byKey.values()].map((h) => Object.assign(h, replay(h.txns)));
-      await redis(["SET", "pos:" + uid, JSON.stringify({ positions: clean, ts: +body.ts || Date.now() })]);
+      // watchlist and personal settings travel with the holdings; an older page that omits them leaves them untouched
+      let prevDoc = {}; try { const r0 = await redis(["GET", "pos:" + uid]); prevDoc = r0 ? JSON.parse(r0) : {}; } catch (e) { prevDoc = {}; }
+      let watchlist = Array.isArray(prevDoc.watchlist) ? prevDoc.watchlist : [], settings = prevDoc.settings && typeof prevDoc.settings === "object" ? prevDoc.settings : {};
+      if (Array.isArray(body.watchlist)) {
+        const seen = new Set(); watchlist = [];
+        for (const w of body.watchlist.slice(0, 100)) {
+          if (!w || typeof w.symbol !== "string") continue;
+          const exchange = w.exchange === "BSE" ? "BSE" : "NSE", symbol = w.symbol.slice(0, 24).toUpperCase().replace(/[^A-Z0-9&.\-]/g, "");
+          if (!symbol || seen.has(exchange + ":" + symbol)) continue; seen.add(exchange + ":" + symbol);
+          watchlist.push({ id: id16(w.id), symbol, exchange, note: String(w.note || "").slice(0, 120), alertBuy: w.alertBuy !== false, alertBelow: !!w.alertBelow, above: num(w.above), below: num(w.below) });
+        }
+      }
+      if (body.settings && typeof body.settings === "object") {
+        const keys = ["capital", "riskPct", "brokeragePct", "brokerageFlat", "sttPct", "exchPct", "sebiPct", "stampPct", "gstPct", "dpFlat", "stcgPct", "ltcgPct", "ltcgExempt"];
+        settings = {};
+        for (const k of keys) { const v = +body.settings[k]; if (isFinite(v) && v >= 0 && v <= 1e12) settings[k] = v; }
+      }
+      await redis(["SET", "pos:" + uid, JSON.stringify({ positions: clean, watchlist, settings, ts: +body.ts || Date.now() })]);
       await redis(["SADD", "users", uid]);
       return send(res, { saved: true });
     }

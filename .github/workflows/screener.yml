@@ -1,25 +1,24 @@
 name: screener
 on:
   schedule:
-    - cron: "*/15 3-9 * * 1-5"   # 08:30-15:15 IST (script only acts 09:15-16:30)
-    - cron: "0,15 10 * * 1-5"    # 15:30 and 15:45 IST (after close: final closing price)
-    - cron: "30 10 * * 1-5"      # 16:00 IST daily summary
+    - cron: "0 3 * * 1-5"        # 08:30 IST: morning session, exact 15-minute scans until 12:30
+    - cron: "45 6 * * 1-5"       # 12:15 IST: afternoon session until 16:30 (waits for the morning one to finish)
   workflow_dispatch:
     inputs:
       mode:
         description: "What to run"
         type: choice
-        options: [run, test-alert, backtest]
+        options: [run, test-alert, backtest, brief-morning, brief-evening]
         default: run
       top: { description: "Backtest: number of stocks", default: "100" }
       years: { description: "Backtest: years of history", default: "5" }
 permissions:
   contents: write
-concurrency: { group: screener, cancel-in-progress: false }
+concurrency: { group: "${{ github.event_name == 'schedule' && 'sessions' || 'manual' }}", cancel-in-progress: false }
 jobs:
   go:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 300
     env:
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -33,27 +32,22 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11", cache: pip, cache-dependency-path: deps.txt }
       - run: pip install -r deps.txt
-      - name: Screener
-        if: github.event_name == 'schedule' || inputs.mode == 'run'
-        env:
-          MODE: ${{ github.event.schedule == '30 10 * * 1-5' && '--summary' || (github.event_name == 'workflow_dispatch' && '--force' || '') }}
-        run: python screen.py $MODE
+      - name: Session (exact 15-minute scans)
+        if: github.event_name == 'schedule'
+        env: { PYTHONUNBUFFERED: "1" }
+        run: python session.py --until ${{ github.event.schedule == '0 3 * * 1-5' && '12:30' || '16:30' }}
+      - name: Screener (manual run)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'run'
+        run: python screen.py --force
       - name: Test alert
         if: inputs.mode == 'test-alert'
         run: python screen.py --test-alert
+      - name: Briefs
+        if: startsWith(inputs.mode, 'brief-')
+        run: python brief.py ${{ inputs.mode == 'brief-morning' && 'morning' || 'evening' }}
       - name: Backtest
         if: inputs.mode == 'backtest'
         run: python backtest.py --top ${{ inputs.top }} --years ${{ inputs.years }} | tee backtest.txt
       - name: Save results
-        run: |
-          git config user.name dma-bot; git config user.email dma-bot@users.noreply.github.com
-          for f in signals.json state.json mcap.json nodata.json universe_nse.csv universe_bse.csv backtest.csv backtest.txt; do [ -e "$f" ] && git add "$f"; done
-          git diff --cached --quiet && exit 0
-          git commit -m "data update"
-          for i in 1 2 3; do
-            git fetch origin main
-            if git rebase -X theirs origin/main && git push origin HEAD:main; then exit 0; fi
-            git rebase --abort || true
-            sleep 5
-          done
-          exit 1
+        if: always()
+        run: bash save.sh
