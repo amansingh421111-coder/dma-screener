@@ -21,7 +21,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 log = logging.getLogger("strat")
 MAX_HOLD = {"swing": 40, "short": 15}
-GRID = {"swing": [(s, t) for s in (5, 8) for t in (10, 15, 20)], "short": [(s, t) for s in (4, 6) for t in (5, 8, 12)]}
+GRID = {"swing": [(s, t) for s in (5, 8, 12) for t in (10, 15, 20, 30)], "short": [(s, t) for s in (4, 6) for t in (5, 8, 12)]}
+MOMSIG = {}   # filled by run(): cross-sectional momentum signals per stock
 
 def sma(s, n): return s.rolling(n).mean()
 def ema(s, n): return s.ewm(span=n, adjust=False).mean()
@@ -94,6 +95,36 @@ def s_inside_reversal(df):
     h, l, c, o = df["High"], df["Low"], df["Close"], df["Open"]
     return (c > sma(c, 200)) & (c < c.shift(5) * 0.95) & (c > o) & (c > h.shift(1))
 
+
+def adx_di(df, n=14):
+    h, l, c = df["High"], df["Low"], df["Close"]
+    up, dn = h.diff(), -l.diff()
+    pdm = np.where((up > dn) & (up > 0), up, 0.0); mdm = np.where((dn > up) & (dn > 0), dn, 0.0)
+    tr = pd.concat([h - l, (h - c.shift(1)).abs(), (l - c.shift(1)).abs()], axis=1).max(axis=1)
+    a = tr.ewm(alpha=1 / n, adjust=False).mean()
+    pdi = 100 * pd.Series(pdm, index=df.index).ewm(alpha=1 / n, adjust=False).mean() / a
+    mdi = 100 * pd.Series(mdm, index=df.index).ewm(alpha=1 / n, adjust=False).mean() / a
+    dx = 100 * (pdi - mdi).abs() / (pdi + mdi).replace(0, np.nan)
+    adx = dx.ewm(alpha=1 / n, adjust=False).mean(); adx.iloc[:2 * n] = np.nan
+    return adx, pdi, mdi
+def s_minervini(df):
+    c = df["Close"]; m50, m150, m200 = sma(c, 50), sma(c, 150), sma(c, 200)
+    hi, lo = c.rolling(252).max(), c.rolling(252).min()
+    return first((c > m150) & (c > m200) & (m150 > m200) & (m200 > m200.shift(21)) & (m50 > m150) & (m50 > m200) & (c > m50) & (c >= 1.3 * lo) & (c >= 0.75 * hi))
+def s_holygrail(df):
+    adx, pdi, mdi = adx_di(df); m20 = sma(df["Close"], 20)
+    return (adx > 30) & (adx > adx.shift(1)) & (pdi > mdi) & (df["Low"] <= m20) & (df["Close"] > m20)
+def s_pocket(df):
+    c, v = df["Close"], df["Volume"]; down_v = v.where(c < c.shift(1))
+    mx = down_v.shift(1).rolling(10, min_periods=1).max(); m50 = sma(c, 50)
+    return (c > c.shift(1)) & (v > mx) & (c > m50) & (c <= m50 * 1.10)
+def s_turtle55(df):
+    h, c = df["High"], df["Close"]; return first(c > h.shift(1).rolling(55).max())
+def s_ibs(df):
+    h, l, c = df["High"], df["Low"], df["Close"]; ibs = (c - l) / (h - l).replace(0, np.nan)
+    return (ibs <= 0.2) & (c > sma(c, 200))
+def s_mom6(df): return MOMSIG.get(df.attrs.get("key"), pd.Series(False, index=df.index)).reindex(df.index, fill_value=False)
+
 # kind: "swing" (stops 5/8%, targets 10/15/20%, 40-day limit) or "short" (stops 4/6%, targets 5/8/12%, 15-day limit)
 STRATS = [
     dict(id="dma44_cross", name="44-DMA cross-up", kind="swing", fn=s_dma44_cross, rule="Close crosses above the 44-day average and finishes within 5% of it."),
@@ -115,7 +146,73 @@ STRATS = [
     dict(id="rsi2", name="Extreme dip (RSI 2)", kind="short", fn=s_rsi2, rule="Close above the 200-day average while the 2-day RSI is below 10."),
     dict(id="bolldip", name="Dip below the lower Bollinger band", kind="short", fn=s_boll_dip, rule="First close below the lower Bollinger band (20 days, 2 deviations) while above the 200-day average."),
     dict(id="reversal", name="Bounce after a 5% slide", kind="short", fn=s_inside_reversal, rule="Above the 200-day average, down more than 5% over 5 days, then an up day that closes above yesterday's high."),
+    dict(id="minervini", name="Minervini Trend Template", kind="swing", fn=s_minervini, rule="First day all seven hold: close above the 150- and 200-day averages; 150-day above 200-day; 200-day higher than a month ago; 50-day above both; close above the 50-day; at least 30% above the 52-week low; within 25% of the 52-week high."),
+    dict(id="holygrail", name="Holy Grail (ADX pullback)", kind="swing", fn=s_holygrail, rule="14-day ADX above 30 and rising with +DI above -DI; the day's low touches the 20-day average and the close finishes above it."),
+    dict(id="pocketpivot", name="Pocket pivot", kind="swing", fn=s_pocket, rule="Up day whose volume is higher than the highest volume of any down day in the previous 10 sessions; close above the 50-day average but no more than 10% above it (the 10% limit is this app's numeric stand-in for 'not extended')."),
+    dict(id="turtle55", name="55-day breakout (Turtle System 2)", kind="swing", fn=s_turtle55, rule="First close above the highest high of the previous 55 days."),
+    dict(id="mom6", name="6-month momentum leaders (monthly)", kind="swing", fn=s_mom6, rule="On the first trading day of each month: the stock is in the top 10% of the list by 6-month return and above its 200-day average."),
+    dict(id="ibs", name="Internal bar strength dip", kind="short", fn=s_ibs, rule="Close in the lowest 20% of the day's range (IBS 0.2 or lower) while above the 200-day average."),
 ]
+
+FAMILY = {
+ "dma44_cross": "Trend",
+ "dma44_zone": "Trend",
+ "dma44_pull": "Pullback",
+ "ma_cross": "Trend",
+ "pull50": "Pullback",
+ "breakout": "Breakout",
+ "base": "Breakout",
+ "donchian": "Breakout",
+ "momentum": "Momentum",
+ "squeeze": "Breakout",
+ "nr7": "Breakout",
+ "gapup": "Breakout",
+ "surge": "Breakout",
+ "supertrend": "Trend",
+ "macd": "Pullback",
+ "oversold": "Mean reversion",
+ "rsi2": "Mean reversion",
+ "bolldip": "Mean reversion",
+ "reversal": "Mean reversion",
+ "minervini": "Trend",
+ "holygrail": "Pullback",
+ "pocketpivot": "Breakout",
+ "turtle55": "Breakout",
+ "ibs": "Mean reversion",
+ "mom6": "Momentum"
+}
+SOURCES = {
+ "minervini": {
+  "name": "Mark Minervini's Trend Template (7 price rules, no relative-strength rule)",
+  "url": "https://prorealcode.com/prorealtime-market-screeners/trend-template-mark-minervini"
+ },
+ "holygrail": {
+  "name": "Linda Raschke and Larry Connors, 'Holy Grail' setup",
+  "url": "https://tradingsetupsreview.com/the-holy-grail-trading-setup"
+ },
+ "pocketpivot": {
+  "name": "Gil Morales and Chris Kacher, pocket pivot (Trade Like an O'Neil Disciple)",
+  "url": "https://www.luxalgo.com/library/concept/pocket-pivot/"
+ },
+ "turtle55": {
+  "name": "Turtle trading, System 2 entry (55-day breakout)",
+  "url": "https://www.kotakneo.com/investing-guide/articles/turtle-trading-strategy-explained-rules/"
+ },
+ "donchian": {
+  "name": "Turtle trading, System 1 entry (20-day breakout)",
+  "url": "https://www.kotakneo.com/investing-guide/articles/turtle-trading-strategy-explained-rules/"
+ },
+ "ibs": {
+  "name": "Internal Bar Strength (IBS) mean reversion; 0.2 or lower treated as oversold",
+  "url": "https://in.tradingview.com/script/Ay41FF7e-SHORT-ONLY-Internal-Bar-Strength-IBS-Mean-Reversion-Strategy"
+ },
+ "mom6": {
+  "name": "Momentum profits in Indian stocks: SPJIMR student research paper published on the NSE site (CNX 100, 2003-2011, 6-month formation)",
+  "url": "https://nsearchives.nseindia.com/research/content/RP_2_Feb2012.pdf"
+ }
+}
+SOURCES["mom6"]["note"] = "A student research project (not peer-reviewed); it reports momentum profits that peaked around 6 months and faded by 12, before trading costs."
+for _k in ("minervini", "holygrail", "pocketpivot", "turtle55", "donchian"): SOURCES[_k]["note"] = "The published method uses its own exits and position rules; this app tests only the entry rule with a stop, target and time limit."
 
 def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None):
     """Buys at the next open after a signal. Leaves at the stop, the target, or the close of the last allowed day.
@@ -163,18 +260,21 @@ def stats(tr, baseline_ret=None):
     return d
 
 def rate(train, test):
-    """Stars out of 5, from the later (unseen) period only, with the earlier period as a sanity check. Returns (stars, verdict)."""
-    if not test or test["n"] < 60: return 0.0, "unproven"
-    pts = 0.0; a = test["avg_ret"]; pf = test["profit_factor"] or 0
-    pts += 2.0 if a >= 0.015 else 1.5 if a >= 0.008 else 1.0 if a >= 0.004 else 0.5 if a > 0 else 0
-    pts += 1.0 if pf >= 1.5 else 0.75 if pf >= 1.3 else 0.4 if pf >= 1.15 else 0
-    pts += 0.5 if test["n"] >= 300 else 0.25 if test["n"] >= 150 else 0
-    pts += 0.5 if train and train["avg_ret"] > 0 else 0
-    pts += 0.5 if test.get("edge", 0) > 0 else 0
-    if test["years_n"] >= 2 and test["years_pos"] / test["years_n"] >= 0.75: pts += 0.5
-    if a <= 0: pts = min(pts, 1.0)
+    """Score out of 5 from fixed, published arithmetic (no judgement calls). Uses the later (unseen) period, with the earlier one as a check.
+    Returns (stars, label, parts) where parts lists every point awarded."""
+    if not test or test["n"] < 60: return 0.0, "unproven", [["Fewer than 60 trades in the later period: no score", 0]]
+    parts = []; a = test["avg_ret"]; pf = test["profit_factor"] or 0
+    def add(label, pts): parts.append([label, pts])
+    add("Average profit per trade after costs: 2 points at 1.5% or more, 1.5 at 0.8%, 1 at 0.4%, 0.5 above 0", 2.0 if a >= 0.015 else 1.5 if a >= 0.008 else 1.0 if a >= 0.004 else 0.5 if a > 0 else 0)
+    add("Profit factor (money won / money lost): 1 point at 1.5 or more, 0.75 at 1.3, 0.4 at 1.15", 1.0 if pf >= 1.5 else 0.75 if pf >= 1.3 else 0.4 if pf >= 1.15 else 0)
+    add("Number of trades: 0.5 point at 300 or more, 0.25 at 150", 0.5 if test["n"] >= 300 else 0.25 if test["n"] >= 150 else 0)
+    add("Also profitable in the earlier period: 0.5 point", 0.5 if train and train["avg_ret"] > 0 else 0)
+    add("Beat buying a random stock for the same days: 0.5 point", 0.5 if test.get("edge", 0) > 0 else 0)
+    add("Profitable in at least 75% of calendar years: 0.5 point", 0.5 if test["years_n"] >= 2 and test["years_pos"] / test["years_n"] >= 0.75 else 0)
+    pts = sum(x[1] for x in parts)
+    if a <= 0 and pts > 1.0: add("Cap: a strategy with zero or negative average profit cannot score above 1", 1.0 - pts); pts = 1.0
     stars = round(min(5.0, pts) * 2) / 2
-    return stars, ("reliable" if stars >= 3.5 else "mixed" if stars >= 2.5 else "unreliable")
+    return stars, ("reliable" if stars >= 3.5 else "mixed" if stars >= 2.5 else "unreliable"), parts
 
 def adjusted_download(tickers, years, batch=50, budget=1500):
     import yfinance as yf
@@ -231,10 +331,17 @@ def run(mode, top, years, cost):
         longest = max(data.values(), key=len).index; split = str(longest[int(len(longest) * 0.6)].date())
     else: split = old.get("split")
     chosen = {s["id"]: tuple(s2["params"][k] for k in ("stop", "target")) for s in STRATS for s2 in old.get("strategies", []) if s2["id"] == s["id"] and "params" in s2} if mode == "states" else {}
+    closes = pd.DataFrame({k: d["Close"] for k, d in data.items()}).sort_index().ffill(limit=5)
+    rank = closes.pct_change(126, fill_method=None).rank(axis=1, pct=True)
+    firstday = pd.Series(closes.index.to_period("M"), index=closes.index).ne(pd.Series(closes.index.to_period("M"), index=closes.index).shift(1)).to_numpy()
+    MOMSIG.clear()
+    for k, d in data.items():
+        MOMSIG[k] = ((rank[k] >= 0.9) & firstday & (closes[k] > sma(closes[k], 200))).fillna(False)
     allt = {s["id"]: {g: [] for g in GRID[s["kind"]]} for s in STRATS}; daily = []
     states = {k: ["-"] * len(STRATS) for k in data}; todays = {s["id"]: dict(buy=[], hold=0, exit=[]) for s in STRATS}; opens = {}
     for key, df in data.items():
         sym = key[:-3]
+        df.attrs["key"] = key
         reg = nok.reindex(df.index, method="ffill").fillna(False).to_numpy(bool) if len(nok) else None
         if mode == "full": daily.append(df["Close"].pct_change().dropna().loc[split:])
         for j, s in enumerate(STRATS):
@@ -272,10 +379,10 @@ def run(mode, top, years, cost):
             base = lambda x: ((1 + rd) ** np.mean([t["days"] for t in x]) - 1 - cost) if x else None
             a, b = stats(train, base(train)), stats(test, base(test))
             ups, dns = [t for t in test if t["up"]], [t for t in test if t["up"] is False]
-            stars, verdict = rate(a, b)
+            stars, verdict, parts = rate(a, b)
             out["strategies"].append(dict(id=s["id"], name=s["name"], rule=s["rule"], kind=s["kind"], params=dict(stop=g[0], target=g[1], max_hold=MAX_HOLD[s["kind"]]),
                                           exit=f"Sell at the target (+{g[1]}%), the stop loss (-{g[0]}%), or after {MAX_HOLD[s['kind']]} trading days, whichever comes first.",
-                                          train=a, test=b, test_up=stats(ups), test_down=stats(dns), grid=table, stars=stars, verdict=verdict))
+                                          train=a, test=b, test_up=stats(ups), test_down=stats(dns), grid=table, stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
     for s in out.get("strategies", []):
         t = todays.get(s["id"], {}); p = s["params"]
         buys = sorted(t.get("buy", []), key=lambda x: x["s"])

@@ -19,7 +19,7 @@ df=mk(o,[100.5]*6,[99.5]*6,c);tr,_=S.simulate(df,en,5,10,3,0.004);assert tr[0]["
 tr,op=S.simulate(df,en,5,10,40,0.004);assert tr==[] and op["stop"]==95,(tr,op)
 # stats / rate
 trs=[dict(ret=0.1,exit="2025-01-0%d"%(i%9+1),entry="2025-0%d-01"%(i%9+1),days=5,why="target") for i in range(200)]+[dict(ret=-0.05,exit="2025-02-01",entry="2025-02-01",days=5,why="stop") for i in range(100)]
-st=S.stats(trs,0.0);print(st);print(S.rate(st,dict(st,edge=0.01)))
+st=S.stats(trs,0.0);print(st);r=S.rate(st,dict(st,edge=0.01));print(r[:2]);assert abs(sum(x[1] for x in r[2])-r[0])<=0.25 or r[0]==5.0
 # all strategies on random data
 rng=np.random.default_rng(1);n=900;c=100*np.cumprod(1+rng.normal(0.0004,0.02,n));o=c*(1+rng.normal(0,0.005,n));h=np.maximum(o,c)*1.01;l=np.minimum(o,c)*0.99
 df=mk(o,h,l,c);df["Volume"]=rng.integers(5e5,2e6,n)
