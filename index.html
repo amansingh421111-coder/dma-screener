@@ -408,7 +408,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.10</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.11</span></footer>
 
 </main>
 <script>
@@ -914,7 +914,18 @@ function scrParse(text){const T=String(text||"").replace(/\r/g,""),L=T.split("\n
  const qm=/(\d[\d,]*)\s*Qty\b/i.exec(T);if(qm&&r.qty==null)r.qty=parseInt(qm[1].replace(/,/g,""),10);
  if(/(rejected|cancel+ed|pending|open)\b/i.test((/Order\s*status[^\n]*/i.exec(T)||[""])[0]))r.warn.push("This order is not marked successful.");
  return r}
-async function scrPrep(file){const bm=await createImageBitmap(file);const W=1600,s=W/bm.width,cv=document.createElement("canvas");cv.width=W;cv.height=Math.round(bm.height*s);const g=cv.getContext("2d",{willReadFrequently:true});g.drawImage(bm,0,0,cv.width,cv.height);
+function scrSniff(u){const a=u8=>String.fromCharCode(...u8);if(u[0]===0xFF&&u[1]===0xD8)return"image/jpeg";if(u[0]===0x89&&a(u.slice(1,4))==="PNG")return"image/png";if(a(u.slice(0,4))==="RIFF"&&a(u.slice(8,12))==="WEBP")return"image/webp";if(a(u.slice(4,8))==="ftyp"){const b=a(u.slice(8,12));return/hei|mif1|avif/.test(b)?(b==="avif"?"image/avif":"image/heic"):"video/mp4"}if(a(u.slice(0,2))==="BM")return"image/bmp";if(a(u.slice(0,3))==="GIF")return"image/gif";return""}
+async function scrDecode(file){const errs=[];
+ let buf;try{buf=await file.arrayBuffer()}catch(e){throw new Error("The browser could not read this file from your gallery ("+(e.name||"error")+"). Pick it again, or take a fresh screenshot and choose that.")}const kind=scrSniff(new Uint8Array(buf.slice(0,16)));
+ if(!buf.byteLength)throw new Error("The picture file is empty. Pick it again from the gallery, or take a screenshot of the order screen and pick that.");
+ if(kind==="image/heic")throw new Error("This picture is in HEIC format, which this browser cannot open. Take a normal screenshot (screenshots are PNG or JPEG), or change the camera format to most compatible.");
+ if(kind==="video/mp4")throw new Error("This file is a video, not a picture.");
+ const types=[...new Set([kind,file.type,"image/jpeg","image/png","image/webp"].filter(Boolean))];
+ try{return await createImageBitmap(file)}catch(e){errs.push(e.message)}
+ for(const t of types){try{return await createImageBitmap(new Blob([buf],{type:t}))}catch(e){errs.push(e.message)}}
+ for(const t of types){try{const url=URL.createObjectURL(new Blob([buf],{type:t}));try{const im=new Image();im.src=url;await im.decode();return im}finally{setTimeout(()=>URL.revokeObjectURL(url),4e3)}}catch(e){errs.push(e.message)}}
+ throw new Error("This browser could not open the picture"+(kind?" ("+kind.replace("image/","")+")":" (unknown format)")+", size "+Math.round(buf.byteLength/1024)+" KB. Try a plain screenshot of the order screen.")}
+async function scrPrep(file){const bm=await scrDecode(file);const bw=bm.naturalWidth||bm.width,bh=bm.naturalHeight||bm.height,W=1600,s=W/bw,cv=document.createElement("canvas");cv.width=W;cv.height=Math.round(bh*s);const g=cv.getContext("2d",{willReadFrequently:true});g.drawImage(bm,0,0,cv.width,cv.height);
  const im=g.getImageData(0,0,cv.width,cv.height),d=im.data;let sum=0;for(let i=0;i<d.length;i+=4){const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];d[i]=d[i+1]=d[i+2]=y;sum+=y}
  if(sum/(d.length/4)<128)for(let i=0;i<d.length;i+=4){d[i]=d[i+1]=d[i+2]=255-d[i]}g.putImageData(im,0,0);return cv}
 async function scrWorker(){if(OCRW)return OCRW;if(!window.Tesseract){await new Promise((ok,no)=>{const s=document.createElement("script");s.src="/ocr/tesseract.min.js";s.onload=ok;s.onerror=()=>no(new Error("The reader could not be loaded. Check your connection."));document.head.appendChild(s)})}
