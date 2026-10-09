@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
     // Diagnostics (no secrets returned) and one-tap webhook registration
     if (a === "health" || a === "setup") {
       const host = req.headers["x-forwarded-host"] || req.headers.host;
-      const out = { storage: !!(URL_ && TOK), bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null };
+      const out = { storage: !!(URL_ && TOK), bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null, youtube_key: !!E.YOUTUBE_API_KEY };
       if (E.BOT_TOKEN) {
         try {
           if (a === "setup") {

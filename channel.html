@@ -35,7 +35,10 @@ td.t{max-width:520px}.t a{color:var(--ink);text-decoration:none;font-weight:600}
 </style></head><body><main>
 <div class="top"><h1>Channel Notes</h1><a href="/">← Back to screener</a></div>
 
-<div id="gate" class="card" hidden>Please log in on the <a href="/#positions">main page</a> first, then come back here.</div>
+<div id="gate" class="card" hidden>
+ <b>Log in</b><p class="sub" style="margin:4px 0 10px">Use the same username and password as your screener account.</p>
+ <div class="row"><input type="text" id="lu" placeholder="Username" autocomplete="username" autocapitalize="none" style="max-width:220px"><input type="password" id="lp" placeholder="Password" autocomplete="current-password" style="max-width:220px;height:36px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit" onkeydown="if(event.key==='Enter')login()">
+ <button class="btn pri" onclick="login()">Log in</button></div><p class="msg err" id="lmsg"></p></div>
 
 <div id="app" hidden>
 <div class="card">
@@ -69,11 +72,17 @@ async function api(a,params,method="GET",body){
 const dur=iso=>{const m=/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso||"");if(!m)return 0;return (+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)};
 const fmtDur=s=>{const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")};
 const say=(t,bad)=>{$("msg").textContent=t||"";$("msg").className="msg"+(bad?" err":"")};
+async function login(){
+ $("lmsg").textContent="";
+ try{await api("login",null,"POST",{username:$("lu").value.trim(),password:$("lp").value});$("lp").value="";$("gate").hidden=true;init()}
+ catch(e){$("lmsg").textContent=e.message}}
 async function init(){
+ if(/^channel-/.test(location.hostname)){const b=document.querySelector(".top a");if(b)b.hidden=true}
  try{await api("me");$("app").hidden=false;
   try{NOTES=(await api("ytnotes")).notes||{}}catch(e){}
   try{$("ch").value=localStorage.getItem("yt_last")||""}catch(e){}
  }catch(e){$("gate").hidden=false}}
+
 function setBusy(b){busy=b;["go","more","all"].forEach(i=>$(i).disabled=b)}
 async function loadFirst(){
  const c=$("ch").value.trim();if(!c){say("Enter a channel link, @handle or channel ID.",true);return}
