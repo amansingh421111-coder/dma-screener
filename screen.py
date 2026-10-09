@@ -581,11 +581,11 @@ def main():
     if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
         st["sent"] += [sk(s) for s in new]
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
-    if ev and notify("📌 Position alerts\n" + "\n".join(t for _, t in ev) + "\n\nResearch alert only, not financial advice."):
+    if ev and notify("📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in ev)) + "\n\nResearch alert only, not financial advice."):
         st["pos_sent"].update({k: t_now for k, _ in ev})
     for u in users:
         uev = [e for e in position_events(u["positions"], quotes, c) if due(f"{u['uid']}:{e[0]}")]
-        if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(t for _, t in uev) + "\n\nResearch alert only, not financial advice."):
+        if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in uev)) + "\n\nResearch alert only, not financial advice."):
             st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
     (ROOT / "state.json").write_text(json.dumps(st))
     try:
