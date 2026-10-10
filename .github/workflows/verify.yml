@@ -6,6 +6,7 @@ jobs:
     steps:
       - name: Live site checks
         run: |
+          exec > >(tee out.txt) 2>&1
           B=https://screenedstocks.vercel.app
           echo "build: $(curl -s $B/ | grep -o 'Build 2026-10-1[0-9]\.[0-9]*')"
           echo "app.css: $(curl -s -o /dev/null -w '%{http_code} %{content_type}' $B/app.css)"
@@ -15,3 +16,6 @@ jobs:
           sleep 5
           for id in people rates all; do curl -s "$B/api/dma?a=theme&id=$id" | python3 -c "import json,sys;j=json.load(sys.stdin);print('theme',j.get('id'),len(j.get('stories',[])),j.get('error',''))"; done
           curl -s "$B/api/dma?a=mkt" | python3 -c "import json,sys;j=json.load(sys.stdin);print('mkt series',len(j.get('series',[])))"
+      - name: Report
+        if: always()
+        run: while IFS= read -r l; do echo "::notice::$l"; done < out.txt
