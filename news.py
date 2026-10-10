@@ -176,6 +176,8 @@ def collect(names=None, days=3, log=None):
         for s in st:
             s["n"] = len(s["out"]); s["co"] = match(s["t"])
             if th.get("people"): s["who"] = [nm for nm, rx in PEOPLE if re.search(rx, s["t"], re.I)][:2]
+            for nm, sym in (("Mukesh Ambani", "RELIANCE"), ("Gautam Adani", "ADANIENT")):     # people whose name stands for a listed group
+                if re.search(dict(PEOPLE)[nm], s["t"], re.I) and sym in (names or {}) and sym not in s["co"]: s["co"].append(sym)
         st.sort(key=lambda s: (-min(s["n"], 6), -(s["d"].timestamp() if s["d"] else 0)))
         if th.get("people"): st = [s for s in st if s.get("who")]
         out = []
