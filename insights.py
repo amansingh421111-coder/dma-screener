@@ -357,11 +357,10 @@ def market_readings(M, sect, breadth, news):
     elif upn >= 3: R.append(ob("Global", f"{upn} of {len(GLOBAL)} major world indices rose 5% or more in a month.", "pos", "global"))
     vx = g("^INDIAVIX")
     if vx.get("last") is not None: R.append(ob("Volatility", f"India VIX (expected 30-day volatility of the Nifty) is {vx['last']:.1f}, {(vx.get('m1') or 0):+.0f}% in a month.", "neg" if (vx.get("m1") or 0) > 20 else "neu", None))
-    gn = (news or {}).get("global", []); cnt = {}
-    for x in gn:
-        for tg in x.get("g", []): cnt[tg] = cnt.get(tg, 0) + 1
-    top = [f"{k} ({v})" for k, v in sorted(cnt.items(), key=lambda kv: -kv[1]) if k in ("Conflict", "Sanctions", "Trade / tariffs", "Crude / energy", "US Fed", "China", "Elections / politics")][:4]
-    if top: R.append(ob("Geopolitics", f"Most frequent topics in world headlines of the last few days: {', '.join(top)}. Conflicts in oil regions, sanctions and trade wars mainly reach Indian stocks through crude prices, the rupee and supply chains.", "neu", "geo"))
+    th = {t["id"]: t for t in (news or {}).get("themes", [])}
+    cov = sorted([(t["name"], sum(x["n"] for x in t["stories"])) for k, t in th.items() if k in ("geo", "trade", "energy", "politics", "people")], key=lambda x: -x[1])
+    cov = [f"{nm.lower()} ({c} reports)" for nm, c in cov if c][:3]
+    if cov: R.append(ob("Geopolitics", f"The most heavily reported world themes of the last {(news or {}).get('days', 3)} days: {', '.join(cov)}. Conflicts in oil regions, sanctions and trade wars mainly reach Indian stocks through crude prices, the rupee and supply chains.", "neu", "geo"))
     return R
 
 
@@ -421,8 +420,10 @@ def main():
     secmed = sector_medians(F) if F else {}
     big = sorted([(s, o) for s, o in F.items() if o.get("mcap") and o.get("ni")], key=lambda x: -x[1]["mcap"])[:50]
     mpe = round(sum(o["mcap"] for _, o in big) / sum(o["ni"] for _, o in big), 1) if big and sum(o["ni"] for _, o in big) > 0 else None
-    # 4. news
-    news = collect_news()
+    # 4. news (organised by how it reaches share prices; company names matched against the covered list)
+    import news as NW
+    names = {k: (F.get(k) or {}).get("name") for k in stocks}
+    news = NW.collect(names, 3, log)
     if F and stocks and M.get("^NSEI"):
         by = {}
         for s_, o in stocks.items():
@@ -448,7 +449,7 @@ def main():
     fund_out = dict(updated=now.isoformat(), fund_updated=fdate, universe=f"The {len(stocks)} most traded NSE stocks", sector_med=secmed,
                     stocks={s: dict(o, n=names.get(s)) for s, o in stocks.items()}, fund=F)
     (ROOT / "fund.json").write_text(json.dumps(clean(fund_out), separators=(",", ":"), default=str, allow_nan=False))
-    log.info("written insights.json (%d readings, %d market + %d world headlines) and fund.json (%d stocks, %d with financials)", len(readings), len(news.get("market", [])), len(news.get("global", [])), len(stocks), len(F))
+    log.info("written insights.json (%d readings, %d stories in themes, %d top stories) and fund.json (%d stocks, %d with financials)", len(readings), sum(len(t["stories"]) for t in news["themes"]), len(news["top"]), len(stocks), len(F))
 
 
 if __name__ == "__main__":
