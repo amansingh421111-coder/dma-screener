@@ -23,6 +23,10 @@
 .in-sh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}.in-sh h3{font-size:19px;margin:0}.in-sh .px{font-size:20px;font-weight:700}
 .in-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
 .in-tally{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.in-lv{font-size:13px;color:var(--mute)}
+.nw-links{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:5px}.nw-lt{font-size:11.5px;color:var(--mute);margin-right:2px}
+.nw-lk{font:inherit;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:1px 7px;cursor:pointer}.nw-lk.ix{color:var(--accent)}.nw-lk b{font-weight:600}
+.nw-tn{font:inherit;font-size:11.5px;border:0;background:none;color:var(--accent);padding:0;margin-top:4px;cursor:pointer}.nw-filter{margin-top:10px;font-size:13px;background:var(--bg);border-radius:8px;padding:8px 10px}
+.nw-badge{display:inline-block;font:inherit;font-size:11px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--accent);border-radius:6px;padding:0 6px;margin-left:6px;cursor:pointer;vertical-align:middle}
 .nw-sec{margin-top:14px}.nw-live{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin-right:6px}.nw-live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mute)}.nw-live.on{color:var(--buy)}.nw-live.on:before{background:var(--buy);box-shadow:0 0 0 3px var(--buy-bg)}
 .nw-rf{font:inherit;font-size:12px;margin-left:6px;border:1px solid var(--line);background:var(--card);color:var(--accent);border-radius:6px;padding:1px 8px;cursor:pointer}
 .nw-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:4px}.nw-seg button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mute);padding:5px 11px;cursor:pointer}.nw-seg button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}.nw-lbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
@@ -48,7 +52,7 @@ async function loadFeed(fresh) {
     const r = await fetch("/api/dma?a=feed" + (fresh ? "&fresh=1" : "")), j = await r.json();
     if (r.ok && j.themes) { LIVE = j; IV.feedErr = ""; } else IV.feedErr = j.error || "Live news unavailable.";
   } catch (e) { IV.feedErr = "Live news unavailable."; }
-  IV.feedBusy = false; if (view_ === "ins") render(); inSchedule();
+  IV.feedBusy = false; if (view_ === "ins" || view_ === "pos") render(); inSchedule();
 }
 function inSchedule() {   // refresh while the tab is open: every 5 minutes in market hours, hourly otherwise
   clearTimeout(LIVET); const m = LIVE && LIVE.refresh_min ? LIVE.refresh_min : 5;
@@ -57,7 +61,7 @@ function inSchedule() {   // refresh while the tab is open: every 5 minutes in m
 function inMatcher(names) {
   const stop = new Set("india indian bank power energy capital finance industries global international national general united steel motors life money gold silver oil gas trade home first star sun".split(" "));
   const P = [], firsts = new Set(), esc2 = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  for (const [sym, nm] of Object.entries(names || {})) {
+  for (const [sym, nm0] of Object.entries(names || {})) { const nm = Array.isArray(nm0) ? nm0[0] : nm0; if (!nm) continue;
     const base = nm.replace(/\b(limited|ltd\.?|company|corporation|corp\.?|co\.|inc\.?|\(india\)|india)\b/gi, "").replace(/^[\s.,&-]+|[\s.,&-]+$/g, "").replace(/\s+/g, " ");
     const w = base.split(" ").filter(Boolean); let c = w.length >= 3 && w.slice(0, 2).join(" ").length < 9 ? w.slice(0, 3).join(" ") : w.length >= 2 ? w.slice(0, 2).join(" ") : base;
     if (/ (of|&|and)$/.test(c)) c = w.slice(0, 3).join(" ");
@@ -105,7 +109,7 @@ function inSpark(a) {
 function inTile(x) {
   const lv = x.k === "^TNX" ? inNum(x.last, 2) + "%" : x.k === "INR=X" ? "₹" + inNum(x.last, 2) : inNum(x.last, x.last < 100 ? 2 : 0);
   return `<div class="in-t"><div class="nm">${esc(x.name)}</div><div class="v">${lv}</div><div class="ch"><span class="${inCl(x.d1)}">Day ${inPct(x.d1)}</span><span class="${inCl(x.m1)}">1M ${inPct(x.m1)}</span><span class="${inCl(x.y1)}">1Y ${inPct(x.y1)}</span></div>
-  <div class="ch" style="margin-top:2px"><span class="sx-mut">${x.vs200 == null ? "" : (x.vs200 >= 0 ? "Above" : "Below") + " 200-day avg (" + inPct(x.vs200) + ")"}</span></div>${inSpark(x.spark)}</div>`;
+  <div class="ch" style="margin-top:2px"><span class="sx-mut">${x.vs200 == null ? "" : (x.vs200 >= 0 ? "Above" : "Below") + " 200-day avg (" + inPct(x.vs200) + ")"}</span></div>${inSpark(x.spark)}${(() => { const n = LIVE ? inCountFor("i:" + x.k) : 0; return n ? `<button type="button" class="nw-tn" onclick="inLinkF('i:${x.k}')">${n} linked ${n === 1 ? "story" : "stories"} →</button>` : ""; })()}</div>`;
 }
 function inNewsList(items) {
   const shown = (items || []).slice(0, 25);
@@ -114,24 +118,26 @@ function inNewsList(items) {
 function inNF(k, t) { IV.nf[k] = t; render(); }
 function inStoryRow(x, num) {
   const also = x.also && x.also.length ? x.also.map((a) => a.s).join(", ") : "";
-  const cos = x.co && x.co.length ? x.co : CMATCH ? CMATCH(x.t, x.who) : [];
+  const cos = [];
   const co = cos.map((c) => `<button type="button" class="nw-co" onclick="inPick('${esc(c)}','NSE')">${esc(c)}</button>`).join("");
   return `<li class="nw-row">${num ? `<span class="nw-num">${num}</span>` : ""}<div class="nw-body"><a class="nw-t" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
-  <div class="nw-meta"><span class="nw-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="${esc(also)}">${x.n} outlets</span>` : ""}</div>${x.tag || (x.who && x.who.length) || co ? `<div class="nw-meta nw-sub">${x.tag ? `<span>${esc(x.tag)}</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}${co ? `<span class="nw-cos">${co}</span>` : ""}</div>` : ""}</div></li>`;
+  <div class="nw-meta"><span class="nw-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="${esc(also)}">${x.n} outlets</span>` : ""}</div>${x.tag || (x.who && x.who.length) || co ? `<div class="nw-meta nw-sub">${x.tag ? `<span>${esc(x.tag)}</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}</div>` : ""}${inLinkChips(x)}</div></li>`;
 }
 function inNewsPro(N0) {
   if (LIVE === null && !IV.feedBusy) loadFeed();
   const N = LIVE || N0; if (!N || !N.themes) return `<div class="in-box"><h3>Market-moving news</h3><p class="m">${esc(IV.feedErr || "Loading live headlines…")}</p></div>`;
   const th = N.themes.filter((t) => t.stories.length), cur = th.find((t) => t.id === IV.theme) || th[0], nm = Object.fromEntries(N.themes.map((t) => [t.id, t.name]));
-  const lst = IV.list === "latest" ? N.latest || [] : N.top || [];
-  const top = lst.map((x, i) => inStoryRow(Object.assign({}, x, { tag: nm[x.th] }), IV.list === "latest" ? 0 : i + 1)).join("");
+  const lf = IV.linkF || "", lfName = lf ? (lf.startsWith("i:") ? MK_NAMES[lf.slice(2)] || lf.slice(2) : lf.slice(2)) : "";
+  const lst = lf ? inAllStories().filter((x) => inStoryMatchesLink(x, lf)).sort((a, b) => (b.d || "").localeCompare(a.d || "")).slice(0, 40) : IV.list === "latest" ? N.latest || [] : N.top || [];
+  const top = lst.map((x, i) => inStoryRow(Object.assign({}, x, { tag: nm[x.th] }), IV.list === "latest" || lf ? 0 : i + 1)).join("");
   let stories = cur ? cur.stories : [], more = "";
   if (cur && cur.id === "people" && IV.who) stories = stories.filter((x) => (x.who || []).includes(IV.who));
   const people = cur && cur.id === "people" && N.people && N.people.length ? `<div class="nw-people">${[["", "Everyone"]].concat(N.people.map((p) => [p.name, `${p.name} (${p.n != null ? p.n : p.stories.length})`])).map(([k, l]) => `<button type="button" class="nw-pp${(IV.who || "") === k ? " on" : ""}" onclick="IV.who='${esc(k)}';IV.allTheme=false;render()">${esc(l)}</button>`).join("")}</div>` : "";
   if (!IV.allTheme && stories.length > 12) { more = `<button type="button" class="btn sm" style="margin-top:8px" onclick="IV.allTheme=true;render()">Show all ${stories.length}${cur.total > stories.length ? " of " + cur.total : ""}</button>`; stories = stories.slice(0, 12); }
   const status = N.live ? `<span class="nw-live${N.market_open ? " on" : ""}">${N.market_open ? "Live" : "Market closed"}</span> Updated ${inAgo(N.updated)} · refreshes every ${N.refresh_min === 60 ? "hour" : N.refresh_min + " minutes"}${N.market_open ? " during market hours" : " until the market opens"} · ${N.pool || 0} headlines from the last ${N.days} days <button type="button" class="nw-rf" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing…" : "Refresh"}</button>` : `Updated ${inAgo(N.updated)} (saved copy; live news unavailable${IV.feedErr ? ": " + esc(IV.feedErr) : ""})`;
   return `<div class="in-box nw"><div class="nw-hd"><div><h3>Market-moving news</h3><p class="m" style="margin:2px 0 0">${status}</p></div></div>
-  <div class="nw-sec"><div class="nw-seg"><button type="button" aria-pressed="${IV.list !== "latest"}" onclick="IV.list='top';render()">Most widely reported (48 h)</button><button type="button" aria-pressed="${IV.list === "latest"}" onclick="IV.list='latest';render()">Latest</button></div><ol class="nw-list">${top || `<li class="m">No stories.</li>`}</ol></div>
+  ${lf ? `<div class="nw-filter">Showing ${lst.length} stories linked to <b>${esc(lfName)}</b>, newest first <button type="button" class="nw-rf" onclick="inLinkF('')">Show all news</button></div>` : ""}
+  <div class="nw-sec"><div class="nw-seg"${lf ? " hidden" : ""}><button type="button" aria-pressed="${IV.list !== "latest"}" onclick="IV.list='top';render()">Most widely reported (48 h)</button><button type="button" aria-pressed="${IV.list === "latest"}" onclick="IV.list='latest';render()">Latest</button></div><ol class="nw-list">${top || `<li class="m">No stories.</li>`}</ol></div>
   <div class="nw-sec"><div class="nw-lbl">By theme</div><div class="nw-tabs" role="tablist">${th.map((t) => `<button role="tab" aria-selected="${t === cur}" class="nw-tab" onclick="IV.theme='${t.id}';IV.who='';IV.allTheme=false;render()" title="${esc(t.name)}">${esc(t.short || t.name)} <span>${t.total || t.stories.length}</span></button>`).join("")}</div>
   ${cur ? `<div class="nw-panel"><div class="nw-why"><div><b>${esc(cur.name)}: how it reaches share prices.</b> ${esc(cur.why)}</div><div class="in-lv" style="margin-top:3px">Most exposed: ${esc(cur.sectors)}</div><div>${inRefBtn(cur.ref, "th-" + cur.id)}</div></div>${people}<ol class="nw-list">${stories.map((x) => inStoryRow(x)).join("")}</ol>${more}</div>` : ""}</div>
   <div class="nw-foot">${esc(N.note || "")} ${inRefBtn("emh", "n-emh")} ${inRefBtn("bias", "n-bias")}</div></div>`;
@@ -161,7 +167,7 @@ function inMarket() {
   const read = `<div class="in-box"><h3>Readings now</h3><p class="m">${asOf} Each line is a fixed rule applied to the numbers below. “Supportive” or “Caution” is what the cited NISM text says such a reading usually indicates, not a forecast.</p>${inReadings(R, "m")}</div>`;
   const grp = groupsSrc.map((g) => `<div class="in-box"><h3>${esc(g.name)}</h3><div class="in-grid">${g.items.map(inTile).join("")}</div></div>`).join("");
   const sec = secSrc.slice().sort((a, b) => (b.rel3 ?? -99) - (a.rel3 ?? -99));
-  const secT = sec.length ? `<div class="in-box"><h3>Sectors against the Nifty 50</h3><p class="m">Relative strength: a sector's return minus the Nifty 50's over the same period; above zero means it did better than the index. “Covered stocks” rows use the median return of the covered companies in that sector (sector names from Yahoo Finance); “index” rows are NSE sector indices. ${inRefBtn("rsc", "s-rsc")}</p><div class="sx-w"><table class="sx2" style="min-width:620px"><thead><tr><th>Sector</th><th>Based on</th><th>1 month</th><th>3 months</th><th>vs Nifty, 1 month</th><th>vs Nifty, 3 months</th><th>Above 200-day average</th></tr></thead><tbody>${sec.map((x) => `<tr><td>${esc(x.name)}</td><td class="sx-mut">${x.kind === "index" ? "NSE index" : x.n + " covered stocks"}</td><td class="${inCl(x.m1)}">${inPct(x.m1)}</td><td class="${inCl(x.m3)}">${inPct(x.m3)}</td><td class="${inCl(x.rel1)}">${inPct(x.rel1)}</td><td class="${inCl(x.rel3)}">${inPct(x.rel3)}</td><td>${x.kind === "index" ? (x.vs200 == null ? "–" : (x.vs200 >= 0 ? "Yes, " : "No, ") + inPct(x.vs200)) : inNum(x.above200, 0) + "% of stocks"}</td></tr>`).join("")}</tbody></table></div></div>` : "";
+  const secT = sec.length ? `<div class="in-box"><h3>Sectors against the Nifty 50</h3><p class="m">Relative strength: a sector's return minus the Nifty 50's over the same period; above zero means it did better than the index. “Covered stocks” rows use the median return of the covered companies in that sector (sector names from Yahoo Finance); “index” rows are NSE sector indices. ${inRefBtn("rsc", "s-rsc")}</p><div class="sx-w"><table class="sx2" style="min-width:620px"><thead><tr><th>Sector</th><th>Based on</th><th>1 month</th><th>3 months</th><th>vs Nifty, 1 month</th><th>vs Nifty, 3 months</th><th>Above 200-day average</th><th>Linked news</th></tr></thead><tbody>${sec.map((x) => `<tr><td>${esc(x.name)}</td><td class="sx-mut">${x.kind === "index" ? "NSE index" : x.n + " covered stocks"}</td><td class="${inCl(x.m1)}">${inPct(x.m1)}</td><td class="${inCl(x.m3)}">${inPct(x.m3)}</td><td class="${inCl(x.rel1)}">${inPct(x.rel1)}</td><td class="${inCl(x.rel3)}">${inPct(x.rel3)}</td><td>${x.kind === "index" ? (x.vs200 == null ? "–" : (x.vs200 >= 0 ? "Yes, " : "No, ") + inPct(x.vs200)) : inNum(x.above200, 0) + "% of stocks"}</td><td>${(() => { const k = x.kind === "index" ? x.k : SEC_IDX[x.name]; const n = k && LIVE ? inCountFor("i:" + k) : 0; return n ? `<button type="button" class="nw-tn" style="margin:0" onclick="inLinkF('i:${k}')">${n} stories</button>` : "–"; })()}</td></tr>`).join("")}</tbody></table></div></div>` : "";
   const mp = I.market_pe, br = I.breadth;
   const val = `<div class="in-box"><h3>Valuation and breadth</h3><div class="in-grid">${mp ? `<div class="in-t"><div class="nm">P/E of the ${mp.n} largest covered companies (combined)</div><div class="v">${inNum(mp.pe, 1)}</div><div class="ch">Earnings yield ${inNum(100 / mp.pe, 2)}%</div></div>` : ""}${br ? `<div class="in-t"><div class="nm">Covered stocks above their 200-day average</div><div class="v">${inNum(br.above200, 0)}%</div><div class="ch">Above 50-day: ${inNum(br.above50, 0)}% · ${br.n} stocks</div></div>` : ""}</div>
   <p class="m" style="margin-top:8px">NISM compares equity earnings or dividend yields with bond yields: when equity yields are well above bond yields, equities are cheap, and in bull markets they fall below bond yields. Compare the earnings yield above with the current 10-year government bond yield. ${inRefBtn("dy", "v-dy")}</p></div>`;
@@ -175,6 +181,72 @@ function inSources() {
   <div class="in-box"><h3>What this page is not</h3><p class="m" style="margin:0">Under SEBI's Research Analyst rules (NISM Series XV, Chapter 14), research reports and recommendations for others need a registered analyst, disclosures and conflict checks. This page only applies written rules to public numbers for your own use; it gives no price targets or buy/sell calls, and headlines are not verified.</p></div>`;
 }
 
+
+/* ---------- linking headlines to indices, sectors and stocks (fixed keyword rules, shown on the page) ---------- */
+// Short names used in headlines -> NSE symbol
+const ALIAS = [["SBI", "SBIN"], ["State Bank", "SBIN"], ["L&T", "LT"], ["Larsen", "LT"], ["HUL", "HINDUNILVR"], ["Airtel", "BHARTIARTL"], ["Jio", "RELIANCE"], ["DMart", "DMART"], ["D-Mart", "DMART"],
+  ["IndiGo", "INDIGO"], ["Infosys", "INFY"], ["HDFC Bank", "HDFCBANK"], ["ICICI Bank", "ICICIBANK"], ["Axis Bank", "AXISBANK"], ["Kotak", "KOTAKBANK"], ["Maruti", "MARUTI"], ["Tata Steel", "TATASTEEL"],
+  ["Tata Motors", "TMPV"], ["Bajaj Finance", "BAJFINANCE"], ["Wipro", "WIPRO"], ["HCLTech", "HCLTECH"], ["HCL Tech", "HCLTECH"], ["Tech Mahindra", "TECHM"], ["ONGC", "ONGC"], ["NTPC", "NTPC"],
+  ["Coal India", "COALINDIA"], ["Adani Ports", "ADANIPORTS"], ["Adani Green", "ADANIGREEN"], ["Adani Enterprises", "ADANIENT"], ["Vedanta", "VEDL"], ["Hindalco", "HINDALCO"], ["Sun Pharma", "SUNPHARMA"],
+  ["Dr Reddy", "DRREDDY"], ["Cipla", "CIPLA"], ["Titan", "TITAN"], ["Asian Paints", "ASIANPAINT"], ["Nestle India", "NESTLEIND"], ["ITC", "ITC"], ["Paytm", "PAYTM"], ["Nykaa", "NYKAA"], ["Zomato", "ETERNAL"],
+  ["Eternal", "ETERNAL"], ["Swiggy", "SWIGGY"], ["LIC", "LICI"], ["Vodafone Idea", "IDEA"], ["Yes Bank", "YESBANK"], ["PNB", "PNB"], ["Bank of Baroda", "BANKBARODA"], ["Ola Electric", "OLAELEC"],
+  ["Hero MotoCorp", "HEROMOTOCO"], ["Bajaj Auto", "BAJAJ-AUTO"], ["Eicher", "EICHERMOT"], ["Mahindra", "M&M"], ["BEL", "BEL"], ["Bharat Electronics", "BEL"], ["HAL", "HAL"], ["Hindustan Aeronautics", "HAL"],
+  ["Mazagon", "MAZDOCK"], ["IRCTC", "IRCTC"], ["IRFC", "IRFC"], ["Jio Financial", "JIOFIN"], ["Tata Power", "TATAPOWER"], ["Power Grid", "POWERGRID"], ["BPCL", "BPCL"], ["Indian Oil", "IOC"], ["HPCL", "HINDPETRO"],
+  ["JSW Steel", "JSWSTEEL"], ["TCS", "TCS"], ["Reliance", "RELIANCE"], ["Ambani", "RELIANCE"], ["Adani", "ADANIENT"], ["Avenue Supermarts", "DMART"], ["Muthoot", "MUTHOOTFIN"], ["CDSL", "CDSL"], ["MCX", "MCX"], ["Angel One", "ANGELONE"]]
+  .map(([a, s]) => [new RegExp("(^|[^A-Za-z])" + a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![A-Za-z])"), s]);
+// Topic in the headline -> indices and stocks most exposed. Each rule says why, in a few words.
+const IMPACT = [
+  { rx: /\b(crude|brent|oil price|opec|diesel|petrol|fuel price)/i, why: "crude oil", idx: ["^CNXENERGY", "BZ=F"], sym: ["ONGC", "BPCL", "IOC", "HINDPETRO", "INDIGO", "ASIANPAINT"] },
+  { rx: /\b(repo|rbi (policy|rate|hike|cut)|rate (hike|cut)|monetary policy|mpc|crr|liquidity)\b/i, why: "interest rates", idx: ["^NSEBANK", "NIFTY_FIN_SERVICE.NS", "^CNXREALTY", "^CNXAUTO"], sym: ["HDFCBANK", "SBIN", "BAJFINANCE"] },
+  { rx: /\b(fed|federal reserve|powell|treasury yields?|us yields?)\b/i, why: "US rates and foreign money", idx: ["^NSEI", "^CNXIT", "^TNX"], sym: [] },
+  { rx: /\b(rupee|forex|fpi|fii|foreign investors?)\b/i, why: "rupee and foreign flows", idx: ["INR=X", "^NSEI", "^CNXIT", "^CNXPHARMA"], sym: ["TCS", "INFY"] },
+  { rx: /\b(h-1b|visa|green card)\b/i, why: "US work visas (IT services)", idx: ["^CNXIT"], sym: ["TCS", "INFY", "WIPRO", "HCLTECH", "TECHM"] },
+  { rx: /\btariffs?\b.*\bpharma|pharma.*\btariffs?\b|\bdrug (prices?|tariffs?)\b/i, why: "pharma tariffs", idx: ["^CNXPHARMA"], sym: ["SUNPHARMA", "DRREDDY", "CIPLA"] },
+  { rx: /\b(tariffs?|trade (deal|pact|war|talks))\b/i, why: "trade and tariffs", idx: ["^NSEI", "^CNXIT", "^CNXMETAL"], sym: [] },
+  { rx: /\b(starlink|satellite internet|satcom|spectrum|telecom|5g)\b/i, why: "telecom and satellite internet", idx: ["^CNXMEDIA"], sym: ["BHARTIARTL", "RELIANCE", "IDEA"] },
+  { rx: /\b(steel|copper|aluminium|aluminum|zinc|iron ore|metals?)\b/i, why: "metal prices", idx: ["^CNXMETAL", "HG=F"], sym: ["TATASTEEL", "JSWSTEEL", "HINDALCO", "VEDL"] },
+  { rx: /\bgold\b/i, why: "gold prices", idx: ["GC=F"], sym: ["TITAN", "MUTHOOTFIN"] },
+  { rx: /\b(defence|defense|missile|military|war|drone|army)\b/i, why: "defence and conflict", idx: ["^CNXENERGY", "BZ=F"], sym: ["HAL", "BEL", "MAZDOCK"] },
+  { rx: /\b(sebi|f&o|derivatives|demat|mutual fund|cas)\b/i, why: "market rules (brokers, exchanges, depositories)", idx: ["NIFTY_FIN_SERVICE.NS"], sym: ["CDSL", "ANGELONE", "MCX"] },
+  { rx: /\b(auto sales|car sales|ev\b|electric vehicles?|two-wheeler)/i, why: "auto demand", idx: ["^CNXAUTO"], sym: ["MARUTI", "M&M", "TMPV", "BAJAJ-AUTO"] },
+  { rx: /\b(real estate|housing|home loans?|property)\b/i, why: "real estate", idx: ["^CNXREALTY"], sym: ["DLF", "GODREJPROP"] },
+  { rx: /\b(ai\b|artificial intelligence|nvidia|semiconductor|chips?|it services|software)\b/i, why: "technology spending", idx: ["^CNXIT", "^IXIC"], sym: ["TCS", "INFY", "HCLTECH"] },
+  { rx: /\b(china|chinese)\b/i, why: "China demand", idx: ["000001.SS", "^CNXMETAL"], sym: [] },
+  { rx: /\b(wall street|s&p 500|nasdaq|dow jones)\b/i, why: "US markets", idx: ["^GSPC", "^IXIC", "^NSEI"], sym: [] },
+  { rx: /\b(sensex|nifty|dalal street|stock market|indian shares|markets? (rally|fall|crash))\b/i, why: "the Indian market as a whole", idx: ["^NSEI", "^BSESN"], sym: [] },
+  { rx: /\b(gst|budget|fiscal deficit|tax cut|income tax)\b/i, why: "tax and government spending", idx: ["^NSEI", "^CNXFMCG", "^CNXAUTO"], sym: [] },
+  { rx: /\b(monsoon|rainfall|kharif|rabi|crop)\b/i, why: "farm output and rural demand", idx: ["^CNXFMCG"], sym: ["ITC", "HINDUNILVR", "M&M"] },
+  { rx: /\b(iran|israel|middle east|red sea|strait of hormuz|gulf)\b/i, why: "Middle East (crude and shipping)", idx: ["BZ=F", "^CNXENERGY"], sym: ["ONGC", "BPCL", "IOC"] },
+  { rx: /\b(russia|ukraine|putin|zelensky)/i, why: "Russia-Ukraine (oil, diesel, sanctions)", idx: ["BZ=F"], sym: ["RELIANCE", "BPCL", "IOC"] },
+];
+const SEC_IDX = { "Technology": "^CNXIT", "Financial Services": "^NSEBANK", "Healthcare": "^CNXPHARMA", "Basic Materials": "^CNXMETAL", "Energy": "^CNXENERGY", "Real Estate": "^CNXREALTY",
+  "Consumer Cyclical": "^CNXAUTO", "Consumer Defensive": "^CNXFMCG", "Communication Services": "^CNXMEDIA", "Utilities": "^CNXENERGY", "Industrials": "^CNXINFRA" };
+const LINKC = new Map();
+function inLinks(x) {   // -> {sym:[...], idx:[...], why:[...]}
+  if (LINKC.has(x.u)) return LINKC.get(x.u);
+  const t = x.t, sym = [], idx = [], why = [], add = (a, v) => { if (v && !a.includes(v)) a.push(v); };
+  (CMATCH ? CMATCH(t, x.who) : []).forEach((s) => add(sym, s));
+  for (const [rx, s] of ALIAS) if (rx.test(t)) add(sym, s);
+  for (const r of IMPACT) if (r.rx.test(t)) { add(why, r.why); r.idx.forEach((k) => add(idx, k)); r.sym.forEach((s) => sym.length < 8 && add(sym, s)); }
+  const o = { sym: sym.slice(0, 7), idx: idx.slice(0, 4), why: why.slice(0, 3) }; LINKC.set(x.u, o); return o;
+}
+function inPx(sym) {   // latest move for a stock: screener price (15-minute delay) if it has one, else last close from the daily update
+  const q = (typeof data !== "undefined" && ((data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === "NSE") || (data.quotes || {})["NSE:" + sym])) || null;
+  if (q && q.chg != null) return q.chg;
+  const n = INAMES && INAMES[sym]; return Array.isArray(n) ? n[2] : null;
+}
+function inIdxPx(k) { const L = MKT && MKT.series && MKT.series.find((x) => x.t === k); if (!L || L.c.length < 2) return null; const c = L.c; return (c[c.length - 1] / c[c.length - 2] - 1) * 100; }
+function inLinkChips(x) {
+  const L = inLinks(x); if (!L.sym.length && !L.idx.length) return "";
+  const ch = (v) => (v == null ? "" : ` <b class="${inCl(v)}">${inPct(v)}</b>`);
+  const idx = L.idx.map((k) => `<button type="button" class="nw-lk ix" onclick="inLinkF('i:${k}')" title="Show stories linked to ${esc(MK_NAMES[k] || k)}">${esc(MK_NAMES[k] || k)}${ch(inIdxPx(k))}</button>`).join("");
+  const st = L.sym.map((s) => `<button type="button" class="nw-lk" onclick="inPick('${esc(s)}','NSE')" title="Open ${esc(s)}">${esc(s)}${ch(inPx(s))}</button>`).join("");
+  return `<div class="nw-links"><span class="nw-lt">${L.why.length ? "Linked via " + esc(L.why.join(", ")) : "Named in the headline"}:</span>${idx}${st}</div>`;
+}
+function inLinkF(k) { IV.linkF = IV.linkF === k ? "" : k; IV.list = IV.list || "top"; render(); const e = document.querySelector(".nw"); if (e) e.scrollIntoView({ block: "start" }); }
+function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.sym.includes(f.slice(2)); }
+function inAllStories() { const N = LIVE || (INS && INS.news); if (!N || !N.themes) return []; const seen = new Set(), out = []; for (const t of N.themes) for (const s of t.stories) if (!seen.has(s.u)) { seen.add(s.u); out.push(Object.assign({ th: t.id }, s)); } return out; }
+function inCountFor(f) { return inAllStories().filter((x) => inStoryMatchesLink(x, f)).length; }
 
 /* ---------- live market tiles and readings (same rules as insights.py, recomputed in the browser) ---------- */
 let MKT = null;
@@ -375,6 +447,19 @@ function inStock() {
     if (P.length > 1) peers = `<div class="in-box"><h3>Peers (${esc(f.ind || f.sec)})</h3><p class="m">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="sx-w"><table class="sx2" style="min-width:640px"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td><a href="#insights" onclick="inPick('${esc(s)}','NSE');return false">${esc(s)}</a></td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
   }
   const q = (name ? name.replace(/\b(limited|ltd\.?|ltd)\b/gi, "").trim() : IV.sym) + " share", N = IV.news[q];
-  const news = `<div class="in-box"><h3>Recent headlines</h3>${inNewsNote()}${!N || N.loading ? `<p class="m">Loading headlines…</p>` : N.error ? `<p class="m">${esc(N.error)}</p>` : `<p class="m">Search: “${esc(N.q)}” · ${esc(N.source || "")}</p>${inNewsList(N.items)}`}</div>`;
-  return box + head + `<div class="in-cols">${tech}${fin}</div>` + qt + peers + news;
+  const news = `<div class="in-box"><h3>More headlines from a company search</h3>${inNewsNote()}${!N || N.loading ? `<p class="m">Loading headlines…</p>` : N.error ? `<p class="m">${esc(N.error)}</p>` : `<p class="m">Search: “${esc(N.q)}” · ${esc(N.source || "")}</p>${inNewsList(N.items)}`}</div>`;
+  if (LIVE === null && !IV.feedBusy) loadFeed();
+  const secK = f && SEC_IDX[f.sec], allS = inAllStories();
+  const direct = allS.filter((x) => inLinks(x).sym.includes(IV.sym)), sector = secK ? allS.filter((x) => !direct.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
+  const linked = `<div class="in-box"><h3>Market news linked to ${esc(IV.sym)}</h3><p class="m">From the live news feed: stories that name the company, or whose topic is linked to it by the keyword rules${secK ? `, plus news linked to its sector index (${esc(MK_NAMES[secK])})` : ""}.</p>
+   ${direct.length ? `<div class="nw-lbl" style="margin-top:6px">About this company (${direct.length})</div><ol class="nw-list">${direct.slice(0, 15).map((x) => inStoryRow(x)).join("")}</ol>` : `<p class="m">No story in the live feed names this company right now.</p>`}
+   ${sector.length ? `<div class="nw-lbl" style="margin-top:10px">Its sector (${esc(MK_NAMES[secK])})</div><ol class="nw-list">${sector.map((x) => inStoryRow(x)).join("")}</ol>` : ""}</div>`;
+  return box + head + linked + `<div class="in-cols">${tech}${fin}</div>` + qt + peers + news;
+}
+
+function inNewsBadge(sym, ex) {   // used in My Positions: how many live stories name this holding
+  if (LIVE === null && !IV.feedBusy) { loadFeed(); return ""; }
+  if (ex === "BSE") return "";
+  const n = inAllStories().filter((x) => inLinks(x).sym.includes(sym)).length;
+  return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();go('ins');inPick('${esc(sym)}','NSE')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
 }

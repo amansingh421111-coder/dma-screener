@@ -424,7 +424,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.19</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.20</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -777,13 +777,13 @@ function pdetail(p,c){const L=c.L,N=ledgerNet(p),rowOf=new Map(L.rows.map(r=>[r.
   <div class="act"><button class="btn sm" onclick="openForm('levels','${p.id}')">Stop loss, target &amp; alerts</button>${tvLink(p)}<button class="btn sm danger" onclick="delHolding('${p.id}')">Delete holding</button></div></div>
   <div class="hr"><div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
 function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%":"–",nm=q&&q.name?`<small>${esc(q.name)}</small>`:"",L=c.L;
- let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer"><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span>${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b>":"–"}</td>
+ let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer"><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b>":"–"}</td>
  <td class="cx">${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td class="cx">${inr(c.invested)}</td><td>${inr(c.value)}</td><td>${c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`}</td><td>${pcs(c.unrealPct)}</td><td class="cx">${w}</td>
  <td>${p.sl?inr(p.sl)+(c.px!=null?`<small>${((c.px/p.sl-1)*100).toFixed(1)}% away</small>`:""):"–"}</td><td>${p.target?inr(p.target)+(c.px!=null?`<small>${((p.target/c.px-1)*100).toFixed(1)}% to go</small>`:""):"–"}</td>
  <td class="cx">${q&&q.pct!=null?pcs(q.pct):"–"}</td><td><span class="tag ${st[1]}" style="margin:0">${st[0]}</span></td><td class="ac">${acts(p,c)}</td></tr>`;
  if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="15">${pdetail(p,c)}</td></tr>`;return h}
 function openCard(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1):"0",L=c.L;
- return `<article class="pc"><div class="ph"><div><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span></div>
+ return `<article class="pc"><div class="ph"><div><b>${esc(p.symbol)}</b><span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}</div>
  <div style="text-align:right"><b>${c.px!=null?inr(c.px):"–"}</b>${c.unreal!=null?`<div class="${pcl(c.unreal)}" style="font-weight:600">${mny(c.unreal)} (${sg(+c.unrealPct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
  <div class="fcs"><div><span>Quantity</span><b>${L.qty}</b></div><div><span>Avg cost</span><b>${inr(L.avg)}</b></div><div><span>Invested</span><b>${inr(c.invested)}</b></div><div><span>Value</span><b>${inr(c.value)}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Holding</span><b>${held(c.days)}</b></div></div>
  ${pbar(p,L.avg,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${c.px!=null&&p.sl?`<span>${((c.px/p.sl-1)*100).toFixed(1)}% above stop</span>`:""}${c.px!=null&&p.target?`<span>${((p.target/c.px-1)*100).toFixed(1)}% to target</span>`:""}</div>

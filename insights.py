@@ -448,7 +448,7 @@ def main():
     (ROOT / "insights.json").write_text(json.dumps(clean(out), separators=(",", ":"), default=str, allow_nan=False))
     fund_out = dict(updated=now.isoformat(), fund_updated=fdate, universe=f"The {len(stocks)} most traded NSE stocks", sector_med=secmed,
                     stocks={s: dict(o, n=names.get(s)) for s, o in stocks.items()}, fund=F)
-    (ROOT / "names.json").write_text(json.dumps({k: v for k, v in names.items() if v}, separators=(",", ":")))
+    (ROOT / "names.json").write_text(json.dumps({k: [v, stocks[k]["t"].get("p"), stocks[k]["t"].get("d1"), (F.get(k) or {}).get("sec")] for k, v in names.items() if v}, separators=(",", ":")))
     (ROOT / "fund.json").write_text(json.dumps(clean(fund_out), separators=(",", ":"), default=str, allow_nan=False))
     log.info("written insights.json (%d readings, %d stories in themes, %d top stories) and fund.json (%d stocks, %d with financials)", len(readings), sum(len(t["stories"]) for t in news["themes"]), len(news["top"]), len(stocks), len(F))
 
