@@ -26,7 +26,9 @@ SOURCES = {
     "thewire.in": "The Wire", "theprint.in": "ThePrint", "scroll.in": "Scroll", "rbi.org.in": "RBI", "pib.gov.in": "PIB (Government of India)", "sebi.gov.in": "SEBI",
 }
 JUNK = re.compile(r"(stocks? to (buy|watch)|top \d+ (stocks|picks)|stock picks|buy or sell|target price|multibagger|current affairs|quiz|horoscope|"
-                  r"price today|rate today|live updates?:? .*gold|lottery|recipe|cricket|bollywood|box office|weather today|\bodds\b|prediction:)", re.I)
+                  r"price today|rate today|check latest (rates|prices)|city-wise|current price of|prices on (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|better .* stock:|stock (is|was) (rallying|falling) today|why is .* stock|live updates?:? .*gold|lottery|recipe|cricket|bollywood|box office|weather today|\bodds\b|prediction:)", re.I)
+
+MARKET = r'\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\b|tesla|spacex|starlink|x\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\b|semiconductor|bank|price|growth|recession|imports?|exports?)'
 
 # Themes: how a kind of news reaches Indian share prices, with the NISM section the channel comes from.
 THEMES = [
@@ -44,11 +46,11 @@ THEMES = [
          q=["tariffs trade war", "sanctions oil exports", "India US trade deal tariffs", "export ban import duty"], kw=r"\b(tariffs?|trade (war|deal|talks|pact)|sanctions?|export ban|import duty|duties|wto|embargo)\b"),
     dict(id="politics", name="Government, elections and policy", ref="cad", sectors="Depends on the policy: PSU stocks, infrastructure, consumer, sectors named in the decision",
          why="Taxes, spending and regulation change company earnings; fiscal deficits push up interest rates.",
-         q=["India government policy budget GST", "US White House policy economy", "election results markets", "H-1B visa policy"], kw=r"\b(government|election|budget|gst|policy|parliament|white house|congress|minister|cabinet|visa|pli|subsidy|tax)\b"),
+         q=["India government policy budget GST", "US White House policy economy", "election results markets", "H-1B visa policy"], kw=r"\b(government|election|budget|gst|policy|parliament|white house|congress|minister|cabinet|visa|pli|subsidy|tax)\b", need=MARKET),
     dict(id="people", name="Posts and remarks by market-moving people", ref="emh", sectors="Companies and sectors they talk about; overall sentiment",
          why="Remarks by heads of government, central bankers and big-company leaders spread in minutes; public information is reflected in prices quickly.",
          q=["\"Elon Musk\" post OR tweet OR \"on X\"", "Trump \"Truth Social\" post", "Trump says tariffs OR markets OR India", "\"Jerome Powell\" says", "\"Nirmala Sitharaman\" says", "\"RBI Governor\" says", "\"Warren Buffett\" OR \"Jensen Huang\" OR \"Sam Altman\" says"],
-         kw=r"(musk|trump|powell|sitharaman|rbi governor|buffett|jensen huang|altman|xi jinping|modi|putin|lagarde|zuckerberg|bezos|ambani|adani|tata)", people=True),
+         kw=r"(musk|trump|powell|sitharaman|rbi governor|buffett|jensen huang|altman|xi jinping|modi|putin|lagarde|zuckerberg|bezos|ambani|adani|tata)", people=True, need=MARKET),
     dict(id="energy", name="Crude oil, gas and commodities", ref="commod_eq", sectors="Oil producers and refiners, OMCs, airlines, paints, tyres, chemicals, metals",
          why="Commodity prices change input costs and margins; India imports most of its crude.",
          q=["crude oil prices OPEC", "gold silver prices", "copper aluminium steel prices"], kw=r"\b(crude|oil|opec|brent|gas|lng|gold|silver|copper|aluminium|steel|coal|commodit)"),
@@ -135,10 +137,12 @@ def company_matcher(names):
         base = re.sub(r"\b(limited|ltd\.?|company|corporation|corp\.?|co\.|inc\.?|\(india\)|india)\b", "", nm, flags=re.I).strip(" .,&-")
         words = base.split()
         cand = " ".join(words[:3]) if len(words) >= 3 and len(" ".join(words[:2])) < 9 else " ".join(words[:2]) if len(words) >= 2 else base
-        if len(cand) >= 5 and cand.lower() not in stop: pats.append((sym, re.compile(r"\b" + re.escape(cand) + r"\b")))
+        if cand.endswith((" of", " &", " and")): cand = " ".join(words[:3])
+        if len(cand) >= 5 and cand.lower() not in stop and not cand.endswith((" of", " &", " and")): pats.append((sym, re.compile(r"\b" + re.escape(cand) + r"\b")))
         if len(sym) >= 3 and sym.isalpha() and sym.lower() not in stop: pats.append((sym, re.compile(r"\b" + re.escape(sym) + r"\b")))
         w0 = words[0] if words else ""          # first word alone ("Reliance") goes to the most traded company that starts with it
-        if len(w0) >= 6 and w0.lower() not in stop and w0[0].isupper() and w0 not in firsts:
+        generic = len(words) >= 2 and words[1].lower() in {"industries", "enterprises", "group", "holdings", "ltd", "limited", "corporation", "ventures"}
+        if generic and len(w0) >= 5 and w0.lower() not in stop and w0[0].isupper() and w0 not in firsts:
             firsts.add(w0); pats.append((sym, re.compile(r"\b" + re.escape(w0) + r"\b(?! (Power|Capital|Infra|Home|Retail|Securities|Finance))")))
     def f(title):
         hit = []
@@ -166,6 +170,7 @@ def collect(names=None, days=3, log=None):
             name = SOURCES.get(x["dom"]) or next((v for k, v in SOURCES.items() if x["dom"].endswith("." + k)), None)
             if not name or JUNK.search(x["t"]): continue
             if not re.search(th["kw"], x["t"], re.I): continue        # the headline itself must be about the theme
+            if th.get("need") and not re.search(th["need"], x["t"], re.I): continue   # and, for people and politics, about money or markets
             x["src"] = name; keep.append(x)
         st = cluster(keep)
         for s in st:
