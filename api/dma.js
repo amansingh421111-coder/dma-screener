@@ -1,5 +1,6 @@
 // api/dma.js - one serverless function: accounts, Telegram connect/webhook, saving positions.
 const crypto = require("crypto");
+const FEED = require("./_feed.js");
 const { promisify } = require("util");
 const scrypt = promisify(crypto.scrypt);
 
@@ -87,6 +88,50 @@ module.exports = async (req, res) => {
     const a = req.query.a;
 
 
+
+
+    if (a === "mkt") {   // live market tiles: indices, world markets, currency, commodities, rates, sector indices
+      if (!(await rl("rl:mkt:" + clientIp(req), 600, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
+      const raw = await redis(["GET", "mkt:out"]); let out = raw ? JSON.parse(raw) : null;
+      const ttl = (FEED.marketOpen() ? 5 : 60) * 60000;
+      if (out && Date.now() - Date.parse(out.updated) < ttl) return send(res, out);
+      const T = ["^NSEI", "^BSESN", "^NSEBANK", "^NSEMDCP50", "^INDIAVIX", "^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS", "INR=X", "DX-Y.NYB", "BZ=F", "GC=F", "HG=F", "^TNX",
+        "^CNXIT", "^CNXAUTO", "^CNXFMCG", "^CNXPHARMA", "^CNXMETAL", "^CNXREALTY", "^CNXENERGY", "^CNXPSUBANK", "^CNXINFRA", "^CNXMEDIA", "NIFTY_FIN_SERVICE.NS"];
+      const one = async (t) => {
+        const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 8000);
+        try {
+          const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d`, { headers: { "user-agent": UA }, signal: ac.signal });
+          const j = await r.json(), R = j && j.chart && j.chart.result && j.chart.result[0]; if (!R || !R.timestamp) return null;
+          const q = R.indicators.quote[0], c = [], d = [];
+          R.timestamp.forEach((ts, i) => { if (q.close[i] != null) { c.push(Math.round(q.close[i] * 10000) / 10000); d.push(new Date((ts + 19800) * 1000).toISOString().slice(0, 10)); } });
+          const live = R.meta && R.meta.regularMarketPrice; if (live && c.length) c[c.length - 1] = live;
+          return { t, c, d: d[d.length - 1], at: R.meta && R.meta.regularMarketTime ? new Date(R.meta.regularMarketTime * 1000).toISOString() : null };
+        } catch (e) { return null; } finally { clearTimeout(tm); }
+      };
+      const got = (await Promise.all(T.map(one))).filter(Boolean);
+      if (got.length < 8) return out ? send(res, out) : send(res, { error: "Price source unavailable." }, 502);
+      out = { updated: new Date().toISOString(), market_open: FEED.marketOpen(), series: got };
+      await redis(["SET", "mkt:out", JSON.stringify(out)]);
+      return send(res, out);
+    }
+    if (a === "feed") {
+      if (!(await rl("rl:feed:" + clientIp(req), 600, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
+      const raw = await redis(["GET", "feed:out"]); let out = raw ? JSON.parse(raw) : null;
+      const ttl = (FEED.marketOpen() ? 5 : 60) * 60000, age = out ? Date.now() - Date.parse(out.updated) : Infinity;
+      if (out && age < ttl && !(req.query.fresh === "1" && age > 90000)) return send(res, out);
+      const lock = await redis(["SET", "feed:lock", "1", "NX", "EX", 55]);
+      if (!lock) return out ? send(res, { ...out, refreshing: true }) : send(res, { error: "Collecting headlines, try again in a minute." }, 503);
+      try {
+        const pr = await redis(["GET", "feed:pool"]), k = await redis(["INCR", "feed:k"]);
+        const r = await FEED.refresh(pr ? JSON.parse(pr) : [], k);
+        if (r.answered > 0 || !out) {
+          await redis(["SET", "feed:pool", JSON.stringify(r.items)]);
+          out = FEED.build(r.items); out.last_fetch = { requests: r.fetched, answered: r.answered, headlines: r.added };
+          await redis(["SET", "feed:out", JSON.stringify(out)]);
+        }
+      } finally { await redis(["DEL", "feed:lock"]); }
+      return send(res, out);
+    }
     if (a === "news" || a === "chart") {
       if (!(await rl(`rl:${a}:` + clientIp(req), a === "news" ? 200 : 300, 3600))) return send(res, { error: "Too many requests this hour. Try again later." }, 429);
       if (a === "news") {

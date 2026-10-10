@@ -1,8 +1,7 @@
 name: insights
 on:
   schedule:
-    - cron: "15 3 * * 1-5"       # 08:45 IST: world markets overnight, morning headlines
-    - cron: "15 14 * * 1-5"      # 19:45 IST: after the close
+    - cron: "15 14 * * 1-5"      # 19:45 IST: after the close (stock readings, breadth, sectors; news and market prices are live on the page)
     - cron: "15 5 * * 6"         # Saturday 10:45 IST: refreshes company financials (weekly)
   workflow_dispatch:
     inputs:

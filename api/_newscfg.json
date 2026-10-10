@@ -1,0 +1,435 @@
+{
+"version": 2,
+"sources": {
+"reuters.com": "Reuters",
+"bloomberg.com": "Bloomberg",
+"ft.com": "Financial Times",
+"wsj.com": "Wall Street Journal",
+"cnbc.com": "CNBC",
+"apnews.com": "AP",
+"bbc.com": "BBC",
+"bbc.co.uk": "BBC",
+"nytimes.com": "New York Times",
+"washingtonpost.com": "Washington Post",
+"theguardian.com": "The Guardian",
+"economist.com": "The Economist",
+"aljazeera.com": "Al Jazeera",
+"cnn.com": "CNN",
+"politico.com": "Politico",
+"politico.eu": "Politico Europe",
+"axios.com": "Axios",
+"barrons.com": "Barron's",
+"marketwatch.com": "MarketWatch",
+"finance.yahoo.com": "Yahoo Finance",
+"fortune.com": "Fortune",
+"forbes.com": "Forbes",
+"businessinsider.com": "Business Insider",
+"asia.nikkei.com": "Nikkei Asia",
+"scmp.com": "South China Morning Post",
+"investing.com": "Investing.com",
+"in.investing.com": "Investing.com",
+"techcrunch.com": "TechCrunch",
+"theverge.com": "The Verge",
+"npr.org": "NPR",
+"foxbusiness.com": "Fox Business",
+"abcnews.go.com": "ABC News",
+"cbsnews.com": "CBS News",
+"nbcnews.com": "NBC News",
+"economictimes.indiatimes.com": "Economic Times",
+"livemint.com": "Mint",
+"business-standard.com": "Business Standard",
+"moneycontrol.com": "Moneycontrol",
+"thehindubusinessline.com": "BusinessLine",
+"financialexpress.com": "Financial Express",
+"ndtvprofit.com": "NDTV Profit",
+"businesstoday.in": "Business Today",
+"thehindu.com": "The Hindu",
+"indianexpress.com": "Indian Express",
+"hindustantimes.com": "Hindustan Times",
+"timesofindia.indiatimes.com": "Times of India",
+"ndtv.com": "NDTV",
+"zeebiz.com": "Zee Business",
+"cnbctv18.com": "CNBC-TV18",
+"outlookbusiness.com": "Outlook Business",
+"fortuneindia.com": "Fortune India",
+"thewire.in": "The Wire",
+"theprint.in": "ThePrint",
+"scroll.in": "Scroll",
+"rbi.org.in": "RBI",
+"pib.gov.in": "PIB (Government of India)",
+"sebi.gov.in": "SEBI"
+},
+"junk": "(stocks? to (buy|watch)|top \\d+ (stocks|picks)|stock picks|buy or sell|target price|multibagger|current affairs|quiz|horoscope|price today|rate today|check latest (rates|prices)|city-wise|current price of|prices on (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|better .* stock:|stock (is|was) (rallying|falling) today|why is .* stock|live updates?:? .*gold|lottery|recipe|cricket|bollywood|box office|weather today|\\bodds\\b|prediction:)",
+"market": "\\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\\b|tesla|spacex|starlink|x\\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\\b|semiconductor|bank|price|growth|recession|imports?|exports?)",
+"people": [
+[
+"Elon Musk",
+"\\bmusk\\b"
+],
+[
+"Donald Trump",
+"\\btrump\\b"
+],
+[
+"Jerome Powell",
+"\\bpowell\\b"
+],
+[
+"Nirmala Sitharaman",
+"sitharaman"
+],
+[
+"RBI Governor",
+"rbi governor|sanjay malhotra"
+],
+[
+"Narendra Modi",
+"\\bmodi\\b"
+],
+[
+"Xi Jinping",
+"\\bxi\\b|xi jinping"
+],
+[
+"Vladimir Putin",
+"\\bputin\\b"
+],
+[
+"Warren Buffett",
+"buffett"
+],
+[
+"Jensen Huang",
+"jensen huang"
+],
+[
+"Sam Altman",
+"\\baltman\\b"
+],
+[
+"Mukesh Ambani",
+"\\bambani\\b"
+],
+[
+"Gautam Adani",
+"\\badani\\b"
+],
+[
+"Rahul Gandhi",
+"rahul gandhi"
+],
+[
+"Piyush Goyal",
+"piyush goyal|\\bgoyal\\b"
+],
+[
+"Scott Bessent",
+"bessent"
+],
+[
+"Christine Lagarde",
+"lagarde"
+],
+[
+"Mark Zuckerberg",
+"zuckerberg"
+],
+[
+"Jeff Bezos",
+"bezos"
+]
+],
+"themes": [
+{
+"id": "rates",
+"name": "Central banks and interest rates",
+"ref": "rates",
+"sectors": "Banks, NBFCs, real estate, autos (loan-funded demand); foreign flows",
+"why": "Rate decisions change borrowing costs and the return on bonds versus shares; foreign portfolio money reacts quickly.",
+"q": [
+"RBI monetary policy repo rate",
+"Federal Reserve interest rate decision",
+"ECB OR \"Bank of Japan\" interest rates",
+"RBI repo rate",
+"Fed rate decision Powell",
+"RBI governor Malhotra"
+],
+"kw": "\\b(rbi|repo|mpc|fed\\b|federal reserve|powell|ecb|bank of japan|boj|rate (cut|hike)|interest rates?)\\b",
+"short": "Rates"
+},
+{
+"id": "macro",
+"name": "Inflation, growth and jobs data",
+"ref": "eic",
+"sectors": "The whole market; consumer and capital-goods companies most",
+"why": "Economy-level numbers come first in the top-down (economy, industry, company) approach.",
+"q": [
+"India inflation CPI GDP data",
+"US inflation jobs report economy",
+"India IIP PMI economy",
+"India economy GDP inflation",
+"US economy inflation jobs"
+],
+"kw": "\\b(inflation|cpi|wpi|gdp|jobs report|payrolls|unemployment|pmi|iip|recession|economic growth)\\b",
+"short": "Economy data"
+},
+{
+"id": "geo",
+"name": "Wars, conflicts and security",
+"ref": "geo",
+"sectors": "Oil marketing and aviation (crude), defence, shipping and logistics, exporters",
+"why": "Conflicts in oil regions lift crude and the risk premium; disruption of shipping routes hits supply chains.",
+"q": [
+"war conflict oil markets",
+"Middle East Iran Israel tensions markets",
+"Russia Ukraine war economy",
+"India China Pakistan border tensions",
+"Iran Israel US war",
+"Russia Ukraine",
+"India Pakistan",
+"China Taiwan"
+],
+"kw": "\\b(war|conflict|missile|strikes?|attack|military|ceasefire|troops|tensions|invasion|drone)\\b",
+"short": "Conflicts"
+},
+{
+"id": "trade",
+"name": "Trade, tariffs and sanctions",
+"ref": "geo",
+"sectors": "Exporters (IT services, pharma, textiles, auto parts, metals), importers",
+"why": "Tariffs, quotas and sanctions change what can be sold where and at what price.",
+"q": [
+"tariffs trade war",
+"sanctions oil exports",
+"India US trade deal tariffs",
+"export ban import duty",
+"tariffs India",
+"Trump tariffs",
+"sanctions Russia oil"
+],
+"kw": "\\b(tariffs?|trade (war|deal|talks|pact)|sanctions?|export ban|import duty|duties|wto|embargo)\\b",
+"short": "Trade & sanctions"
+},
+{
+"id": "politics",
+"name": "Government, elections and policy",
+"ref": "cad",
+"sectors": "Depends on the policy: PSU stocks, infrastructure, consumer, sectors named in the decision",
+"why": "Taxes, spending and regulation change company earnings; fiscal deficits push up interest rates.",
+"q": [
+"India government policy budget GST",
+"US White House policy economy",
+"election results markets",
+"H-1B visa policy",
+"Modi government decision",
+"H-1B visa",
+"GST council",
+"Union Budget"
+],
+"kw": "\\b(government|election|budget|gst|policy|parliament|white house|congress|minister|cabinet|visa|pli|subsidy|tax)\\b",
+"need": "\\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\\b|tesla|spacex|starlink|x\\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\\b|semiconductor|bank|price|growth|recession|imports?|exports?)",
+"short": "Policy & elections"
+},
+{
+"id": "people",
+"name": "Posts and remarks by market-moving people",
+"ref": "emh",
+"sectors": "Companies and sectors they talk about; overall sentiment",
+"why": "Remarks by heads of government, central bankers and big-company leaders spread in minutes; public information is reflected in prices quickly.",
+"q": [
+"\"Elon Musk\" post OR tweet OR \"on X\"",
+"Trump \"Truth Social\" post",
+"Trump says tariffs OR markets OR India",
+"\"Jerome Powell\" says",
+"\"Nirmala Sitharaman\" says",
+"\"RBI Governor\" says",
+"\"Warren Buffett\" OR \"Jensen Huang\" OR \"Sam Altman\" says",
+"\"Elon Musk\" India",
+"\"Elon Musk\" Ambani Starlink",
+"\"Elon Musk\" Tesla OR SpaceX OR xAI",
+"\"Donald Trump\" India",
+"Trump statement markets",
+"Mukesh Ambani",
+"Gautam Adani",
+"Rahul Gandhi business OR economy"
+],
+"kw": "(musk|trump|powell|sitharaman|rbi governor|buffett|jensen huang|altman|xi jinping|modi|putin|lagarde|zuckerberg|bezos|ambani|adani|tata|rahul gandhi|goyal|bessent)",
+"people": true,
+"need": "\\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\\b|tesla|spacex|starlink|x\\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\\b|semiconductor|bank|price|growth|recession|imports?|exports?)",
+"short": "People & posts"
+},
+{
+"id": "energy",
+"name": "Crude oil, gas and commodities",
+"ref": "commod_eq",
+"sectors": "Oil producers and refiners, OMCs, airlines, paints, tyres, chemicals, metals",
+"why": "Commodity prices change input costs and margins; India imports most of its crude.",
+"q": [
+"crude oil prices OPEC",
+"gold silver prices",
+"copper aluminium steel prices",
+"crude oil price",
+"OPEC+"
+],
+"kw": "\\b(crude|oil|opec|brent|gas|lng|gold|silver|copper|aluminium|steel|coal|commodit)",
+"short": "Oil & commodities"
+},
+{
+"id": "fx",
+"name": "Rupee, dollar and foreign money flows",
+"ref": "fpi",
+"sectors": "IT services and pharma (exporters), importers, the whole market via FPI flows",
+"why": "Foreign portfolio money is 'hot money' that can leave at any time; a weaker rupee raises import costs and helps exporters.",
+"q": [
+"rupee dollar forex",
+"FPI FII outflows inflows India equities",
+"rupee record low OR high",
+"FPI selling OR buying"
+],
+"kw": "\\b(rupee|dollar|forex|currency|fpi|fii|foreign investors?|outflows?|inflows?)\\b",
+"short": "Rupee & flows"
+},
+{
+"id": "regulator",
+"name": "Regulators, courts and investigations",
+"ref": "corp",
+"sectors": "The companies named; sometimes a whole segment (derivatives, brokers, platforms)",
+"why": "Orders, penalties and rule changes alter what companies may do and can trigger exchange surveillance.",
+"q": [
+"SEBI order rules",
+"SEC investigation company",
+"antitrust probe fine company",
+"court ruling company shares",
+"SEBI",
+"RBI action bank",
+"CCI penalty",
+"ED raid company"
+],
+"kw": "\\b(sebi|sec\\b|regulator|probe|investigation|penalty|fine[sd]?|ban|court|ruling|antitrust|nclt|ed\\b|cbi|raid)\\b",
+"short": "Regulators"
+},
+{
+"id": "corporate",
+"name": "Company results, deals and boardrooms",
+"ref": "corp",
+"sectors": "The companies named and their peers",
+"why": "Results, mergers, buybacks, management changes and governance issues change a company's value directly.",
+"q": [
+"quarterly results India company profit",
+"merger acquisition deal billion",
+"CEO resigns OR appointed company",
+"boardroom battle shareholders activist",
+"IPO listing India",
+"shares surge NSE",
+"shares plunge NSE",
+"Q2 results profit",
+"block deal stake sale",
+"order win shares",
+"promoter stake",
+"IPO GMP listing"
+],
+"kw": "\\b(results?|profit|revenue|earnings|merger|acqui|buyback|stake|ceo|chairman|board|resign|ipo|listing|dividend|bonus|demerger)",
+"short": "Companies"
+},
+{
+"id": "tech",
+"name": "Big tech, AI and chips",
+"ref": "global",
+"sectors": "IT services, semiconductors and electronics makers, data centres, telecom",
+"why": "Spending plans of the world's largest tech companies drive demand for Indian IT services and global sentiment.",
+"q": [
+"Nvidia Apple Microsoft AI spending",
+"artificial intelligence chips semiconductor",
+"Tesla SpaceX xAI Musk business",
+"Starlink India",
+"OpenAI",
+"Nvidia earnings OR stock"
+],
+"kw": "\\b(ai|artificial intelligence|nvidia|apple|microsoft|google|alphabet|amazon|meta|openai|tesla|chip|semiconductor|xai|spacex)\\b",
+"short": "Tech & AI"
+},
+{
+"id": "world",
+"name": "China and world markets",
+"ref": "global",
+"sectors": "Metals, chemicals, exporters; overall risk appetite",
+"why": "Integrated economies mean a problem in one region spreads; China drives global metal and commodity demand.",
+"q": [
+"China economy stimulus stocks",
+"global stock markets selloff OR rally",
+"Wall Street stocks close",
+"Wall Street stocks",
+"Asian markets",
+"China stocks"
+],
+"kw": "\\b(china|chinese|beijing|wall street|s&p|nasdaq|dow|nikkei|hang seng|global markets|stocks)\\b",
+"short": "China & world"
+},
+{
+"id": "ratings",
+"name": "Credit ratings and sovereign outlook",
+"ref": "corp",
+"sectors": "Banks and the whole market (foreign funding costs)",
+"why": "Rating changes for India or large companies change borrowing costs and foreign investors' appetite.",
+"q": [
+"Moody's OR Fitch OR S&P rating India",
+"credit rating downgrade upgrade company",
+"rating upgrade India",
+"rating downgrade"
+],
+"kw": "\\b(moody|fitch|s&p global ratings|rating|downgrade|upgrade|outlook)\\b",
+"short": "Ratings"
+},
+{
+"id": "other",
+"name": "Other market and business news",
+"short": "Other business",
+"ref": "eic",
+"sectors": "Varies",
+"why": "Business and market stories that do not fit the themes above.",
+"q": [
+"Sensex Nifty today",
+"stock market India",
+"Indian shares"
+],
+"kw": "\\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\\b|tesla|spacex|starlink|x\\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\\b|semiconductor|bank|price|growth|recession|imports?|exports?)"
+}
+],
+"sections": [
+[
+"BUSINESS",
+"IN"
+],
+[
+"WORLD",
+"IN"
+],
+[
+"NATION",
+"IN"
+],
+[
+"TECHNOLOGY",
+"IN"
+],
+[
+"BUSINESS",
+"US"
+],
+[
+"WORLD",
+"US"
+]
+],
+"owners": [
+[
+"Mukesh Ambani",
+"RELIANCE"
+],
+[
+"Gautam Adani",
+"ADANIENT"
+]
+],
+"days": 7
+}

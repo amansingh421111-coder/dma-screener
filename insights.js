@@ -23,7 +23,9 @@
 .in-sh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}.in-sh h3{font-size:19px;margin:0}.in-sh .px{font-size:20px;font-weight:700}
 .in-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
 .in-tally{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.in-lv{font-size:13px;color:var(--mute)}
-.nw-sec{margin-top:14px}.nw-lbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+.nw-sec{margin-top:14px}.nw-live{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin-right:6px}.nw-live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mute)}.nw-live.on{color:var(--buy)}.nw-live.on:before{background:var(--buy);box-shadow:0 0 0 3px var(--buy-bg)}
+.nw-rf{font:inherit;font-size:12px;margin-left:6px;border:1px solid var(--line);background:var(--card);color:var(--accent);border-radius:6px;padding:1px 8px;cursor:pointer}
+.nw-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:4px}.nw-seg button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mute);padding:5px 11px;cursor:pointer}.nw-seg button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}.nw-lbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
 .nw-list{list-style:none;margin:0;padding:0}.nw-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.nw-row:first-child{border-top:0}
 .nw-num{flex:0 0 22px;font-size:15px;font-weight:700;color:var(--mute);text-align:right;line-height:1.35}.nw-body{min-width:0;flex:1}
 .nw-t{color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;line-height:1.35}.nw-t:hover{text-decoration:underline}
@@ -38,8 +40,36 @@
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
 })();
 
-let INS = null, FUND = null, DEEPI = null, BSEU = null;
-const IV = { theme: "", who: "", tab: "market", sym: "", ex: "NSE", open: new Set(), nf: { market: "", global: "" }, chart: {}, news: {}, busy: false, err: "" };
+let INS = null, FUND = null, DEEPI = null, BSEU = null, LIVE = null, INAMES = null, CMATCH = null, LIVET = null;
+async function loadFeed(fresh) {
+  if (IV.feedBusy) return; IV.feedBusy = true; if (fresh) render();
+  try {
+    if (INAMES === null) { INAMES = {}; try { const r = await fetch("/names.json", { cache: "no-cache" }); if (r.ok) INAMES = await r.json(); } catch (e) {} CMATCH = inMatcher(INAMES); }
+    const r = await fetch("/api/dma?a=feed" + (fresh ? "&fresh=1" : "")), j = await r.json();
+    if (r.ok && j.themes) { LIVE = j; IV.feedErr = ""; } else IV.feedErr = j.error || "Live news unavailable.";
+  } catch (e) { IV.feedErr = "Live news unavailable."; }
+  IV.feedBusy = false; if (view_ === "ins") render(); inSchedule();
+}
+function inSchedule() {   // refresh while the tab is open: every 5 minutes in market hours, hourly otherwise
+  clearTimeout(LIVET); const m = LIVE && LIVE.refresh_min ? LIVE.refresh_min : 5;
+  LIVET = setTimeout(() => { if (view_ === "ins" && !document.hidden) { loadFeed(); MKT = null; loadMkt(); } else inSchedule(); }, m * 60000);
+}
+function inMatcher(names) {
+  const stop = new Set("india indian bank power energy capital finance industries global international national general united steel motors life money gold silver oil gas trade home first star sun".split(" "));
+  const P = [], firsts = new Set(), esc2 = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const [sym, nm] of Object.entries(names || {})) {
+    const base = nm.replace(/\b(limited|ltd\.?|company|corporation|corp\.?|co\.|inc\.?|\(india\)|india)\b/gi, "").replace(/^[\s.,&-]+|[\s.,&-]+$/g, "").replace(/\s+/g, " ");
+    const w = base.split(" ").filter(Boolean); let c = w.length >= 3 && w.slice(0, 2).join(" ").length < 9 ? w.slice(0, 3).join(" ") : w.length >= 2 ? w.slice(0, 2).join(" ") : base;
+    if (/ (of|&|and)$/.test(c)) c = w.slice(0, 3).join(" ");
+    if (c.length >= 5 && !stop.has(c.toLowerCase()) && !/ (of|&|and)$/.test(c)) P.push([sym, new RegExp("\\b" + esc2(c) + "\\b")]);
+    if (sym.length >= 3 && /^[A-Z]+$/.test(sym) && !stop.has(sym.toLowerCase())) P.push([sym, new RegExp("\\b" + sym + "\\b")]);
+    const generic = w.length >= 2 && /^(industries|enterprises|group|holdings|ventures)$/i.test(w[1]);
+    if (generic && w[0].length >= 5 && /^[A-Z]/.test(w[0]) && !firsts.has(w[0])) { firsts.add(w[0]); P.push([sym, new RegExp("\\b" + esc2(w[0]) + "\\b(?! (Power|Capital|Infra|Home|Retail|Securities|Finance))")]); }
+  }
+  return (t, who) => { const h = []; for (const [s, r] of P) if (!h.includes(s) && r.test(t)) h.push(s);
+    for (const [n, s] of (LIVE && LIVE.owners) || []) if ((who || []).includes(n) && names[s] && !h.includes(s)) h.push(s); return h.slice(0, 4); };
+}
+const IV = { theme: "", who: "", list: "top", allTheme: false, feedBusy: false, feedErr: "", tab: "market", sym: "", ex: "NSE", open: new Set(), nf: { market: "", global: "" }, chart: {}, news: {}, busy: false, err: "" };
 async function loadIns() {
   if (INS !== null) return; INS = {};
   try { const r = await fetch("/insights.json", { cache: "no-cache" }); if (r.ok) INS = await r.json(); } catch (e) {}
@@ -84,21 +114,26 @@ function inNewsList(items) {
 function inNF(k, t) { IV.nf[k] = t; render(); }
 function inStoryRow(x, num) {
   const also = x.also && x.also.length ? x.also.map((a) => a.s).join(", ") : "";
-  const co = (x.co || []).map((c) => `<button type="button" class="nw-co" onclick="inPick('${esc(c)}','NSE')">${esc(c)}</button>`).join("");
+  const cos = x.co && x.co.length ? x.co : CMATCH ? CMATCH(x.t, x.who) : [];
+  const co = cos.map((c) => `<button type="button" class="nw-co" onclick="inPick('${esc(c)}','NSE')">${esc(c)}</button>`).join("");
   return `<li class="nw-row">${num ? `<span class="nw-num">${num}</span>` : ""}<div class="nw-body"><a class="nw-t" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
   <div class="nw-meta"><span class="nw-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="${esc(also)}">${x.n} outlets</span>` : ""}</div>${x.tag || (x.who && x.who.length) || co ? `<div class="nw-meta nw-sub">${x.tag ? `<span>${esc(x.tag)}</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}${co ? `<span class="nw-cos">${co}</span>` : ""}</div>` : ""}</div></li>`;
 }
-function inNewsPro(N) {
-  if (!N || !N.themes) return "";
+function inNewsPro(N0) {
+  if (LIVE === null && !IV.feedBusy) loadFeed();
+  const N = LIVE || N0; if (!N || !N.themes) return `<div class="in-box"><h3>Market-moving news</h3><p class="m">${esc(IV.feedErr || "Loading live headlines…")}</p></div>`;
   const th = N.themes.filter((t) => t.stories.length), cur = th.find((t) => t.id === IV.theme) || th[0], nm = Object.fromEntries(N.themes.map((t) => [t.id, t.name]));
-  const top = (N.top || []).map((x, i) => inStoryRow(Object.assign({}, x, { tag: nm[x.th] }), i + 1)).join("");
-  let stories = cur ? cur.stories : [];
+  const lst = IV.list === "latest" ? N.latest || [] : N.top || [];
+  const top = lst.map((x, i) => inStoryRow(Object.assign({}, x, { tag: nm[x.th] }), IV.list === "latest" ? 0 : i + 1)).join("");
+  let stories = cur ? cur.stories : [], more = "";
   if (cur && cur.id === "people" && IV.who) stories = stories.filter((x) => (x.who || []).includes(IV.who));
-  const people = cur && cur.id === "people" && N.people && N.people.length ? `<div class="nw-people">${[["", "Everyone"]].concat(N.people.map((p) => [p.name, `${p.name} (${p.stories.length})`])).map(([k, l]) => `<button type="button" class="nw-pp${(IV.who || "") === k ? " on" : ""}" onclick="IV.who='${esc(k)}';render()">${esc(l)}</button>`).join("")}</div>` : "";
-  return `<div class="in-box nw"><div class="nw-hd"><div><h3>Market-moving news</h3><p class="m" style="margin:2px 0 0">Last ${N.days || 3} days from established outlets, grouped by how the news can reach share prices. Updated ${inAgo(N.updated)}.</p></div></div>
-  <div class="nw-sec"><div class="nw-lbl">Most widely reported</div><ol class="nw-list">${top || `<li class="m">No stories.</li>`}</ol></div>
-  <div class="nw-sec"><div class="nw-lbl">By theme</div><div class="nw-tabs" role="tablist">${th.map((t) => `<button role="tab" aria-selected="${t === cur}" class="nw-tab" onclick="IV.theme='${t.id}';IV.who='';render()" title="${esc(t.name)}">${esc(t.short || t.name)} <span>${t.stories.length}</span></button>`).join("")}</div>
-  ${cur ? `<div class="nw-panel"><div class="nw-why"><div><b>${esc(cur.name)}: how it reaches share prices.</b> ${esc(cur.why)}</div><div class="in-lv" style="margin-top:3px">Most exposed: ${esc(cur.sectors)}</div><div>${inRefBtn(cur.ref, "th-" + cur.id)}</div></div>${people}<ol class="nw-list">${stories.map((x) => inStoryRow(x)).join("")}</ol></div>` : ""}</div>
+  const people = cur && cur.id === "people" && N.people && N.people.length ? `<div class="nw-people">${[["", "Everyone"]].concat(N.people.map((p) => [p.name, `${p.name} (${p.n != null ? p.n : p.stories.length})`])).map(([k, l]) => `<button type="button" class="nw-pp${(IV.who || "") === k ? " on" : ""}" onclick="IV.who='${esc(k)}';IV.allTheme=false;render()">${esc(l)}</button>`).join("")}</div>` : "";
+  if (!IV.allTheme && stories.length > 12) { more = `<button type="button" class="btn sm" style="margin-top:8px" onclick="IV.allTheme=true;render()">Show all ${stories.length}${cur.total > stories.length ? " of " + cur.total : ""}</button>`; stories = stories.slice(0, 12); }
+  const status = N.live ? `<span class="nw-live${N.market_open ? " on" : ""}">${N.market_open ? "Live" : "Market closed"}</span> Updated ${inAgo(N.updated)} · refreshes every ${N.refresh_min === 60 ? "hour" : N.refresh_min + " minutes"}${N.market_open ? " during market hours" : " until the market opens"} · ${N.pool || 0} headlines from the last ${N.days} days <button type="button" class="nw-rf" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing…" : "Refresh"}</button>` : `Updated ${inAgo(N.updated)} (saved copy; live news unavailable${IV.feedErr ? ": " + esc(IV.feedErr) : ""})`;
+  return `<div class="in-box nw"><div class="nw-hd"><div><h3>Market-moving news</h3><p class="m" style="margin:2px 0 0">${status}</p></div></div>
+  <div class="nw-sec"><div class="nw-seg"><button type="button" aria-pressed="${IV.list !== "latest"}" onclick="IV.list='top';render()">Most widely reported (48 h)</button><button type="button" aria-pressed="${IV.list === "latest"}" onclick="IV.list='latest';render()">Latest</button></div><ol class="nw-list">${top || `<li class="m">No stories.</li>`}</ol></div>
+  <div class="nw-sec"><div class="nw-lbl">By theme</div><div class="nw-tabs" role="tablist">${th.map((t) => `<button role="tab" aria-selected="${t === cur}" class="nw-tab" onclick="IV.theme='${t.id}';IV.who='';IV.allTheme=false;render()" title="${esc(t.name)}">${esc(t.short || t.name)} <span>${t.total || t.stories.length}</span></button>`).join("")}</div>
+  ${cur ? `<div class="nw-panel"><div class="nw-why"><div><b>${esc(cur.name)}: how it reaches share prices.</b> ${esc(cur.why)}</div><div class="in-lv" style="margin-top:3px">Most exposed: ${esc(cur.sectors)}</div><div>${inRefBtn(cur.ref, "th-" + cur.id)}</div></div>${people}<ol class="nw-list">${stories.map((x) => inStoryRow(x)).join("")}</ol>${more}</div>` : ""}</div>
   <div class="nw-foot">${esc(N.note || "")} ${inRefBtn("emh", "n-emh")} ${inRefBtn("bias", "n-bias")}</div></div>`;
 }
 function inNewsNote() {
@@ -117,11 +152,15 @@ function renderIns() {
 function inTab(t) { IV.tab = t; if (t === "stock") loadFund(); render(); }
 
 function inMarket() {
-  const I = INS, R = I.readings || [];
+  if (MKT === null && !IV.mktBusy) loadMkt();
+  const I = INS, L = mkLive(), cov = (I.sectors || []).filter((x) => x.kind !== "index");
+  const R = L ? mkReadings(L.M, cov, I.breadth, LIVE) : I.readings || [];
+  const groupsSrc = L ? L.groups : I.groups || [], secSrc = L ? cov.concat(L.sidx) : I.sectors || [];
+  const asOf = L ? `Live prices (about 15 minutes delayed), updated ${inAgo(MKT.updated)}; they refresh every ${MKT.market_open ? "5 minutes during market hours" : "hour while the market is closed"}.` : `Prices from the last scheduled update (${inAgo(I.updated)}).`;
   const eic = `<div class="in-eic"><div><b>1. Economy and the world</b>Rates, currency, crude, global markets and politics</div><div><b>2. Sectors</b>Which industries are leading or lagging the Nifty 50</div><div><b>3. Companies</b>Open “A stock” for one company's readings</div></div>`;
-  const read = `<div class="in-box"><h3>Readings today</h3><p class="m">Each line is a fixed rule applied to the numbers below. “Supportive” or “Caution” is what the cited NISM text says such a reading usually indicates, not a forecast.</p>${inReadings(R, "m")}</div>`;
-  const grp = (I.groups || []).map((g) => `<div class="in-box"><h3>${esc(g.name)}</h3><div class="in-grid">${g.items.map(inTile).join("")}</div></div>`).join("");
-  const sec = (I.sectors || []).slice().sort((a, b) => (b.rel3 ?? -99) - (a.rel3 ?? -99));
+  const read = `<div class="in-box"><h3>Readings now</h3><p class="m">${asOf} Each line is a fixed rule applied to the numbers below. “Supportive” or “Caution” is what the cited NISM text says such a reading usually indicates, not a forecast.</p>${inReadings(R, "m")}</div>`;
+  const grp = groupsSrc.map((g) => `<div class="in-box"><h3>${esc(g.name)}</h3><div class="in-grid">${g.items.map(inTile).join("")}</div></div>`).join("");
+  const sec = secSrc.slice().sort((a, b) => (b.rel3 ?? -99) - (a.rel3 ?? -99));
   const secT = sec.length ? `<div class="in-box"><h3>Sectors against the Nifty 50</h3><p class="m">Relative strength: a sector's return minus the Nifty 50's over the same period; above zero means it did better than the index. “Covered stocks” rows use the median return of the covered companies in that sector (sector names from Yahoo Finance); “index” rows are NSE sector indices. ${inRefBtn("rsc", "s-rsc")}</p><div class="sx-w"><table class="sx2" style="min-width:620px"><thead><tr><th>Sector</th><th>Based on</th><th>1 month</th><th>3 months</th><th>vs Nifty, 1 month</th><th>vs Nifty, 3 months</th><th>Above 200-day average</th></tr></thead><tbody>${sec.map((x) => `<tr><td>${esc(x.name)}</td><td class="sx-mut">${x.kind === "index" ? "NSE index" : x.n + " covered stocks"}</td><td class="${inCl(x.m1)}">${inPct(x.m1)}</td><td class="${inCl(x.m3)}">${inPct(x.m3)}</td><td class="${inCl(x.rel1)}">${inPct(x.rel1)}</td><td class="${inCl(x.rel3)}">${inPct(x.rel3)}</td><td>${x.kind === "index" ? (x.vs200 == null ? "–" : (x.vs200 >= 0 ? "Yes, " : "No, ") + inPct(x.vs200)) : inNum(x.above200, 0) + "% of stocks"}</td></tr>`).join("")}</tbody></table></div></div>` : "";
   const mp = I.market_pe, br = I.breadth;
   const val = `<div class="in-box"><h3>Valuation and breadth</h3><div class="in-grid">${mp ? `<div class="in-t"><div class="nm">P/E of the ${mp.n} largest covered companies (combined)</div><div class="v">${inNum(mp.pe, 1)}</div><div class="ch">Earnings yield ${inNum(100 / mp.pe, 2)}%</div></div>` : ""}${br ? `<div class="in-t"><div class="nm">Covered stocks above their 200-day average</div><div class="v">${inNum(br.above200, 0)}%</div><div class="ch">Above 50-day: ${inNum(br.above50, 0)}% · ${br.n} stocks</div></div>` : ""}</div>
@@ -134,6 +173,71 @@ function inSources() {
   return `<div class="in-box"><h3>Where the readings come from</h3><p class="m">The rules on this page paraphrase these sections of the NISM certification workbooks you provided. Where a number has no NISM rule (India VIX, market breadth, the 52-week range), the page shows it as data only. Thresholds such as RSI 70/30, ADX 25, debt/equity 1 and PEG 1 are the ones the workbooks state.</p>
   <ul class="in-r">${Object.entries(R).map(([k, r]) => `<li><span class="in-tone neu">${esc(k)}</span><div><b>${esc(r.src)}</b><div class="in-says" style="border:0;padding-left:0">${esc(r.says)}</div></div></li>`).join("")}</ul></div>
   <div class="in-box"><h3>What this page is not</h3><p class="m" style="margin:0">Under SEBI's Research Analyst rules (NISM Series XV, Chapter 14), research reports and recommendations for others need a registered analyst, disclosures and conflict checks. This page only applies written rules to public numbers for your own use; it gives no price targets or buy/sell calls, and headlines are not verified.</p></div>`;
+}
+
+
+/* ---------- live market tiles and readings (same rules as insights.py, recomputed in the browser) ---------- */
+let MKT = null;
+const MK_NAMES = { "^NSEI": "Nifty 50", "^BSESN": "Sensex", "^NSEBANK": "Nifty Bank", "^NSEMDCP50": "Nifty Midcap 50", "^INDIAVIX": "India VIX", "^GSPC": "S&P 500 (US)", "^IXIC": "Nasdaq (US)",
+  "^FTSE": "FTSE 100 (UK)", "^GDAXI": "DAX (Germany)", "^N225": "Nikkei 225 (Japan)", "^HSI": "Hang Seng (Hong Kong)", "000001.SS": "Shanghai Composite (China)", "INR=X": "US dollar in rupees",
+  "DX-Y.NYB": "US dollar index", "BZ=F": "Brent crude ($ a barrel)", "GC=F": "Gold ($ an ounce)", "HG=F": "Copper ($ a pound)", "^TNX": "US 10-year bond yield (%)",
+  "^CNXIT": "IT", "^CNXAUTO": "Auto", "^CNXFMCG": "FMCG", "^CNXPHARMA": "Pharma", "^CNXMETAL": "Metal", "^CNXREALTY": "Realty", "^CNXENERGY": "Energy", "^CNXPSUBANK": "PSU banks", "^CNXINFRA": "Infrastructure", "^CNXMEDIA": "Media", "NIFTY_FIN_SERVICE.NS": "Financial services" };
+const MK_GROUPS = [["India", ["^NSEI", "^BSESN", "^NSEBANK", "^NSEMDCP50", "^INDIAVIX"]], ["World markets", ["^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS"]], ["Currency, commodities and rates", ["INR=X", "DX-Y.NYB", "BZ=F", "GC=F", "HG=F", "^TNX"]]];
+async function loadMkt() {
+  if (IV.mktBusy) return; IV.mktBusy = true;
+  try { const r = await fetch("/api/dma?a=mkt"), j = await r.json(); if (r.ok && j.series) MKT = j; } catch (e) {}
+  IV.mktBusy = false; if (view_ === "ins") render();
+}
+function mkStats(c) {
+  const n = c.length, L = c[n - 1], r2 = (x) => (x == null || !isFinite(x) ? null : Math.round(x * 10000) / 10000), ret = (k) => (n > k && c[n - 1 - k] ? r2((L / c[n - 1 - k] - 1) * 100) : null);
+  const m50 = inSma(c, 50), m200 = inSma(c, 200), y = c.slice(-252);
+  return { last: r2(L), d1: ret(1), w1: ret(5), m1: ret(21), m3: ret(63), y1: ret(252), vs50: n >= 50 ? r2((L / m50[n - 1] - 1) * 100) : null, vs200: n >= 200 ? r2((L / m200[n - 1] - 1) * 100) : null,
+    s200: n >= 221 ? r2((m200[n - 1] / m200[n - 21] - 1) * 100) : null, hi52: r2((L / Math.max(...y) - 1) * 100), lo52: r2((L / Math.min(...y) - 1) * 100), spark: c.slice(-60) };
+}
+function mkLive() {   // returns {M, groups, sectors} from the live series, or null
+  if (!MKT || !MKT.series) return null;
+  const M = {}; for (const x of MKT.series) if (x.c && x.c.length > 30) M[x.t] = Object.assign(mkStats(x.c), { date: x.d });
+  const ns = MKT.series.find((x) => x.t === "^NSEI");
+  if (ns) { const c = ns.c, up = [null], dn = [null]; for (let i = 1; i < c.length; i++) { const d = c[i] - c[i - 1]; up.push(Math.max(d, 0)); dn.push(Math.max(-d, 0)); }
+    const au = inEma(up, 14, 1 / 14), ad = inEma(dn, 14, 1 / 14), e12 = inEma(c, 12), e26 = inEma(c, 26), mc = c.map((_, i) => e12[i] - e26[i]), sg = inEma(mc, 9), n = c.length;
+    M._nifty = { rsi: ad[n - 1] ? 100 - 100 / (1 + au[n - 1] / ad[n - 1]) : null, macd: mc[n - 1], msig: sg[n - 1] }; }
+  const groups = MK_GROUPS.map(([name, ks]) => ({ name, items: ks.filter((k) => M[k]).map((k) => Object.assign({ k, name: MK_NAMES[k] }, M[k])) }));
+  const N = M["^NSEI"] || {};
+  const sidx = Object.keys(MK_NAMES).filter((k) => k.startsWith("^CNX") || k === "NIFTY_FIN_SERVICE.NS" || k === "^NSEBANK").filter((k) => M[k]).map((k) => ({ k, name: k === "^NSEBANK" ? "Banks" : MK_NAMES[k], kind: "index", m1: M[k].m1, m3: M[k].m3, vs200: M[k].vs200,
+    rel1: M[k].m1 != null && N.m1 != null ? M[k].m1 - N.m1 : null, rel3: M[k].m3 != null && N.m3 != null ? M[k].m3 - N.m3 : null }));
+  return { M, groups, sidx };
+}
+function mkReadings(M, sectCov, breadth, feed) {
+  const R = [], g = (k) => M[k] || {}, ob = (area, text, tone, ref) => R.push({ area, text, tone, ref }), f1 = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+  const n = g("^NSEI"), sx = g("^BSESN");
+  if (n.vs200 != null) { const up = n.vs200 > 0, ris = (n.s200 || 0) > 0, st = up && ris ? "uptrend (bull)" : !up && !ris ? "downtrend (bear)" : "mixed / sideways";
+    ob("Trend", `Nifty 50 is ${Math.abs(n.vs200).toFixed(1)}% ${up ? "above" : "below"} its 200-day average, and that average is ${ris ? "rising" : "falling"} (${f1(n.s200 || 0)}% over 20 days). By the moving-average test the primary trend reads as ${st}.`, up && ris ? "pos" : !up && !ris ? "neg" : "neu", "trend"); }
+  if (n.m1 != null && sx.m1 != null) ob("Trend", `Over one month the Nifty 50 moved ${f1(n.m1)}% and the Sensex ${f1(sx.m1)}%: ${(n.m1 >= 0) === (sx.m1 >= 0) ? "the two indices confirm each other" : "the two indices disagree, so the move is not confirmed"}.`, "neu", "dow");
+  const ni = M._nifty || {};
+  if (ni.rsi != null) { const r = ni.rsi; ob("Momentum", `Nifty 50 RSI (14) is ${r.toFixed(0)}. ` + (r > 70 ? "That is above 70, the usual overbought line." : r < 30 ? "That is below 30, the usual oversold line." : r < 44 ? "That is below the 44-45 zone that a bull market rarely falls under." : r > 55 ? "That is above the 50-55 zone that a bear market rarely rises over." : "That is in the middle band (44-55), which by itself does not separate a bull from a bear phase."), r < 44 ? "neg" : r > 55 ? "pos" : "neu", "rsi"); }
+  if (ni.macd != null) ob("Momentum", `Nifty 50 MACD is ${ni.macd > ni.msig ? "above" : "below"} its signal line and ${ni.macd > 0 ? "above" : "below"} zero.`, ni.macd > ni.msig && ni.macd > 0 ? "pos" : ni.macd < ni.msig && ni.macd < 0 ? "neg" : "neu", "macd");
+  if (breadth) ob("Breadth", `${Math.round(breadth.above200)}% of the ${breadth.n} covered stocks were above their 200-day average and ${Math.round(breadth.above50)}% above their 50-day average at the last close.`, breadth.above200 > 60 ? "pos" : breadth.above200 < 40 ? "neg" : "neu", null);
+  const rk = (sectCov || []).filter((x) => x.rel3 != null).sort((a, b) => b.rel3 - a.rel3);
+  if (rk.length >= 4) ob("Sectors", `Against the Nifty 50 over 3 months, the strongest sectors were ${rk.slice(0, 3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}; the weakest were ${rk.slice(-3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}.`, "neu", "rsc");
+  const b = g("BZ=F");
+  if (b.m1 != null) { const x = b.m1;
+    if (x >= 5) ob("Commodities", `Brent crude is up ${x.toFixed(1)}% in a month ($${b.last.toFixed(1)}). Rising crude raises input costs for users such as airlines, paints and logistics and helps oil producers; as an importer, India feels it in fuel prices and inflation.`, "neg", "commod_eq");
+    else if (x <= -5) ob("Commodities", `Brent crude is down ${Math.abs(x).toFixed(1)}% in a month ($${b.last.toFixed(1)}). Falling crude lowers input costs for users such as airlines, paints and logistics and squeezes oil producers; for an importer like India it eases fuel prices and inflation.`, "pos", "commod_eq");
+    else ob("Commodities", `Brent crude moved ${f1(x)}% in a month ($${b.last.toFixed(1)}), a modest change.`, "neu", "intl"); }
+  const u = g("INR=X");
+  if (u.m1 != null) { const x = u.m1;
+    ob("Currency", x >= 1 ? `The rupee weakened ${x.toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). A weaker rupee makes imports (crude, capital goods) dearer and helps exporters' rupee earnings.` : x <= -1 ? `The rupee strengthened ${Math.abs(x).toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). Imports get cheaper; exporters earn fewer rupees per dollar.` : `The rupee was steady against the dollar (${f1(x)}% in a month, ₹${u.last.toFixed(2)}).`, x >= 1 ? "neg" : x <= -1 ? "pos" : "neu", "cad"); }
+  const d = g("DX-Y.NYB"); if (d.m1 != null && Math.abs(d.m1) >= 1.5) ob("Currency", `The US dollar index ${d.m1 > 0 ? "rose" : "fell"} ${Math.abs(d.m1).toFixed(1)}% in a month. A ${d.m1 > 0 ? "stronger dollar usually weighs on" : "weaker dollar usually supports"} dollar-priced commodities.`, "neu", "dollar");
+  const au = g("GC=F"); if (au.m1 != null && Math.abs(au.m1) >= 4) ob("Commodities", `Gold ${au.m1 > 0 ? "rose" : "fell"} ${Math.abs(au.m1).toFixed(1)}% in a month ($${au.last.toFixed(0)}). Gold is the usual hedge investors turn to when inflation worries rise.`, "neu", "macro_ind");
+  const cu = g("HG=F"); if (cu.m1 != null && Math.abs(cu.m1) >= 5) ob("Commodities", `Copper ${cu.m1 > 0 ? "rose" : "fell"} ${Math.abs(cu.m1).toFixed(1)}% in a month. NISM reads a fall in copper as a possible sign of slowing industrial demand, weighing on metal and infrastructure stocks${cu.m1 > 0 ? "; a rise is the opposite reading" : ""}.`, cu.m1 > 0 ? "pos" : "neg", "commod_eq");
+  const t = g("^TNX"); if (t.last != null && t.m1 != null) ob("Global rates", `The US 10-year yield is ${t.last.toFixed(2)}% (${f1(t.last * t.m1 / (100 + t.m1) * 100).replace(".0", "")} basis points in a month). Foreign portfolio money, which NISM calls 'hot money' that can leave at any time, watches global rates.`, "neu", "fpi");
+  const gl = ["^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS"].map(g), dn = gl.filter((x) => (x.m1 || 0) <= -5).length, upn = gl.filter((x) => (x.m1 || 0) >= 5).length;
+  if (dn >= 3) ob("Global", `${dn} of 7 major world indices fell 5% or more in a month. Integrated economies mean trouble in one region spreads to others.`, "neg", "global");
+  else if (upn >= 3) ob("Global", `${upn} of 7 major world indices rose 5% or more in a month.`, "pos", "global");
+  const vx = g("^INDIAVIX"); if (vx.last != null) ob("Volatility", `India VIX (expected 30-day volatility of the Nifty) is ${vx.last.toFixed(1)}, ${f1(vx.m1 || 0).replace(/\.\d$/, "")}% in a month.`, (vx.m1 || 0) > 20 ? "neg" : "neu", null);
+  if (feed && feed.themes) { const cov = feed.themes.filter((x) => ["geo", "trade", "energy", "politics", "people"].includes(x.id)).map((x) => [x.name, x.day || 0]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (cov.length) ob("Geopolitics", `The busiest world themes in the last 24 hours: ${cov.map(([a, c]) => `${a.toLowerCase()} (${c} stories)`).join(", ")}. Conflicts in oil regions, sanctions and trade wars mainly reach Indian stocks through crude prices, the rupee and supply chains.`, "neu", "geo"); }
+  return R;
 }
 
 /* ---------- technical numbers computed in the browser (same formulas as insights.py) ---------- */

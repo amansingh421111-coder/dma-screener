@@ -1,0 +1,24 @@
+name: news-refresh
+# Keeps the live news and market prices fresh even when nobody has the page open.
+# The site itself decides how old is too old: 5 minutes while the market is open, 60 minutes otherwise.
+on:
+  schedule:
+    - cron: "*/5 3-10 * * 1-5"    # 08:30-16:25 IST, Monday to Friday: every 5 minutes
+    - cron: "17 * * * *"          # every hour, all days
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - run: |
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o feed.json || true
+          curl -s --max-time 60 "https://screenedstocks.vercel.app/api/dma?a=mkt" -o mkt.json || true
+          python3 - <<'P'
+          import json, sys
+          f = json.load(open("feed.json")); m = json.load(open("mkt.json"))
+          print("feed:", f.get("error") or f"{f.get('pool')} headlines, updated {f.get('updated')}, last fetch {f.get('last_fetch')}")
+          print("themes:", {t["short"]: t["total"] for t in f.get("themes", [])})
+          print("mkt:", m.get("error") or f"{len(m.get('series', []))} series, updated {m.get('updated')}")
+          sys.exit(0 if f.get("themes") and m.get("series") else 1)
+          P
