@@ -122,10 +122,11 @@ module.exports = async (req, res) => {
       const lock = await redis(["SET", "feed:lock", "1", "NX", "EX", 55]);
       if (!lock) return out ? send(res, { ...out, refreshing: true }) : send(res, { error: "Collecting headlines, try again in a minute." }, 503);
       try {
-        const pr = await redis(["GET", "feed:pool"]), k = await redis(["INCR", "feed:k"]);
-        const r = await FEED.refresh(pr ? JSON.parse(pr) : [], k);
+        const zlib = require("zlib"), pr = await redis(["GET", "feed:pool2"]), k = await redis(["INCR", "feed:k"]);
+        let old = []; try { if (pr) old = JSON.parse(zlib.inflateSync(Buffer.from(pr, "base64")).toString()); } catch (e) {}
+        const r = await FEED.refresh(old, k);
         if (r.answered > 0 || !out) {
-          await redis(["SET", "feed:pool", JSON.stringify(r.items)]);
+          await redis(["SET", "feed:pool2", zlib.deflateSync(JSON.stringify(r.items)).toString("base64")]);
           out = FEED.build(r.items); out.last_fetch = { requests: r.fetched, answered: r.answered, headlines: r.added };
           await redis(["SET", "feed:out", JSON.stringify(out)]);
         }

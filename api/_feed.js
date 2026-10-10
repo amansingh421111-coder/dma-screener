@@ -114,7 +114,7 @@ async function refresh(oldPool, k) {
     const key = x.t.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 80) + "|" + x.s;
     const prev = map.get(key); if (!prev || prev.o === "other") map.set(key, x);
   }
-  const items = [...map.values()].sort((a, b) => b.d - a.d).slice(0, 2000);
+  const items = [...map.values()].sort((a, b) => b.d - a.d).slice(0, 3500);
   return { items, fetched: tasks.length, answered: ok, added: fresh.length };
 }
 module.exports = { refresh, build, marketOpen };
