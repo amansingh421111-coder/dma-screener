@@ -123,10 +123,18 @@ def collect_news():
             except Exception as e: log.warning("feed %s: %s", f, str(e)[:80])
         seen, uniq = set(), []
         cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=5)).isoformat()
+        nowi = dt.datetime.now(dt.timezone.utc)
+        for x in items:   # some feeds label Indian time as UTC: a time in the future is shifted back by 5h30
+            try:
+                d_ = dt.datetime.fromisoformat(x["d"]) if x.get("d") else None
+                if d_ and d_ > nowi + dt.timedelta(minutes=10): x["d"] = (d_ - dt.timedelta(minutes=330)).isoformat()
+            except Exception: pass
         for x in sorted(items, key=lambda x: x.get("d") or "", reverse=True):
             key = re.sub(r"\W+", "", x["t"].lower())[:70]
             if key in seen or (x.get("d") and x["d"] < cutoff): continue
-            seen.add(key); x["g"] = tag(x["t"]); uniq.append(x)
+            x["g"] = tag(x["t"])
+            if k == "global" and not x["g"]: continue          # untagged world items are mostly unrelated noise
+            seen.add(key); uniq.append(x)
         out[k] = uniq[:60]
     return out
 
@@ -216,6 +224,18 @@ def one_fund(sym):
             o = {k: info.get(v) for k, v in FKEYS.items()}
             o = {k: (round(float(v), 4) if isinstance(v, (int, float)) and np.isfinite(v) else None) for k, v in o.items()}
             if o.get("de") is not None: o["de"] = round(o["de"] / 100, 3)       # Yahoo gives debt/equity in percent
+            if not o.get("dy"):   # Yahoo's trailing yield is often 0 for Indian stocks: fall back to the annual dividend rate / price
+                dr, px_ = info.get("dividendRate"), info.get("currentPrice") or info.get("regularMarketPrice")
+                o["dy"] = round(dr / px_, 4) if isinstance(dr, (int, float)) and isinstance(px_, (int, float)) and dr > 0 and px_ > 0 else None
+            try:
+                b = t.balance_sheet
+                if b is not None and not b.empty:
+                    col = sorted(b.columns)[-1]; g = lambda nm: float(b.loc[nm, col]) if nm in b.index and np.isfinite(b.loc[nm, col]) else None
+                    eq, ca, cl = g("Stockholders Equity") or g("Common Stock Equity"), g("Current Assets"), g("Current Liabilities")
+                    if o.get("roe") is None and eq and eq > 0 and o.get("ni") is not None: o["roe"], o["roe_src"] = round(o["ni"] / eq, 4), "profit / latest equity"
+                    if o.get("cr") is None and ca and cl and cl > 0: o["cr"] = round(ca / cl, 2)
+            except Exception: pass
+            if o.get("roe") is None and o.get("pe") and o.get("pb") and o["pe"] > 0 and o["pb"] > 0: o["roe"], o["roe_src"] = round(o["pb"] / o["pe"], 4), "P/B divided by P/E"
             o["sec"], o["ind"], o["name"] = info.get("sector"), info.get("industry"), info.get("longName") or info.get("shortName")
             try:
                 q = t.quarterly_income_stmt
@@ -403,7 +423,20 @@ def main():
     mpe = round(sum(o["mcap"] for _, o in big) / sum(o["ni"] for _, o in big), 1) if big and sum(o["ni"] for _, o in big) > 0 else None
     # 4. news
     news = collect_news()
-    readings = market_readings(M, sect, breadth, news)
+    if F and stocks and M.get("^NSEI"):
+        by = {}
+        for s_, o in stocks.items():
+            sec_ = (F.get(s_) or {}).get("sec")
+            if sec_: by.setdefault(sec_, []).append(o["t"])
+        nm1, nm3 = M["^NSEI"].get("m1"), M["^NSEI"].get("m3")
+        cov = []
+        for sec_, L in by.items():
+            if len(L) < 5: continue
+            m1_, m3_ = med([x.get("m1") for x in L]), med([x.get("m3") for x in L])
+            cov.append(dict(name=sec_, n=len(L), kind="stocks", m1=m1_, m3=m3_, rel1=None if m1_ is None or nm1 is None else round(m1_ - nm1, 2), rel3=None if m3_ is None or nm3 is None else round(m3_ - nm3, 2),
+                            above200=round(100 * np.mean([(x.get("vs200") or 0) > 0 for x in L]), 0)))
+        sect = cov + [dict(x, kind="index") for x in sect]
+    readings = market_readings(M, [x for x in sect if x.get("kind") != "index"] or sect, breadth, news)
     names = {s: (F.get(s) or {}).get("name") for s in stocks}
     out = dict(updated=now.isoformat(), price_date=(M.get("^NSEI") or {}).get("date"),
                groups=[dict(name="India", items=[dict(k=k, name=nm, **M[k]) for k, nm in INDIA if k in M]),
