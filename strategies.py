@@ -126,6 +126,65 @@ def s_ibs(df):
     return (ibs <= 0.2) & (c > sma(c, 200))
 def s_mom6(df): return MOMSIG.get(df.attrs.get("key"), pd.Series(False, index=df.index)).reindex(df.index, fill_value=False)
 
+# ---- indicator columns shown beside each stock that signals today (last bar only; pure arithmetic on the same prices) ----
+def _l(x):
+    try: v = float(x.iloc[-1]); return v if np.isfinite(v) else None
+    except Exception: return None
+def _vx(df): v = df["Volume"]; m = v.shift(1).rolling(20).mean(); return _l(v / m)
+def _atr(df, n=14):
+    h, l, c = df["High"], df["Low"], df["Close"]
+    return pd.concat([h - l, (h - c.shift(1)).abs(), (l - c.shift(1)).abs()], axis=1).max(axis=1).rolling(n).mean()
+IND = {
+ "chg": ("Day change", "pct", lambda d: _l(d["Close"] / d["Close"].shift(1) - 1)),
+ "vs20": ("vs 20-DMA", "pct", lambda d: _l(d["Close"] / sma(d["Close"], 20) - 1)),
+ "vs44": ("vs 44-DMA", "pct", lambda d: _l(d["Close"] / sma(d["Close"], 44) - 1)),
+ "vs50": ("vs 50-DMA", "pct", lambda d: _l(d["Close"] / sma(d["Close"], 50) - 1)),
+ "vs100": ("vs 100-DMA", "pct", lambda d: _l(d["Close"] / sma(d["Close"], 100) - 1)),
+ "vs200": ("vs 200-DMA", "pct", lambda d: _l(d["Close"] / sma(d["Close"], 200) - 1)),
+ "slope44": ("44-DMA, 5-day change", "pct", lambda d: _l(sma(d["Close"], 44) / sma(d["Close"], 44).shift(5) - 1)),
+ "gap2050": ("20-DMA vs 50-DMA", "pct", lambda d: _l(sma(d["Close"], 20) / sma(d["Close"], 50) - 1)),
+ "stretch20": ("Highest above 44-DMA, last 20d", "pct", lambda d: _l((d["Close"] / sma(d["Close"], 44) - 1).rolling(20).max())),
+ "rsi14": ("RSI (14)", "num", lambda d: _l(rsi(d["Close"]))),
+ "rsi2": ("RSI (2)", "num", lambda d: _l(rsi(d["Close"], 2))),
+ "vol_x": ("Volume vs 20-day avg", "x", _vx),
+ "brk20": ("Above prior 20-day high", "pct", lambda d: _l(d["Close"] / d["High"].shift(1).rolling(20).max() - 1)),
+ "brk55": ("Above prior 55-day high", "pct", lambda d: _l(d["Close"] / d["High"].shift(1).rolling(55).max() - 1)),
+ "brk40": ("Above prior 40-day close high", "pct", lambda d: _l(d["Close"] / d["Close"].shift(1).rolling(40).max() - 1)),
+ "brk252": ("Above prior 52-week high", "pct", lambda d: _l(d["Close"] / d["Close"].shift(1).rolling(252).max() - 1)),
+ "base_w": ("Base width (40d)", "pct", lambda d: _l(d["Close"].shift(1).rolling(40).max() / d["Close"].shift(1).rolling(40).min() - 1)),
+ "hi52": ("Below 52-week high", "pct", lambda d: _l(d["Close"] / d["Close"].rolling(252).max() - 1)),
+ "off_low": ("Above 52-week low", "pct", lambda d: _l(d["Close"] / d["Close"].rolling(252).min() - 1)),
+ "ret6m": ("6-month return", "pct", lambda d: _l(d["Close"] / d["Close"].shift(126) - 1)),
+ "ret5d": ("5-day change", "pct", lambda d: _l(d["Close"] / d["Close"].shift(5) - 1)),
+ "gap": ("Opened above yesterday's high", "pct", lambda d: _l(d["Open"] / d["High"].shift(1) - 1)),
+ "ibs": ("Close in day's range (0 low, 1 high)", "num", lambda d: _l((d["Close"] - d["Low"]) / (d["High"] - d["Low"]).replace(0, np.nan))),
+ "bb_pos": ("vs lower Bollinger band", "pct", lambda d: _l(d["Close"] / (sma(d["Close"], 20) - 2 * d["Close"].rolling(20).std()) - 1)),
+ "bw": ("Bollinger width", "pct", lambda d: _l(4 * d["Close"].rolling(20).std() / sma(d["Close"], 20))),
+ "adx": ("ADX (14)", "num", lambda d: _l(adx_di(d)[0])),
+ "atr": ("Daily range (ATR 14)", "pct", lambda d: _l(_atr(d) / d["Close"])),
+ "macd": ("MACD histogram", "num", lambda d: _l((ema(d["Close"], 12) - ema(d["Close"], 26)) - ema(ema(d["Close"], 12) - ema(d["Close"], 26), 9))),
+ "yr": ("Yesterday's range vs 20-day avg", "x", lambda d: _l((d["High"] - d["Low"]).shift(1) / (d["High"] - d["Low"]).rolling(20).mean())),
+ "yh": ("Close above yesterday's high", "pct", lambda d: _l(d["Close"] / d["High"].shift(1) - 1)),
+}
+IND_COLS = {
+ "dma44_cross": ["vs44", "slope44", "rsi14", "vol_x"], "dma44_zone": ["vs44", "slope44", "rsi14", "vol_x"], "dma44_pull": ["vs44", "stretch20", "rsi14", "vol_x"],
+ "ma_cross": ["gap2050", "vs200", "rsi14", "vol_x"], "pull50": ["vs50", "vs200", "rsi14", "vol_x"], "breakout": ["brk252", "vol_x", "rsi14", "chg"],
+ "base": ["brk40", "base_w", "vol_x", "rsi14"], "donchian": ["brk20", "vs100", "vol_x", "rsi14"], "momentum": ["ret6m", "hi52", "vs50", "rsi14"],
+ "squeeze": ["bw", "vs50", "vol_x", "rsi14"], "nr7": ["yr", "yh", "vs50", "vol_x"], "gapup": ["gap", "chg", "vol_x", "vs50"], "surge": ["vol_x", "chg", "vs50", "rsi14"],
+ "supertrend": ["vs100", "adx", "atr", "rsi14"], "macd": ["macd", "vs200", "rsi14", "vol_x"], "oversold": ["rsi14", "vs200", "ret5d", "vol_x"], "rsi2": ["rsi2", "vs200", "ret5d", "vol_x"],
+ "bolldip": ["bb_pos", "vs200", "rsi14", "ret5d"], "reversal": ["ret5d", "chg", "vs200", "vol_x"], "minervini": ["hi52", "off_low", "vs200", "vs50"],
+ "holygrail": ["adx", "vs20", "rsi14", "vol_x"], "pocketpivot": ["vol_x", "chg", "vs50", "rsi14"], "turtle55": ["brk55", "vol_x", "adx", "vs50"],
+ "mom6": ["ret6m", "vs200", "hi52", "vol_x"], "ibs": ["ibs", "vs200", "chg", "vol_x"],
+}
+def ind_values(sid, df):
+    out = []
+    for k in IND_COLS.get(sid, []):
+        try: v = IND[k][2](df)
+        except Exception: v = None
+        out.append(None if v is None else round(v * 100, 2) if IND[k][1] == "pct" else round(v, 2))
+    return out
+def ind_header(sid): return [dict(k=k, label=IND[k][0], fmt=IND[k][1]) for k in IND_COLS.get(sid, [])]
+
 # kind: "swing" (stops 5/8%, targets 10/15/20%, 40-day limit) or "short" (stops 4/6%, targets 5/8/12%, 15-day limit)
 STRATS = [
     dict(id="dma44_cross", name="44-DMA cross-up", kind="swing", fn=s_dma44_cross, rule="Close crosses above the 44-day average and finishes within 5% of it."),
@@ -542,7 +601,7 @@ def run(mode, top, years, cost):
                 elif tr and tr[-1]["exit"] == str(df.index[-1].date()): states[key][j] = "s"; todays[s["id"]]["exit"].append(sym)
             last_buy = bool(en.iloc[-1]) if len(en) else False
             if last_buy and states[key][j] != "h":
-                states[key][j] = "b"; todays[s["id"]]["buy"].append(dict(s=sym, c=round(float(df["Close"].iloc[-1]), 2)))
+                states[key][j] = "b"; todays[s["id"]]["buy"].append(dict(s=sym, c=round(float(df["Close"].iloc[-1]), 2), i=ind_values(s["id"], df)))
     out = dict(old) if mode == "states" else {}
     out.update(updated=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=price_date, official_date=bhav_day, stale=price_date < bhav_day, market=market,
                universe=f"Top {len(data)} NSE stocks by traded value", order=[s["id"] for s in STRATS], states={f"NSE:{k[:-3]}": "".join(v) for k, v in states.items()})
@@ -565,7 +624,7 @@ def run(mode, top, years, cost):
                                           exit=f"Sell at the target (+{g[1]}%), the stop loss (-{g[0]}%), or after {MAX_HOLD[s['kind']]} trading days, whichever comes first.",
                                           train=a, test=b, test_up=stats(ups, [t for t in inper(bk, split, "9999") if t["up"]]), test_down=stats(dns, [t for t in inper(bk, split, "9999") if t["up"] is False]), trail=trail_result(alltT[s["id"]], allbT[s["kind"]], split, inper), grid=table, robust=compute_robust(allt[s["id"]], allb[s["kind"]], g, split, order_idx, len(syms), cost), stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
     for s in out.get("strategies", []):
-        t = todays.get(s["id"], {}); p = s["params"]
+        t = todays.get(s["id"], {}); p = s["params"]; s["ind"] = ind_header(s["id"])
         buys = sorted(t.get("buy", []), key=lambda x: x["s"])
         s["today"] = dict(buy=[dict(x, stop=round(x["c"] * (1 - p["stop"] / 100), 2), target=round(x["c"] * (1 + p["target"] / 100), 2)) for x in buys[:60]], buy_n=len(buys),
                           exit=sorted(t.get("exit", []))[:40] if mode == "states" else s.get("today", {}).get("exit", []), hold_n=t.get("hold", 0) if mode == "states" else s.get("today", {}).get("hold_n", 0))
