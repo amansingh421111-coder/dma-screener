@@ -1,14 +1,16 @@
 name: snapshot
-# Saves the live news and market feed as a downloadable artifact (for checking the page design against real data).
+# Saves the live news and market feed to the "snapshot-data" branch (for checking the page design against real data).
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   s:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          mkdir snap
-          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o snap/feed.json
-          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=mkt" -o snap/mkt.json
-          ls -la snap
-      - uses: actions/upload-artifact@v4
-        with: { name: snap, path: snap, retention-days: 3 }
+          mkdir snap && cd snap
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o feed.json
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=mkt" -o mkt.json
+          git init -q -b snapshot-data && git config user.name dma-bot && git config user.email dma-bot@users.noreply.github.com
+          git add . && git commit -qm "snapshot [skip ci]"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" snapshot-data
