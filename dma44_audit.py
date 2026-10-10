@@ -148,14 +148,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--nse", type=int, default=2500); ap.add_argument("--bse", type=int, default=1200)
     ap.add_argument("--years", type=int, default=12); a = ap.parse_args()
     nse, bse, day = DD.universes(a.nse, a.bse); log.info("universe: %d NSE, %d BSE-only", len(nse), len(bse))
-    import time
-    got = S.adjusted_download([s + ".NS" for s in nse], a.years, budget=5400)
-    data, grp = {}, {}
-    for s in nse:
-        if s + ".NS" in got: data["NSE:" + s] = got[s + ".NS"]; grp["NSE:" + s] = "nse"
-    gb = S.adjusted_download([c + ".BO" for _, c, _ in bse], a.years, budget=3000)
-    for s, c, _ in bse:
-        if c + ".BO" in gb: data["BSE:" + s] = gb[c + ".BO"]; grp["BSE:" + s] = "bse"
+    data, grp = DD.fetch_all(nse, bse, a.years)   # BSE: by scrip code, then by symbol (same as the deep test)
     for k, d in data.items():
         if getattr(d.index, "tz", None) is not None: d.index = d.index.tz_localize(None)
     log.info("downloaded: %d NSE, %d BSE", sum(v == "nse" for v in grp.values()), sum(v == "bse" for v in grp.values()))
