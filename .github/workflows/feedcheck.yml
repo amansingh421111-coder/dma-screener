@@ -1,0 +1,18 @@
+name: feedcheck
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o /tmp/feed.json
+          python3 -c "
+          import json;f=json.load(open('/tmp/feed.json'))
+          out={'updated':f.get('updated'),'pool':f.get('pool'),'last_fetch':f.get('last_fetch'),'themes':{t['short']:t['total'] for t in f.get('themes',[])},'people':f.get('people'),
+               'top':[(x['n'],x['s'],x['t']) for x in f.get('top',[])],'musk':[(x['s'],x['d'],x['t']) for t in f.get('themes',[]) if t['id']=='people' for x in t['stories'] if 'Elon Musk' in (x.get('who') or [])]}
+          open('feedcheck.json','w').write(json.dumps(out,indent=1))"
+          git config user.name dma-bot; git config user.email dma-bot@users.noreply.github.com
+          git add feedcheck.json; git commit -qm "feed check"; git push -q
