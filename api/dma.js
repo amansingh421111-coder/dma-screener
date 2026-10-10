@@ -63,9 +63,66 @@ async function newSession(name, sv) {
 }
 const checkPw = (pw) => (typeof pw !== "string" || pw.length < 8 ? "Password must be at least 8 characters." : pw.length > 128 ? "Password is too long." : null);
 
+
+// ---- public market data helpers (no account needed; rate limited per IP; cached) ----
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36";
+const NEWS_TAGS = [["Results", /\b(q[1-4]|quarter|results?|earnings|profit|revenue|net loss|ebitda)\b/], ["Corporate action", /\b(dividend|bonus|split|buyback|merger|demerger|acquisition|acquire|stake)\b/],
+  ["Orders / deals", /\b(order|contract|deal|wins?|bags?)\b/], ["Ratings / brokers", /\b(rating|upgrade|downgrade|target price|brokerage|buy call|sell call)\b/],
+  ["Regulator", /\b(sebi|regulator|penalty|ban|probe|nclt|court)\b/], ["IPO / fundraise", /\b(ipo|qip|listing|fund ?rais|rights issue|ofs)\b/],
+  ["Management", /\b(ceo|cfo|md|chairman|resign|appoint)\b/], ["Promoter / pledge", /\b(promoter|pledge)\b/]];
+const unesc = (s) => String(s || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").trim();
+function parseRss(xml) {
+  const out = [];
+  for (const it of String(xml).match(/<item\b[\s\S]*?<\/item>/gi) || []) {
+    const g = (k) => { const m = it.match(new RegExp(`<${k}\\b[^>]*>([\\s\\S]*?)</${k}>`, "i")); return m ? m[1] : ""; };
+    let t = unesc(g("title")); const u = unesc(g("link")), src = unesc(g("source")); const d = new Date(unesc(g("pubDate")));
+    if (src && t.endsWith(" - " + src)) t = t.slice(0, -src.length - 3);
+    if (t && /^https?:\/\//.test(u)) out.push({ t: t.slice(0, 220), u: u.slice(0, 600), s: src.slice(0, 60), d: isNaN(d) ? null : d.toISOString(), g: NEWS_TAGS.filter(([, rx]) => rx.test(t.toLowerCase())).map(([n]) => n).slice(0, 3) });
+  }
+  return out;
+}
+
 module.exports = async (req, res) => {
   try {
     const a = req.query.a;
+
+
+    if (a === "news" || a === "chart") {
+      if (!(await rl(`rl:${a}:` + clientIp(req), a === "news" ? 200 : 300, 3600))) return send(res, { error: "Too many requests this hour. Try again later." }, 429);
+      if (a === "news") {
+        const q = String(req.query.q || "").replace(/[^\w &.'\-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+        if (q.length < 2) return send(res, { error: "Enter a company name." }, 400);
+        const key = "news:" + sha(q.toLowerCase()), hit = await redis(["GET", key]);
+        if (hit) return send(res, JSON.parse(hit));
+        const u = new URL("https://news.google.com/rss/search");
+        u.searchParams.set("q", q + " when:14d"); u.searchParams.set("hl", "en-IN"); u.searchParams.set("gl", "IN"); u.searchParams.set("ceid", "IN:en");
+        try {
+          const r = await fetch(u, { headers: { "user-agent": UA } });
+          if (!r.ok) return send(res, { error: "News source returned " + r.status }, 502);
+          const items = parseRss(await r.text()).sort((x, y) => String(y.d).localeCompare(String(x.d))).slice(0, 25);
+          const out = { q, items, fetched: new Date().toISOString(), source: "Google News search (last 14 days)" };
+          await redis(["SET", key, JSON.stringify(out), "EX", 1200]);
+          return send(res, out);
+        } catch (e) { return send(res, { error: "Could not reach the news source." }, 502); }
+      }
+      const t = String(req.query.t || "").toUpperCase();
+      if (!/^[A-Z0-9&\-^_=]{1,25}(\.NS|\.BO)?$/.test(t)) return send(res, { error: "Bad ticker." }, 400);
+      const key = "chart:" + t, hit = await redis(["GET", key]);
+      if (hit) return send(res, JSON.parse(hit));
+      try {
+        const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d&events=split`, { headers: { "user-agent": UA } });
+        const j = await r.json(); const R = j && j.chart && j.chart.result && j.chart.result[0];
+        if (!R || !R.timestamp) return send(res, { error: "No price history for " + t + "." }, 404);
+        const q = R.indicators.quote[0], adj = (R.indicators.adjclose && R.indicators.adjclose[0].adjclose) || q.close;
+        const out = { t, name: (R.meta && (R.meta.longName || R.meta.shortName)) || null, dates: [], o: [], h: [], l: [], c: [], v: [] };
+        R.timestamp.forEach((ts, i) => {
+          const c = q.close[i]; if (c == null || !(c > 0)) return; const f = adj[i] != null && c ? adj[i] / c : 1, r2 = (x) => (x == null ? null : Math.round(x * f * 100) / 100);
+          out.dates.push(new Date((ts + 19800) * 1000).toISOString().slice(0, 10)); out.o.push(r2(q.open[i])); out.h.push(r2(q.high[i])); out.l.push(r2(q.low[i])); out.c.push(r2(c)); out.v.push(q.volume[i] || 0);
+        });
+        await redis(["SET", key, JSON.stringify(out), "EX", 1800]);
+        return send(res, out);
+      } catch (e) { return send(res, { error: "Could not reach the price source." }, 502); }
+    }
 
     // Diagnostics (no secrets returned) and one-tap webhook registration
     if (a === "health" || a === "setup") {

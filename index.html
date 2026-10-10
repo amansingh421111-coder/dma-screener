@@ -341,6 +341,7 @@ table.sx th{vertical-align:bottom}
 </section>
 
 <section id="vStrat" hidden></section>
+<section id="vIns" hidden></section>
 <section id="vPos" hidden>
 <div class="fm" id="authcard" hidden>
 <h3 id="atitle">Log in to see your positions</h3>
@@ -423,9 +424,10 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.16</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.17</span></footer>
 
 </main>
+<script src="insights.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const NAMES={bullish:"Bullish candle",bearish:"Bearish candle",doji:"Doji, undecided",hammer:"Hammer",shooting_star:"Shooting star"};
@@ -1221,15 +1223,15 @@ function healthLine(H){const n=v=>Number(v||0).toLocaleString("en-IN"),x=H.xchec
  if(x)parts.push(`NSE vs BSE cross-check: ${n(x.pairs)} stocks, ${x.mismatch?`<b class="neg">${x.mismatch} differ by over 0.5%</b>`:"all within 0.5%"}`);
  return parts.join(" · ")}
 let view_="screen";
-function go(v){location.hash=v==="pos"?"#positions":v==="strat"?"#strategies":"#screener";route()}
-function route(){view_=location.hash==="#positions"?"pos":location.hash==="#strategies"?"strat":"screen";if(view_==="strat")loadStrat();render()}
+function go(v){location.hash=v==="pos"?"#positions":v==="strat"?"#strategies":v==="ins"?"#insights":"#screener";route()}
+function route(){view_=location.hash==="#positions"?"pos":location.hash==="#strategies"?"strat":location.hash==="#insights"?"ins":"screen";if(view_==="strat")loadStrat();if(view_==="ins"){loadIns();loadStrat()}render()}
 function render(){
  const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · ${data.price_date?`prices as of ${new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"})} · `:""}updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
  $("health").innerHTML=data.health?healthLine(data.health):"";
- $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button>`;
- $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";
- if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else renderStrat()}
+ $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button><button class="seg" aria-pressed="${view_==="ins"}" onclick="go('ins')">Insights</button>`;
+ $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";$("vIns").hidden=view_!=="ins";
+ if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else if(view_==="ins")renderIns();else renderStrat()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 $("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
 addEventListener("hashchange",route);matchMedia("(max-width:760px)").addEventListener("change",render);
