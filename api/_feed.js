@@ -63,7 +63,7 @@ function cluster(items) {
   return st;
 }
 const rank = (a, b) => Math.min(b.out.length, 6) - Math.min(a.out.length, 6) || b.d - a.d;
-const strip = (s, th) => { const o = { t: s.t, u: s.u, s: s.s, d: new Date(s.d).toISOString(), n: s.out.length, also: s.out.filter((a) => a.s !== s.s).slice(0, 5) }; if (s.who && s.who.length) o.who = s.who; if (th) o.th = th; return o; };
+const strip = (s, th) => { const o = { t: s.t, u: s.u, s: s.s, d: new Date(s.d).toISOString(), n: s.out.length, also: [...new Set(s.out.filter((a) => a.s !== s.s).map((a) => a.s))].slice(0, 6) }; if (s.who && s.who.length) o.who = s.who; if (th) o.th = th; return o; };
 
 function build(items) {
   const now = Date.now(), cut = now - CFG.days * 864e5, by = {};
@@ -74,7 +74,7 @@ function build(items) {
     if (hit.length) hit.slice(0, 2).forEach((t) => by[t.id].push(x));
     else if (MARKET.test(x.t) && (x.o === "BUSINESS" || x.o === "other" || /^(corporate|world|fx|energy|rates|macro)$/.test(x.o))) by.other.push(x);
   }
-  const themes = [], all = [];
+  const themes = [], all = [], full = {}, every = new Map();
   for (const t of THEMES) {
     let st = cluster(by[t.id]);
     if (t.people) st.forEach((s) => (s.who = PEOPLE.filter(([, r]) => r.test(s.t)).map(([n]) => n).slice(0, 2)));
@@ -83,7 +83,11 @@ function build(items) {
     const day = st.filter((s) => now - s.d < 864e5).length;
     themes.push({ id: t.id, name: t.name, short: t.short, why: t.why, ref: t.ref, sectors: t.sectors, total: st.length, day, stories: st.slice(0, 30).map((s) => strip(s)) });
     st.slice(0, 30).forEach((s) => all.push({ s, th: t.id }));
+    full[t.id] = st.map((s) => strip(s));
+    st.forEach((s) => { if (!every.has(s.u)) every.set(s.u, strip(s, t.id)); });
   }
+  // every story of the last 7 days, newest first (served on request, not in the main feed)
+  full.all = [...every.values()].sort((a, b) => b.d.localeCompare(a.d)).slice(0, 1200);
   // top stories: last 48 hours, most outlets first; a story found under two themes counts once
   const top = [], seen = [];
   for (const { s, th } of all.filter((x) => now - x.s.d < 2 * 864e5).sort((a, b) => rank(a.s, b.s))) {
@@ -98,7 +102,7 @@ function build(items) {
   const people = {};
   const pt = themes.find((t) => t.id === "people");
   if (pt) for (const s of pt.stories) for (const w of s.who || []) (people[w] = people[w] || []).push(s);
-  return { updated: new Date(now).toISOString(), live: true, market_open: marketOpen(), refresh_min: marketOpen() ? 5 : 60, days: CFG.days, pool: items.length,
+  return { updated: new Date(now).toISOString(), live: true, market_open: marketOpen(), refresh_min: marketOpen() ? 5 : 60, days: CFG.days, pool: items.length, stories_total: every.size, full,
     top, latest, themes, people: Object.entries(people).map(([name, st]) => ({ name, n: st.length })).sort((a, b) => b.n - a.n), owners: CFG.owners,
     note: "Collected from Google News (searches plus its Business, World, India and Technology sections), limited to a fixed list of established outlets, grouped when several outlets carry the same story, and ranked by how many outlets carry it and how recent it is. Headlines are kept for 7 days and topped up on every refresh. Posts on X or Truth Social appear when these outlets report them. Headlines are not summarised or checked." };
 }

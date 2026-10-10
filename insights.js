@@ -1,49 +1,17 @@
-/* Insights tab: market and stock readings tied to the NISM workbook sections they come from.
-   Data: /insights.json (market, sectors, world, headlines), /fund.json (covered stocks: technical + financial numbers),
-   /api/dma?a=chart (price history for any other stock), /api/dma?a=news (live headlines for one company).
-   Readings describe numbers and what the cited NISM text says such numbers usually indicate. No buy/sell verdicts. */
-(function () {
-  const css = `
-.in-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end;margin:4px 0 12px}.in-head h2{margin:0;font-size:20px}.in-head p{margin:4px 0 0;color:var(--mute);font-size:13.5px;max-width:860px}
-.in-tabs{display:flex;gap:6px;flex-wrap:wrap}.chip.on,.chip[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
-.in-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}.in-box h3{margin:0 0 4px;font-size:15.5px}.in-box>p.m{margin:0 0 10px}
-.in-eic{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.in-eic div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--card);font-size:13px}.in-eic b{display:block;font-size:13.5px}
-.in-r{list-style:none;margin:0;padding:0}.in-r li{display:grid;grid-template-columns:118px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.45}.in-r li:first-child{border-top:0}
-.in-tone{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;text-align:center;align-self:start;white-space:nowrap}.in-tone.pos{background:var(--buy-bg);color:var(--buy)}.in-tone.neg{background:var(--sell-bg);color:var(--sell)}.in-tone.neu{background:var(--line);color:var(--mute)}
-.in-area{font-size:11.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px}
-.in-ref{display:inline-block;margin-top:4px;font-size:12px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-align:left;font:inherit;font-size:12px}
-.in-says{margin-top:5px;font-size:12.5px;color:var(--mute);border-left:3px solid var(--line);padding:4px 0 4px 9px}
-.in-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}.in-t{border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--card)}
-.in-t .nm{font-size:12.5px;color:var(--mute)}.in-t .v{font-size:17px;font-weight:700;margin:2px 0}.in-t .ch{font-size:12px;display:flex;gap:8px;flex-wrap:wrap}.in-t svg{display:block;width:100%;height:30px;margin-top:4px}
-.in-news{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}.in-n{list-style:none;margin:0;padding:0}.in-n li{padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.4}.in-n li:first-child{border-top:0}
-.in-n a{color:var(--ink);text-decoration:none;font-weight:500}.in-n a:hover{text-decoration:underline}.in-n .mt{font-size:12px;color:var(--mute);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.in-tag{font-size:11px;padding:1px 7px;border-radius:99px;background:var(--line);color:var(--mute)}
-.in-note{font-size:12.5px;color:var(--mute);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px}
-.in-search{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}.in-search input{flex:1;min-width:180px;width:auto}.in-search select{width:auto;flex:0 0 auto}.in-search .btn{flex:0 0 auto}.in-quick{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
-.in-sh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}.in-sh h3{font-size:19px;margin:0}.in-sh .px{font-size:20px;font-weight:700}
-.in-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
-.in-tally{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.in-lv{font-size:13px;color:var(--mute)}
-.nw-links{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:5px}.nw-lt{font-size:11.5px;color:var(--mute);margin-right:2px}
-.nw-lk{font:inherit;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:1px 7px;cursor:pointer}.nw-lk.ix{color:var(--accent)}.nw-lk b{font-weight:600}
-.nw-tn{font:inherit;font-size:11.5px;border:0;background:none;color:var(--accent);padding:0;margin-top:4px;cursor:pointer}.nw-filter{margin-top:10px;font-size:13px;background:var(--bg);border-radius:8px;padding:8px 10px}
-.nw-badge{display:inline-block;font:inherit;font-size:11px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--accent);border-radius:6px;padding:0 6px;margin-left:6px;cursor:pointer;vertical-align:middle}
-.nw-sec{margin-top:14px}.nw-live{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin-right:6px}.nw-live:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mute)}.nw-live.on{color:var(--buy)}.nw-live.on:before{background:var(--buy);box-shadow:0 0 0 3px var(--buy-bg)}
-.nw-rf{font:inherit;font-size:12px;margin-left:6px;border:1px solid var(--line);background:var(--card);color:var(--accent);border-radius:6px;padding:1px 8px;cursor:pointer}
-.nw-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:4px}.nw-seg button{font:inherit;font-size:12.5px;border:0;background:var(--card);color:var(--mute);padding:5px 11px;cursor:pointer}.nw-seg button[aria-pressed=true]{background:var(--accent);color:#fff;font-weight:600}.nw-lbl{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
-.nw-list{list-style:none;margin:0;padding:0}.nw-row{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.nw-row:first-child{border-top:0}
-.nw-num{flex:0 0 22px;font-size:15px;font-weight:700;color:var(--mute);text-align:right;line-height:1.35}.nw-body{min-width:0;flex:1}
-.nw-t{color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;line-height:1.35}.nw-t:hover{text-decoration:underline}
-.nw-meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:12px;color:var(--mute)}.nw-meta>span+span:before{content:"·";margin-right:10px;opacity:.6}.nw-sub{margin-top:1px;opacity:.9}.nw-src{font-weight:600;color:var(--ink);opacity:.8}
-.nw-cos{display:inline-flex;gap:4px}.nw-co{font:inherit;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--accent);border-radius:6px;padding:0 6px;cursor:pointer}
-.nw-tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:thin}.nw-tab{font:inherit;font-size:13px;white-space:nowrap;background:none;border:0;border-bottom:2px solid transparent;color:var(--mute);padding:8px 10px;cursor:pointer}
-.nw-tab span{font-size:11.5px;opacity:.7;margin-left:3px}.nw-tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-.nw-panel{padding-top:10px}.nw-why{font-size:13px;background:var(--bg);border-radius:8px;padding:9px 11px;margin-bottom:6px;line-height:1.45}
-.nw-people{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0 2px}.nw-pp{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:3px 9px;cursor:pointer}.nw-pp.on{border-color:var(--accent);color:var(--accent);font-weight:600}
-.nw-foot{margin-top:12px;font-size:12px;color:var(--mute);border-top:1px solid var(--line);padding-top:9px;line-height:1.5}
-@media(max-width:600px){.nw-num{flex-basis:16px;font-size:13.5px}.nw-t{font-size:14px}.in-r li{grid-template-columns:1fr;gap:4px}.in-r li .in-tone{justify-self:start}.in-eic{grid-template-columns:1fr}.in-cols{grid-template-columns:1fr}.in-news{grid-template-columns:1fr}}`;
-  const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
-})();
+/* Insights tab: a market desk. Live market tape, top stories linked to indices and stocks, a news desk by theme,
+   market tables and readings, and a page per stock. Readings apply fixed rules to public numbers and cite the NISM
+   workbook section each rule paraphrases. No buy/sell verdicts, no price targets.
+   Data: /api/dma?a=feed (live news), /api/dma?a=mkt (live prices), /insights.json, /fund.json, /names.json,
+   /api/dma?a=chart (price history for any stock), /api/dma?a=news (headlines for one company).
+   Styles live in app.css. */
+const IV = { view: "overview", theme: "all", who: "", list: "top", linkF: "", stab: "summary", secPer: "rel3", secSrc: "index", shown: 30,
+  feedBusy: false, feedErr: "", mktBusy: false, sym: "", ex: "NSE", open: new Set(), chart: {}, news: {}, busy: false, err: "", full: {} };
+const TONE = { pos: "Supportive", neg: "Caution", neu: "Neutral" };
+const TAPE = ["^NSEI", "^BSESN", "^NSEBANK", "^INDIAVIX", "INR=X", "BZ=F", "GC=F", "^TNX"];
+const TAPE_NM = { "^NSEI": "Nifty 50", "^BSESN": "Sensex", "^NSEBANK": "Bank Nifty", "^INDIAVIX": "India VIX", "INR=X": "USD/INR", "BZ=F": "Brent crude", "GC=F": "Gold", "^TNX": "US 10-year" };
+const ixN = (v) => Number(v || 0).toLocaleString("en-IN");
 
+/* ===================== data loading, linking, numbers ===================== */
 let INS = null, FUND = null, DEEPI = null, BSEU = null, LIVE = null, INAMES = null, CMATCH = null, LIVET = null;
 async function loadFeed(fresh) {
   if (IV.feedBusy) return; IV.feedBusy = true; if (fresh) render();
@@ -73,7 +41,7 @@ function inMatcher(names) {
   return (t, who) => { const h = []; for (const [s, r] of P) if (!h.includes(s) && r.test(t)) h.push(s);
     for (const [n, s] of (LIVE && LIVE.owners) || []) if ((who || []).includes(n) && names[s] && !h.includes(s)) h.push(s); return h.slice(0, 4); };
 }
-const IV = { theme: "", who: "", list: "top", allTheme: false, feedBusy: false, feedErr: "", tab: "market", sym: "", ex: "NSE", open: new Set(), nf: { market: "", global: "" }, chart: {}, news: {}, busy: false, err: "" };
+
 async function loadIns() {
   if (INS !== null) return; INS = {};
   try { const r = await fetch("/insights.json", { cache: "no-cache" }); if (r.ok) INS = await r.json(); } catch (e) {}
@@ -85,102 +53,11 @@ async function loadFund() {
   try { const r = await fetch("/dma44_deep.json", { cache: "no-cache" }); if (r.ok) DEEPI = await r.json(); } catch (e) {}
   render();
 }
+
 const inNum = (v, d = 1) => (v == null || !isFinite(v) ? "–" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }));
-const inPct = (v, d = 1) => (v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%");
+const inPct = (v, d = 1) => { if (v == null || !isFinite(v)) return "–"; const a = Math.abs(v).toFixed(d); return (+a === 0 ? "" : v > 0 ? "+" : "−") + a + "%"; };
 const inCl = (v) => (v == null ? "" : v > 0 ? "sx-pos" : v < 0 ? "sx-neg" : "");
 const inAgo = (iso) => { if (!iso) return ""; const m = (Date.now() - new Date(iso)) / 6e4; return m < 60 ? Math.max(1, Math.round(m)) + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
-const TONE = { pos: "Supportive", neg: "Caution", neu: "Neutral" };
-function inRefBtn(key, id) {
-  const R = (INS && INS.refs) || {}, r = R[key]; if (!r) return "";
-  const open = IV.open.has(id);
-  return `<button type="button" class="in-ref" onclick="inTog('${id}')">${esc(r.src)} ${open ? "▴" : "▾"}</button>${open ? `<div class="in-says">What it says: ${esc(r.says)}</div>` : ""}`;
-}
-function inTog(id) { IV.open.has(id) ? IV.open.delete(id) : IV.open.add(id); render(); }
-function inReadings(list, pre) {
-  if (!list.length) return `<p class="m">No readings.</p>`;
-  return `<ul class="in-r">${list.map((x, i) => `<li><span class="in-tone ${x.tone}">${TONE[x.tone] || "Neutral"}</span><div>${x.area ? `<span class="in-area">${esc(x.area)}</span>` : ""}${x.html || esc(x.text)}${x.ref ? `<div>${inRefBtn(x.ref, pre + i)}</div>` : x.src ? `<div class="in-lv">${esc(x.src)}</div>` : `<div class="in-lv">Data only; no NISM rule is attached to this number.</div>`}</div></li>`).join("")}</ul>`;
-}
-function inSpark(a) {
-  if (!a || a.length < 2) return ""; const mn = Math.min(...a), mx = Math.max(...a), w = 100, h = 30, k = (mx - mn) || 1;
-  const pts = a.map((v, i) => `${(i / (a.length - 1) * w).toFixed(1)},${(h - 2 - (v - mn) / k * (h - 4)).toFixed(1)}`).join(" ");
-  const up = a[a.length - 1] >= a[0];
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${up ? "var(--buy)" : "var(--sell)"}" stroke-width="1.6" points="${pts}" vector-effect="non-scaling-stroke"/></svg>`;
-}
-function inTile(x) {
-  const lv = x.k === "^TNX" ? inNum(x.last, 2) + "%" : x.k === "INR=X" ? "₹" + inNum(x.last, 2) : inNum(x.last, x.last < 100 ? 2 : 0);
-  return `<div class="in-t"><div class="nm">${esc(x.name)}</div><div class="v">${lv}</div><div class="ch"><span class="${inCl(x.d1)}">Day ${inPct(x.d1)}</span><span class="${inCl(x.m1)}">1M ${inPct(x.m1)}</span><span class="${inCl(x.y1)}">1Y ${inPct(x.y1)}</span></div>
-  <div class="ch" style="margin-top:2px"><span class="sx-mut">${x.vs200 == null ? "" : (x.vs200 >= 0 ? "Above" : "Below") + " 200-day avg (" + inPct(x.vs200) + ")"}</span></div>${inSpark(x.spark)}${(() => { const n = LIVE ? inCountFor("i:" + x.k) : 0; return n ? `<button type="button" class="nw-tn" onclick="inLinkF('i:${x.k}')">${n} linked ${n === 1 ? "story" : "stories"} →</button>` : ""; })()}</div>`;
-}
-function inNewsList(items) {
-  const shown = (items || []).slice(0, 25);
-  return shown.length ? `<ol class="nw-list">${shown.map((x) => inStoryRow({ t: x.t, u: x.u, s: x.s, d: x.d, n: 1, tag: (x.g || []).join(" · ") })).join("")}</ol>` : `<p class="m">No headlines in the last 14 days.</p>`;
-}
-function inNF(k, t) { IV.nf[k] = t; render(); }
-function inStoryRow(x, num) {
-  const also = x.also && x.also.length ? x.also.map((a) => a.s).join(", ") : "";
-  const cos = [];
-  const co = cos.map((c) => `<button type="button" class="nw-co" onclick="inPick('${esc(c)}','NSE')">${esc(c)}</button>`).join("");
-  return `<li class="nw-row">${num ? `<span class="nw-num">${num}</span>` : ""}<div class="nw-body"><a class="nw-t" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
-  <div class="nw-meta"><span class="nw-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="${esc(also)}">${x.n} outlets</span>` : ""}</div>${x.tag || (x.who && x.who.length) || co ? `<div class="nw-meta nw-sub">${x.tag ? `<span>${esc(x.tag)}</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}</div>` : ""}${inLinkChips(x)}</div></li>`;
-}
-function inNewsPro(N0) {
-  if (LIVE === null && !IV.feedBusy) loadFeed();
-  const N = LIVE || N0; if (!N || !N.themes) return `<div class="in-box"><h3>Market-moving news</h3><p class="m">${esc(IV.feedErr || "Loading live headlines…")}</p></div>`;
-  const th = N.themes.filter((t) => t.stories.length), cur = th.find((t) => t.id === IV.theme) || th[0], nm = Object.fromEntries(N.themes.map((t) => [t.id, t.name]));
-  const lf = IV.linkF || "", lfName = lf ? (lf.startsWith("i:") ? MK_NAMES[lf.slice(2)] || lf.slice(2) : lf.slice(2)) : "";
-  const lst = lf ? inAllStories().filter((x) => inStoryMatchesLink(x, lf)).sort((a, b) => (b.d || "").localeCompare(a.d || "")).slice(0, 40) : IV.list === "latest" ? N.latest || [] : N.top || [];
-  const top = lst.map((x, i) => inStoryRow(Object.assign({}, x, { tag: nm[x.th] }), IV.list === "latest" || lf ? 0 : i + 1)).join("");
-  let stories = cur ? cur.stories : [], more = "";
-  if (cur && cur.id === "people" && IV.who) stories = stories.filter((x) => (x.who || []).includes(IV.who));
-  const people = cur && cur.id === "people" && N.people && N.people.length ? `<div class="nw-people">${[["", "Everyone"]].concat(N.people.map((p) => [p.name, `${p.name} (${p.n != null ? p.n : p.stories.length})`])).map(([k, l]) => `<button type="button" class="nw-pp${(IV.who || "") === k ? " on" : ""}" onclick="IV.who='${esc(k)}';IV.allTheme=false;render()">${esc(l)}</button>`).join("")}</div>` : "";
-  if (!IV.allTheme && stories.length > 12) { more = `<button type="button" class="btn sm" style="margin-top:8px" onclick="IV.allTheme=true;render()">Show all ${stories.length}${cur.total > stories.length ? " of " + cur.total : ""}</button>`; stories = stories.slice(0, 12); }
-  const status = N.live ? `<span class="nw-live${N.market_open ? " on" : ""}">${N.market_open ? "Live" : "Market closed"}</span> Updated ${inAgo(N.updated)} · refreshes every ${N.refresh_min === 60 ? "hour" : N.refresh_min + " minutes"}${N.market_open ? " during market hours" : " until the market opens"} · ${N.pool || 0} headlines from the last ${N.days} days <button type="button" class="nw-rf" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing…" : "Refresh"}</button>` : `Updated ${inAgo(N.updated)} (saved copy; live news unavailable${IV.feedErr ? ": " + esc(IV.feedErr) : ""})`;
-  return `<div class="in-box nw"><div class="nw-hd"><div><h3>Market-moving news</h3><p class="m" style="margin:2px 0 0">${status}</p></div></div>
-  ${lf ? `<div class="nw-filter">Showing ${lst.length} stories linked to <b>${esc(lfName)}</b>, newest first <button type="button" class="nw-rf" onclick="inLinkF('')">Show all news</button></div>` : ""}
-  <div class="nw-sec"><div class="nw-seg"${lf ? " hidden" : ""}><button type="button" aria-pressed="${IV.list !== "latest"}" onclick="IV.list='top';render()">Most widely reported (48 h)</button><button type="button" aria-pressed="${IV.list === "latest"}" onclick="IV.list='latest';render()">Latest</button></div><ol class="nw-list">${top || `<li class="m">No stories.</li>`}</ol></div>
-  <div class="nw-sec"><div class="nw-lbl">By theme</div><div class="nw-tabs" role="tablist">${th.map((t) => `<button role="tab" aria-selected="${t === cur}" class="nw-tab" onclick="IV.theme='${t.id}';IV.who='';IV.allTheme=false;render()" title="${esc(t.name)}">${esc(t.short || t.name)} <span>${t.total || t.stories.length}</span></button>`).join("")}</div>
-  ${cur ? `<div class="nw-panel"><div class="nw-why"><div><b>${esc(cur.name)}: how it reaches share prices.</b> ${esc(cur.why)}</div><div class="in-lv" style="margin-top:3px">Most exposed: ${esc(cur.sectors)}</div><div>${inRefBtn(cur.ref, "th-" + cur.id)}</div></div>${people}<ol class="nw-list">${stories.map((x) => inStoryRow(x)).join("")}</ol>${more}</div>` : ""}</div>
-  <div class="nw-foot">${esc(N.note || "")} ${inRefBtn("emh", "n-emh")} ${inRefBtn("bias", "n-bias")}</div></div>`;
-}
-function inNewsNote() {
-  return `<div class="in-note">Headlines are collected automatically and tagged by keywords; they are not checked or summarised. Two NISM points worth keeping in mind: news that is already public is quickly reflected in prices (semi-strong efficiency), and reading only the headlines that agree with you is confirmation bias. ${inRefBtn("emh", "n-emh")} ${inRefBtn("bias", "n-bias")}</div>`;
-}
-
-function renderIns() {
-  const el = $("vIns"); if (!el) return;
-  if (INS === null) { loadIns(); el.innerHTML = `<div class="empty">Loading…</div>`; return; }
-  const tabs = `<div class="in-tabs"><button class="chip" aria-pressed="${IV.tab === "market"}" onclick="inTab('market')">Market</button><button class="chip" aria-pressed="${IV.tab === "stock"}" onclick="inTab('stock')">A stock</button><button class="chip" aria-pressed="${IV.tab === "src"}" onclick="inTab('src')">Where the readings come from</button></div>`;
-  const head = `<div class="in-head"><div><h2>Market and stock insights</h2><p>Numbers, headlines and rule-based readings. Every reading names the NISM workbook section its rule comes from; tap the reference to see what that section says. This is a personal research aid, not a research report or a recommendation.${INS.updated ? ` Market data updated ${new Date(INS.updated).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })} IST.` : ""}</p></div>${tabs}</div>`;
-  if (!INS.groups) { el.innerHTML = head + `<div class="empty">No market data yet. It is built by the “insights” workflow on GitHub (weekday mornings and evenings).</div>`; return; }
-  el.innerHTML = head + (IV.tab === "market" ? inMarket() : IV.tab === "stock" ? inStock() : inSources());
-  const tb = el.querySelector('.nw-tab[aria-selected="true"]'); if (tb) tb.parentElement.scrollLeft = Math.max(0, tb.offsetLeft - 24);
-}
-function inTab(t) { IV.tab = t; if (t === "stock") loadFund(); render(); }
-
-function inMarket() {
-  if (MKT === null && !IV.mktBusy) loadMkt();
-  const I = INS, L = mkLive(), cov = (I.sectors || []).filter((x) => x.kind !== "index");
-  const R = L ? mkReadings(L.M, cov, I.breadth, LIVE) : I.readings || [];
-  const groupsSrc = L ? L.groups : I.groups || [], secSrc = L ? cov.concat(L.sidx) : I.sectors || [];
-  const asOf = L ? `Live prices (about 15 minutes delayed), updated ${inAgo(MKT.updated)}; they refresh every ${MKT.market_open ? "5 minutes during market hours" : "hour while the market is closed"}.` : `Prices from the last scheduled update (${inAgo(I.updated)}).`;
-  const eic = `<div class="in-eic"><div><b>1. Economy and the world</b>Rates, currency, crude, global markets and politics</div><div><b>2. Sectors</b>Which industries are leading or lagging the Nifty 50</div><div><b>3. Companies</b>Open “A stock” for one company's readings</div></div>`;
-  const read = `<div class="in-box"><h3>Readings now</h3><p class="m">${asOf} Each line is a fixed rule applied to the numbers below. “Supportive” or “Caution” is what the cited NISM text says such a reading usually indicates, not a forecast.</p>${inReadings(R, "m")}</div>`;
-  const grp = groupsSrc.map((g) => `<div class="in-box"><h3>${esc(g.name)}</h3><div class="in-grid">${g.items.map(inTile).join("")}</div></div>`).join("");
-  const sec = secSrc.slice().sort((a, b) => (b.rel3 ?? -99) - (a.rel3 ?? -99));
-  const secT = sec.length ? `<div class="in-box"><h3>Sectors against the Nifty 50</h3><p class="m">Relative strength: a sector's return minus the Nifty 50's over the same period; above zero means it did better than the index. “Covered stocks” rows use the median return of the covered companies in that sector (sector names from Yahoo Finance); “index” rows are NSE sector indices. ${inRefBtn("rsc", "s-rsc")}</p><div class="sx-w"><table class="sx2" style="min-width:620px"><thead><tr><th>Sector</th><th>Based on</th><th>1 month</th><th>3 months</th><th>vs Nifty, 1 month</th><th>vs Nifty, 3 months</th><th>Above 200-day average</th><th>Linked news</th></tr></thead><tbody>${sec.map((x) => `<tr><td>${esc(x.name)}</td><td class="sx-mut">${x.kind === "index" ? "NSE index" : x.n + " covered stocks"}</td><td class="${inCl(x.m1)}">${inPct(x.m1)}</td><td class="${inCl(x.m3)}">${inPct(x.m3)}</td><td class="${inCl(x.rel1)}">${inPct(x.rel1)}</td><td class="${inCl(x.rel3)}">${inPct(x.rel3)}</td><td>${x.kind === "index" ? (x.vs200 == null ? "–" : (x.vs200 >= 0 ? "Yes, " : "No, ") + inPct(x.vs200)) : inNum(x.above200, 0) + "% of stocks"}</td><td>${(() => { const k = x.kind === "index" ? x.k : SEC_IDX[x.name]; const n = k && LIVE ? inCountFor("i:" + k) : 0; return n ? `<button type="button" class="nw-tn" style="margin:0" onclick="inLinkF('i:${k}')">${n} stories</button>` : "–"; })()}</td></tr>`).join("")}</tbody></table></div></div>` : "";
-  const mp = I.market_pe, br = I.breadth;
-  const val = `<div class="in-box"><h3>Valuation and breadth</h3><div class="in-grid">${mp ? `<div class="in-t"><div class="nm">P/E of the ${mp.n} largest covered companies (combined)</div><div class="v">${inNum(mp.pe, 1)}</div><div class="ch">Earnings yield ${inNum(100 / mp.pe, 2)}%</div></div>` : ""}${br ? `<div class="in-t"><div class="nm">Covered stocks above their 200-day average</div><div class="v">${inNum(br.above200, 0)}%</div><div class="ch">Above 50-day: ${inNum(br.above50, 0)}% · ${br.n} stocks</div></div>` : ""}</div>
-  <p class="m" style="margin-top:8px">NISM compares equity earnings or dividend yields with bond yields: when equity yields are well above bond yields, equities are cheap, and in bull markets they fall below bond yields. Compare the earnings yield above with the current 10-year government bond yield. ${inRefBtn("dy", "v-dy")}</p></div>`;
-  return eic + read + inNewsPro(I.news) + grp + secT + val;
-}
-
-function inSources() {
-  const R = (INS && INS.refs) || {};
-  return `<div class="in-box"><h3>Where the readings come from</h3><p class="m">The rules on this page paraphrase these sections of the NISM certification workbooks you provided. Where a number has no NISM rule (India VIX, market breadth, the 52-week range), the page shows it as data only. Thresholds such as RSI 70/30, ADX 25, debt/equity 1 and PEG 1 are the ones the workbooks state.</p>
-  <ul class="in-r">${Object.entries(R).map(([k, r]) => `<li><span class="in-tone neu">${esc(k)}</span><div><b>${esc(r.src)}</b><div class="in-says" style="border:0;padding-left:0">${esc(r.says)}</div></div></li>`).join("")}</ul></div>
-  <div class="in-box"><h3>What this page is not</h3><p class="m" style="margin:0">Under SEBI's Research Analyst rules (NISM Series XV, Chapter 14), research reports and recommendations for others need a registered analyst, disclosures and conflict checks. This page only applies written rules to public numbers for your own use; it gives no price targets or buy/sell calls, and headlines are not verified.</p></div>`;
-}
-
 
 /* ---------- linking headlines to indices, sectors and stocks (fixed keyword rules, shown on the page) ---------- */
 // Short names used in headlines -> NSE symbol
@@ -236,17 +113,10 @@ function inPx(sym) {   // latest move for a stock: screener price (15-minute del
   const n = INAMES && INAMES[sym]; return Array.isArray(n) ? n[2] : null;
 }
 function inIdxPx(k) { const L = MKT && MKT.series && MKT.series.find((x) => x.t === k); if (!L || L.c.length < 2) return null; const c = L.c; return (c[c.length - 1] / c[c.length - 2] - 1) * 100; }
-function inLinkChips(x) {
-  const L = inLinks(x); if (!L.sym.length && !L.idx.length) return "";
-  const ch = (v) => (v == null ? "" : ` <b class="${inCl(v)}">${inPct(v)}</b>`);
-  const idx = L.idx.map((k) => `<button type="button" class="nw-lk ix" onclick="inLinkF('i:${k}')" title="Show stories linked to ${esc(MK_NAMES[k] || k)}">${esc(MK_NAMES[k] || k)}${ch(inIdxPx(k))}</button>`).join("");
-  const st = L.sym.map((s) => `<button type="button" class="nw-lk" onclick="inPick('${esc(s)}','NSE')" title="Open ${esc(s)}">${esc(s)}${ch(inPx(s))}</button>`).join("");
-  return `<div class="nw-links"><span class="nw-lt">${L.why.length ? "Linked via " + esc(L.why.join(", ")) : "Named in the headline"}:</span>${idx}${st}</div>`;
-}
-function inLinkF(k) { IV.linkF = IV.linkF === k ? "" : k; IV.list = IV.list || "top"; render(); const e = document.querySelector(".nw"); if (e) e.scrollIntoView({ block: "start" }); }
 function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.sym.includes(f.slice(2)); }
 function inAllStories() { const N = LIVE || (INS && INS.news); if (!N || !N.themes) return []; const seen = new Set(), out = []; for (const t of N.themes) for (const s of t.stories) if (!seen.has(s.u)) { seen.add(s.u); out.push(Object.assign({ th: t.id }, s)); } return out; }
 function inCountFor(f) { return inAllStories().filter((x) => inStoryMatchesLink(x, f)).length; }
+
 
 /* ---------- live market tiles and readings (same rules as insights.py, recomputed in the browser) ---------- */
 let MKT = null;
@@ -279,38 +149,7 @@ function mkLive() {   // returns {M, groups, sectors} from the live series, or n
     rel1: M[k].m1 != null && N.m1 != null ? M[k].m1 - N.m1 : null, rel3: M[k].m3 != null && N.m3 != null ? M[k].m3 - N.m3 : null }));
   return { M, groups, sidx };
 }
-function mkReadings(M, sectCov, breadth, feed) {
-  const R = [], g = (k) => M[k] || {}, ob = (area, text, tone, ref) => R.push({ area, text, tone, ref }), f1 = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
-  const n = g("^NSEI"), sx = g("^BSESN");
-  if (n.vs200 != null) { const up = n.vs200 > 0, ris = (n.s200 || 0) > 0, st = up && ris ? "uptrend (bull)" : !up && !ris ? "downtrend (bear)" : "mixed / sideways";
-    ob("Trend", `Nifty 50 is ${Math.abs(n.vs200).toFixed(1)}% ${up ? "above" : "below"} its 200-day average, and that average is ${ris ? "rising" : "falling"} (${f1(n.s200 || 0)}% over 20 days). By the moving-average test the primary trend reads as ${st}.`, up && ris ? "pos" : !up && !ris ? "neg" : "neu", "trend"); }
-  if (n.m1 != null && sx.m1 != null) ob("Trend", `Over one month the Nifty 50 moved ${f1(n.m1)}% and the Sensex ${f1(sx.m1)}%: ${(n.m1 >= 0) === (sx.m1 >= 0) ? "the two indices confirm each other" : "the two indices disagree, so the move is not confirmed"}.`, "neu", "dow");
-  const ni = M._nifty || {};
-  if (ni.rsi != null) { const r = ni.rsi; ob("Momentum", `Nifty 50 RSI (14) is ${r.toFixed(0)}. ` + (r > 70 ? "That is above 70, the usual overbought line." : r < 30 ? "That is below 30, the usual oversold line." : r < 44 ? "That is below the 44-45 zone that a bull market rarely falls under." : r > 55 ? "That is above the 50-55 zone that a bear market rarely rises over." : "That is in the middle band (44-55), which by itself does not separate a bull from a bear phase."), r < 44 ? "neg" : r > 55 ? "pos" : "neu", "rsi"); }
-  if (ni.macd != null) ob("Momentum", `Nifty 50 MACD is ${ni.macd > ni.msig ? "above" : "below"} its signal line and ${ni.macd > 0 ? "above" : "below"} zero.`, ni.macd > ni.msig && ni.macd > 0 ? "pos" : ni.macd < ni.msig && ni.macd < 0 ? "neg" : "neu", "macd");
-  if (breadth) ob("Breadth", `${Math.round(breadth.above200)}% of the ${breadth.n} covered stocks were above their 200-day average and ${Math.round(breadth.above50)}% above their 50-day average at the last close.`, breadth.above200 > 60 ? "pos" : breadth.above200 < 40 ? "neg" : "neu", null);
-  const rk = (sectCov || []).filter((x) => x.rel3 != null).sort((a, b) => b.rel3 - a.rel3);
-  if (rk.length >= 4) ob("Sectors", `Against the Nifty 50 over 3 months, the strongest sectors were ${rk.slice(0, 3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}; the weakest were ${rk.slice(-3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}.`, "neu", "rsc");
-  const b = g("BZ=F");
-  if (b.m1 != null) { const x = b.m1;
-    if (x >= 5) ob("Commodities", `Brent crude is up ${x.toFixed(1)}% in a month ($${b.last.toFixed(1)}). Rising crude raises input costs for users such as airlines, paints and logistics and helps oil producers; as an importer, India feels it in fuel prices and inflation.`, "neg", "commod_eq");
-    else if (x <= -5) ob("Commodities", `Brent crude is down ${Math.abs(x).toFixed(1)}% in a month ($${b.last.toFixed(1)}). Falling crude lowers input costs for users such as airlines, paints and logistics and squeezes oil producers; for an importer like India it eases fuel prices and inflation.`, "pos", "commod_eq");
-    else ob("Commodities", `Brent crude moved ${f1(x)}% in a month ($${b.last.toFixed(1)}), a modest change.`, "neu", "intl"); }
-  const u = g("INR=X");
-  if (u.m1 != null) { const x = u.m1;
-    ob("Currency", x >= 1 ? `The rupee weakened ${x.toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). A weaker rupee makes imports (crude, capital goods) dearer and helps exporters' rupee earnings.` : x <= -1 ? `The rupee strengthened ${Math.abs(x).toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). Imports get cheaper; exporters earn fewer rupees per dollar.` : `The rupee was steady against the dollar (${f1(x)}% in a month, ₹${u.last.toFixed(2)}).`, x >= 1 ? "neg" : x <= -1 ? "pos" : "neu", "cad"); }
-  const d = g("DX-Y.NYB"); if (d.m1 != null && Math.abs(d.m1) >= 1.5) ob("Currency", `The US dollar index ${d.m1 > 0 ? "rose" : "fell"} ${Math.abs(d.m1).toFixed(1)}% in a month. A ${d.m1 > 0 ? "stronger dollar usually weighs on" : "weaker dollar usually supports"} dollar-priced commodities.`, "neu", "dollar");
-  const au = g("GC=F"); if (au.m1 != null && Math.abs(au.m1) >= 4) ob("Commodities", `Gold ${au.m1 > 0 ? "rose" : "fell"} ${Math.abs(au.m1).toFixed(1)}% in a month ($${au.last.toFixed(0)}). Gold is the usual hedge investors turn to when inflation worries rise.`, "neu", "macro_ind");
-  const cu = g("HG=F"); if (cu.m1 != null && Math.abs(cu.m1) >= 5) ob("Commodities", `Copper ${cu.m1 > 0 ? "rose" : "fell"} ${Math.abs(cu.m1).toFixed(1)}% in a month. NISM reads a fall in copper as a possible sign of slowing industrial demand, weighing on metal and infrastructure stocks${cu.m1 > 0 ? "; a rise is the opposite reading" : ""}.`, cu.m1 > 0 ? "pos" : "neg", "commod_eq");
-  const t = g("^TNX"); if (t.last != null && t.m1 != null) ob("Global rates", `The US 10-year yield is ${t.last.toFixed(2)}% (${f1(t.last * t.m1 / (100 + t.m1) * 100).replace(".0", "")} basis points in a month). Foreign portfolio money, which NISM calls 'hot money' that can leave at any time, watches global rates.`, "neu", "fpi");
-  const gl = ["^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS"].map(g), dn = gl.filter((x) => (x.m1 || 0) <= -5).length, upn = gl.filter((x) => (x.m1 || 0) >= 5).length;
-  if (dn >= 3) ob("Global", `${dn} of 7 major world indices fell 5% or more in a month. Integrated economies mean trouble in one region spreads to others.`, "neg", "global");
-  else if (upn >= 3) ob("Global", `${upn} of 7 major world indices rose 5% or more in a month.`, "pos", "global");
-  const vx = g("^INDIAVIX"); if (vx.last != null) ob("Volatility", `India VIX (expected 30-day volatility of the Nifty) is ${vx.last.toFixed(1)}, ${f1(vx.m1 || 0).replace(/\.\d$/, "")}% in a month.`, (vx.m1 || 0) > 20 ? "neg" : "neu", null);
-  if (feed && feed.themes) { const cov = feed.themes.filter((x) => ["geo", "trade", "energy", "politics", "people"].includes(x.id)).map((x) => [x.name, x.day || 0]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    if (cov.length) ob("Geopolitics", `The busiest world themes in the last 24 hours: ${cov.map(([a, c]) => `${a.toLowerCase()} (${c} stories)`).join(", ")}. Conflicts in oil regions, sanctions and trade wars mainly reach Indian stocks through crude prices, the rupee and supply chains.`, "neu", "geo"); }
-  return R;
-}
+
 
 /* ---------- technical numbers computed in the browser (same formulas as insights.py) ---------- */
 function inSma(a, n) { const o = new Array(a.length).fill(null); let s = 0; for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; if (i >= n - 1) o[i] = s / n; } return o; }
@@ -344,6 +183,7 @@ function inTech(S, nifty) {
   }
   return o;
 }
+
 
 /* ---------- readings for one stock ---------- */
 function inStockReadings(t, f, sm, mpe, sym) {
@@ -386,7 +226,7 @@ function inDeepLine() {
 
 async function inPick(sym, ex) {
   sym = String(sym || "").trim().toUpperCase(); if (!sym) return;
-  IV.sym = sym; IV.ex = ex === "BSE" ? "BSE" : "NSE"; IV.err = ""; IV.tab = "stock"; loadFund(); render();
+  IV.sym = sym; IV.ex = ex === "BSE" ? "BSE" : "NSE"; IV.err = ""; IV.view = "stocks"; loadFund(); render();
   const key = IV.ex + ":" + sym, inF = FUND && FUND.stocks && IV.ex === "NSE" && FUND.stocks[sym];
   if (!inF && !IV.chart[key]) {
     IV.busy = true; render();
@@ -420,46 +260,310 @@ function inName(sym) {
   const q = (typeof data !== "undefined" && data.signals || []).find((x) => x.symbol === sym); return q && q.name || null;
 }
 
-function inStock() {
-  if (FUND === null) { loadFund(); return `<div class="empty">Loading…</div>`; }
-  const syms = Object.keys((FUND && FUND.stocks) || {});
-  const hold = (typeof openPos === "function" ? openPos() : []).map((p) => [p.symbol, p.exchange]);
-  const wl = (typeof WL !== "undefined" && Array.isArray(WL) ? WL : []).map((w) => [w.symbol, w.exchange]);
-  const quick = (lbl, arr) => (arr.length ? `<div class="in-quick"><span class="in-lv" style="align-self:center">${lbl}:</span>${arr.slice(0, 20).map(([s, e]) => `<button class="chip" aria-pressed="${IV.sym === s && IV.ex === (e || "NSE")}" onclick="inPick('${esc(s)}','${e || "NSE"}')">${esc(s)}${e === "BSE" ? " (BSE)" : ""}</button>`).join("")}</div>` : "");
-  const box = `<div class="in-box"><div class="in-search"><input id="in-q" list="in-syms" placeholder="Type a symbol, e.g. RELIANCE" autocapitalize="characters" autocomplete="off" onkeydown="if(event.key==='Enter')inPick(this.value,document.getElementById('in-ex').value)"><datalist id="in-syms">${syms.slice(0, 1200).map((s) => `<option value="${esc(s)}">`).join("")}</datalist><select id="in-ex" aria-label="Exchange"><option${IV.ex === "NSE" ? " selected" : ""}>NSE</option><option${IV.ex === "BSE" ? " selected" : ""}>BSE</option></select><button class="btn pri" onclick="inPick(document.getElementById('in-q').value,document.getElementById('in-ex').value)">Show</button></div>
-  ${quick("My holdings", hold)}${quick("Watchlist", wl)}<p class="m" style="margin:6px 0 0">${esc((FUND && FUND.universe) || "")} have technical and financial numbers ready${FUND && FUND.fund_updated ? ` (financials from ${new Date(FUND.fund_updated).toLocaleDateString("en-IN", { day: "numeric", month: "short" })})` : ""}. Any other NSE or BSE stock gets technical numbers fetched live.</p></div>`;
-  if (!IV.sym) return box + `<div class="empty">Pick a stock to see its readings.</div>`;
-  const key = IV.ex + ":" + IV.sym, pre = IV.ex === "NSE" && FUND.stocks ? FUND.stocks[IV.sym] : null, live = IV.chart[key];
-  const t = pre ? pre.t : live ? live.t : null, f = IV.ex === "NSE" && FUND.fund ? FUND.fund[IV.sym] : null;
-  if (!t && IV.busy) return box + `<div class="empty">Fetching ${esc(IV.sym)}…</div>`;
-  if (!t && !f) return box + `<div class="empty">${esc(IV.err || "No data for " + IV.sym + ".")}</div>`;
-  const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = inStockReadings(t, f, FUND.sector_med, mpe, IV.sym), all = R.T.concat(R.F);
-  const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
-  const tvs = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
-  const head = `<div class="in-box"><div class="in-sh"><div><h3>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h3><div class="in-lv">${esc(name || "")}${f && f.sec ? ` · ${esc(f.sec)}${f.ind ? " / " + esc(f.ind) : ""}` : ""}${f && f.mcap ? ` · market cap ₹${inNum(f.mcap / 1e7, 0)} crore` : ""}</div></div><div style="text-align:right"><div class="px">${t ? "₹" + inNum(t.p, 2) : "–"}</div><div class="in-lv">${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span> · <span class="${inCl(t.m1)}">${inPct(t.m1)} 1M</span> · <span class="${inCl(t.y1)}">${inPct(t.y1)} 1Y</span> · close of ${esc(t.date || "")}` : ""}</div></div></div>
-   <div class="in-tally"><span class="sx-chip g">${cnt("pos")} supportive</span><span class="sx-chip r">${cnt("neg")} caution</span><span class="sx-chip">${cnt("neu")} neutral</span><span class="in-lv" style="align-self:center">readings below; this is a count, not a verdict · <a href="${tvs}" target="_blank" rel="noopener noreferrer">Chart on TradingView</a></span></div></div>`;
-  const tech = `<div class="in-box"><h3>Technical readings</h3><p class="m">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? inReadings(R.T, "t") : `<p class="m">No price history.</p>`}</div>`;
-  const fin = `<div class="in-box"><h3>Financial readings</h3><p class="m">From the latest reported numbers (Yahoo Finance, which can lag or contain errors; check the annual report). Compared with the median of covered companies in the same sector, as NISM's peer-comparison section suggests.</p>${f ? inReadings(R.F, "f") : `<p class="m">Financial numbers are only collected for covered NSE stocks (${esc(((FUND && FUND.universe) || "").replace(/^The /, "the "))}).</p>`}</div>`;
-  const qt = f && f.q && f.q.length ? `<div class="in-box"><h3>Quarterly results</h3><div class="sx-w"><table class="sx2" style="min-width:420px"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div></div>` : "";
-  let peers = "";
-  if (f && f.sec && FUND.fund) {
-    const P = Object.entries(FUND.fund).filter(([s, o]) => o.sec === f.sec && (o.ind === f.ind || !f.ind) && o.mcap).sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 10);
-    if (P.length > 1) peers = `<div class="in-box"><h3>Peers (${esc(f.ind || f.sec)})</h3><p class="m">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="sx-w"><table class="sx2" style="min-width:640px"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td><a href="#insights" onclick="inPick('${esc(s)}','NSE');return false">${esc(s)}</a></td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
-  }
-  const q = (name ? name.replace(/\b(limited|ltd\.?|ltd)\b/gi, "").trim() : IV.sym) + " share", N = IV.news[q];
-  const news = `<div class="in-box"><h3>More headlines from a company search</h3>${inNewsNote()}${!N || N.loading ? `<p class="m">Loading headlines…</p>` : N.error ? `<p class="m">${esc(N.error)}</p>` : `<p class="m">Search: “${esc(N.q)}” · ${esc(N.source || "")}</p>${inNewsList(N.items)}`}</div>`;
-  if (LIVE === null && !IV.feedBusy) loadFeed();
-  const secK = f && SEC_IDX[f.sec], allS = inAllStories();
-  const direct = allS.filter((x) => inLinks(x).sym.includes(IV.sym)), sector = secK ? allS.filter((x) => !direct.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
-  const linked = `<div class="in-box"><h3>Market news linked to ${esc(IV.sym)}</h3><p class="m">From the live news feed: stories that name the company, or whose topic is linked to it by the keyword rules${secK ? `, plus news linked to its sector index (${esc(MK_NAMES[secK])})` : ""}.</p>
-   ${direct.length ? `<div class="nw-lbl" style="margin-top:6px">About this company (${direct.length})</div><ol class="nw-list">${direct.slice(0, 15).map((x) => inStoryRow(x)).join("")}</ol>` : `<p class="m">No story in the live feed names this company right now.</p>`}
-   ${sector.length ? `<div class="nw-lbl" style="margin-top:10px">Its sector (${esc(MK_NAMES[secK])})</div><ol class="nw-list">${sector.map((x) => inStoryRow(x)).join("")}</ol>` : ""}</div>`;
-  return box + head + linked + `<div class="in-cols">${tech}${fin}</div>` + qt + peers + news;
-}
 
 function inNewsBadge(sym, ex) {   // used in My Positions: how many live stories name this holding
   if (LIVE === null && !IV.feedBusy) { loadFeed(); return ""; }
   if (ex === "BSE") return "";
   const n = inAllStories().filter((x) => inLinks(x).sym.includes(sym)).length;
-  return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();go('ins');inPick('${esc(sym)}','NSE')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
+  return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();IV.stab='news';go('ins');inPick('${esc(sym)}','NSE')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
 }
+
+
+/* ----- readings with a short label for the compact "market read" ----- */
+function mkReadings(M, sectCov, breadth, feed) {
+  const R = [], g = (k) => M[k] || {}, ob = (k, area, short, text, tone, ref) => R.push({ k, area, short, text, tone, ref }), f1 = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+  const n = g("^NSEI"), sx = g("^BSESN");
+  if (n.vs200 != null) { const up = n.vs200 > 0, ris = (n.s200 || 0) > 0, st = up && ris ? "uptrend (bull)" : !up && !ris ? "downtrend (bear)" : "mixed / sideways";
+    ob("trend", "Primary trend", up && ris ? "Uptrend" : !up && !ris ? "Downtrend" : "Mixed", `Nifty 50 is ${Math.abs(n.vs200).toFixed(1)}% ${up ? "above" : "below"} its 200-day average, and that average is ${ris ? "rising" : "falling"} (${f1(n.s200 || 0)}% over 20 days). By the moving-average test the primary trend reads as ${st}.`, up && ris ? "pos" : !up && !ris ? "neg" : "neu", "trend"); }
+  const ni = M._nifty || {};
+  if (ni.rsi != null) { const r = ni.rsi; ob("rsi", "Momentum (RSI)", `RSI ${r.toFixed(0)}${r > 70 ? ", overbought" : r < 30 ? ", oversold" : ""}`, `Nifty 50 RSI (14) is ${r.toFixed(0)}. ` + (r > 70 ? "That is above 70, the usual overbought line." : r < 30 ? "That is below 30, the usual oversold line." : r < 44 ? "That is below the 44-45 zone that a bull market rarely falls under." : r > 55 ? "That is above the 50-55 zone that a bear market rarely rises over." : "That is in the middle band (44-55), which by itself does not separate a bull from a bear phase."), r < 44 ? "neg" : r > 55 ? "pos" : "neu", "rsi"); }
+  if (ni.macd != null) ob("macd", "Momentum (MACD)", `${ni.macd > ni.msig ? "Above" : "Below"} signal, ${ni.macd > 0 ? "above" : "below"} zero`, `Nifty 50 MACD is ${ni.macd > ni.msig ? "above" : "below"} its signal line and ${ni.macd > 0 ? "above" : "below"} zero.`, ni.macd > ni.msig && ni.macd > 0 ? "pos" : ni.macd < ni.msig && ni.macd < 0 ? "neg" : "neu", "macd");
+  if (n.m1 != null && sx.m1 != null) { const same = (n.m1 >= 0) === (sx.m1 >= 0); ob("dow", "Index confirmation", same ? "Nifty and Sensex agree" : "Nifty and Sensex disagree", `Over one month the Nifty 50 moved ${f1(n.m1)}% and the Sensex ${f1(sx.m1)}%: ${same ? "the two indices confirm each other" : "the two indices disagree, so the move is not confirmed"}.`, "neu", "dow"); }
+  if (breadth) ob("breadth", "Breadth", `${Math.round(breadth.above200)}% above 200-day avg`, `${Math.round(breadth.above200)}% of the ${breadth.n} covered stocks were above their 200-day average and ${Math.round(breadth.above50)}% above their 50-day average at the last close.`, breadth.above200 > 60 ? "pos" : breadth.above200 < 40 ? "neg" : "neu", null);
+  const vx = g("^INDIAVIX"); if (vx.last != null) ob("vix", "Volatility", `India VIX ${vx.last.toFixed(1)}`, `India VIX (expected 30-day volatility of the Nifty) is ${vx.last.toFixed(1)}, ${f1(vx.m1 || 0).replace(/\.\d$/, "")}% in a month.`, (vx.m1 || 0) > 20 ? "neg" : "neu", null);
+  const b = g("BZ=F");
+  if (b.m1 != null) { const x = b.m1;
+    if (x >= 5) ob("crude", "Crude oil", `Brent up ${x.toFixed(1)}% in a month`, `Brent crude is up ${x.toFixed(1)}% in a month ($${b.last.toFixed(1)}). Rising crude raises input costs for users such as airlines, paints and logistics and helps oil producers; as an importer, India feels it in fuel prices and inflation.`, "neg", "commod_eq");
+    else if (x <= -5) ob("crude", "Crude oil", `Brent down ${Math.abs(x).toFixed(1)}% in a month`, `Brent crude is down ${Math.abs(x).toFixed(1)}% in a month ($${b.last.toFixed(1)}). Falling crude lowers input costs for users such as airlines, paints and logistics and squeezes oil producers; for an importer like India it eases fuel prices and inflation.`, "pos", "commod_eq");
+    else ob("crude", "Crude oil", `Brent ${f1(x)}% in a month`, `Brent crude moved ${f1(x)}% in a month ($${b.last.toFixed(1)}), a modest change.`, "neu", "intl"); }
+  const u = g("INR=X");
+  if (u.m1 != null) { const x = u.m1;
+    ob("rupee", "Rupee", x >= 1 ? `Weaker by ${x.toFixed(1)}% in a month` : x <= -1 ? `Stronger by ${Math.abs(x).toFixed(1)}% in a month` : "Steady against the dollar", x >= 1 ? `The rupee weakened ${x.toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). A weaker rupee makes imports (crude, capital goods) dearer and helps exporters' rupee earnings.` : x <= -1 ? `The rupee strengthened ${Math.abs(x).toFixed(1)}% against the dollar in a month (₹${u.last.toFixed(2)}). Imports get cheaper; exporters earn fewer rupees per dollar.` : `The rupee was steady against the dollar (${f1(x)}% in a month, ₹${u.last.toFixed(2)}).`, x >= 1 ? "neg" : x <= -1 ? "pos" : "neu", "cad"); }
+  const t = g("^TNX"); if (t.last != null && t.m1 != null) { const bp = Math.round(t.last * t.m1 / (100 + t.m1) * 100); ob("us10y", "US 10-year yield", `${t.last.toFixed(2)}%, ${bp > 0 ? "+" : bp < 0 ? "−" : ""}${Math.abs(bp)} bp in a month`, `The US 10-year yield is ${t.last.toFixed(2)}% (${bp > 0 ? "+" : bp < 0 ? "−" : ""}${Math.abs(bp)} basis points in a month). Foreign portfolio money, which NISM calls 'hot money' that can leave at any time, watches global rates.`, "neu", "fpi"); }
+  const gl = ["^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS"].map(g), dn = gl.filter((x) => (x.m1 || 0) <= -5).length, upn = gl.filter((x) => (x.m1 || 0) >= 5).length;
+  if (dn >= 3) ob("global", "World markets", `${dn} of 7 down 5% or more`, `${dn} of 7 major world indices fell 5% or more in a month. Integrated economies mean trouble in one region spreads to others.`, "neg", "global");
+  else if (upn >= 3) ob("global", "World markets", `${upn} of 7 up 5% or more`, `${upn} of 7 major world indices rose 5% or more in a month.`, "pos", "global");
+  else if (gl.some((x) => x.m1 != null)) ob("global", "World markets", "No broad move this month", `Fewer than three of the seven major world indices moved 5% or more in a month.`, "neu", "global");
+  const rk = (sectCov || []).filter((x) => x.rel3 != null).sort((a, b) => b.rel3 - a.rel3);
+  if (rk.length >= 4) ob("sectors", "Sector leaders", `${rk[0].name} leads, ${rk[rk.length - 1].name} lags`, `Against the Nifty 50 over 3 months, the strongest sectors were ${rk.slice(0, 3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}; the weakest were ${rk.slice(-3).map((x) => `${x.name} (${f1(x.rel3)}%)`).join(", ")}.`, "neu", "rsc");
+  const d = g("DX-Y.NYB"); if (d.m1 != null && Math.abs(d.m1) >= 1.5) ob("dxy", "US dollar", `Dollar index ${d.m1 > 0 ? "up" : "down"} ${Math.abs(d.m1).toFixed(1)}%`, `The US dollar index ${d.m1 > 0 ? "rose" : "fell"} ${Math.abs(d.m1).toFixed(1)}% in a month. A ${d.m1 > 0 ? "stronger dollar usually weighs on" : "weaker dollar usually supports"} dollar-priced commodities.`, "neu", "dollar");
+  const au = g("GC=F"); if (au.m1 != null && Math.abs(au.m1) >= 4) ob("gold", "Gold", `${au.m1 > 0 ? "Up" : "Down"} ${Math.abs(au.m1).toFixed(1)}% in a month`, `Gold ${au.m1 > 0 ? "rose" : "fell"} ${Math.abs(au.m1).toFixed(1)}% in a month ($${au.last.toFixed(0)}). Gold is the usual hedge investors turn to when inflation worries rise.`, "neu", "macro_ind");
+  const cu = g("HG=F"); if (cu.m1 != null && Math.abs(cu.m1) >= 5) ob("copper", "Copper", `${cu.m1 > 0 ? "Up" : "Down"} ${Math.abs(cu.m1).toFixed(1)}% in a month`, `Copper ${cu.m1 > 0 ? "rose" : "fell"} ${Math.abs(cu.m1).toFixed(1)}% in a month. NISM reads a fall in copper as a possible sign of slowing industrial demand, weighing on metal and infrastructure stocks${cu.m1 > 0 ? "; a rise is the opposite reading" : ""}.`, cu.m1 > 0 ? "pos" : "neg", "commod_eq");
+  if (feed && feed.themes) { const cov = feed.themes.filter((x) => ["geo", "trade", "energy", "politics", "people"].includes(x.id)).map((x) => [x.name, x.day || 0, x.short || x.name]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (cov.length) ob("geo", "World news", `Busiest: ${cov[0][2]}`, `The busiest world themes in the last 24 hours: ${cov.map(([a, c]) => `${a.toLowerCase()} (${c} stories)`).join(", ")}. Conflicts in oil regions, sanctions and trade wars mainly reach Indian stocks through crude prices, the rupee and supply chains.`, "neu", "geo"); }
+  return R;
+}
+function inReadingsNow() {
+  const L = mkLive(), cov = ((INS && INS.sectors) || []).filter((x) => x.kind !== "index");
+  return L ? mkReadings(L.M, cov, INS && INS.breadth, LIVE) : ((INS && INS.readings) || []).map((r) => Object.assign({ short: "" }, r));
+}
+
+/* ----- small building blocks ----- */
+function inRefBtn(key, id) {
+  const R = (INS && INS.refs) || {}, r = R[key]; if (!r) return "";
+  const open = IV.open.has(id);
+  return `<button type="button" class="ref" aria-expanded="${open}" onclick="inTog('${id}')">${esc(r.src)}</button>${open ? `<div class="ref-says">${esc(r.says)}</div>` : ""}`;
+}
+function inTog(id) { IV.open.has(id) ? IV.open.delete(id) : IV.open.add(id); render(); }
+function inSpark(a, cls) {
+  if (!a || a.length < 2) return "";
+  const mn = Math.min(...a), mx = Math.max(...a), w = 100, h = 28, k = (mx - mn) || 1, n = a.length;
+  const pts = a.map((v, i) => `${(i / (n - 1) * w).toFixed(1)},${(h - 3 - (v - mn) / k * (h - 6)).toFixed(1)}`).join(" ");
+  return `<svg class="spk ${cls || ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function inFmt(k, v) {
+  if (v == null || !isFinite(v)) return "–";
+  if (k === "^TNX") return v.toFixed(2) + "%";
+  if (k === "INR=X") return "₹" + v.toFixed(2);
+  if (k === "BZ=F" || k === "HG=F") return "$" + v.toFixed(2);
+  if (k === "GC=F") return "$" + Math.round(v).toLocaleString("en-IN");
+  if (k === "DX-Y.NYB" || k === "^INDIAVIX") return v.toFixed(2);
+  return v.toLocaleString("en-IN", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+}
+function inSeries(k) { return MKT && MKT.series && MKT.series.find((x) => x.t === k); }
+function inDay(k) { const s = inSeries(k); if (!s || s.c.length < 2) return null; const c = s.c; return k === "^TNX" ? { bp: (c[c.length - 1] - c[c.length - 2]) * 100 } : { pct: (c[c.length - 1] / c[c.length - 2] - 1) * 100 }; }
+function inMove(dm) { if (!dm) return ""; if (dm.bp != null) { const b = Math.round(dm.bp); return `<span class="${b > 0 ? "neg" : b < 0 ? "pos" : ""}">${b > 0 ? "+" : b < 0 ? "−" : ""}${Math.abs(b)} bp</span>`; } return `<span class="${inCl(dm.pct)}">${inPct(dm.pct, 2)}</span>`; }
+
+/* ----- market tape ----- */
+function inTape() {
+  const L = mkLive(), M = L ? L.M : {};
+  const it = TAPE.map((k) => {
+    const m = M[k], s = inSeries(k), dm = inDay(k), up = dm && (dm.pct != null ? dm.pct : -dm.bp) >= 0;
+    return `<button type="button" class="tk" onclick="inTapeGo('${k}')" title="${esc(MK_NAMES[k] || TAPE_NM[k])}: open the linked news"><span class="tk-n">${esc(TAPE_NM[k])}</span><span class="tk-v">${m ? inFmt(k, m.last) : "–"}</span><span class="tk-c ${dm ? (k === "^TNX" || k === "^INDIAVIX" || k === "INR=X" ? "flat" : up ? "up" : "dn") : ""}">${dm ? inMove(dm).replace(/class="[^"]*"/, "") : ""}</span>${s ? inSpark(s.c.slice(-22)) : ""}</button>`;
+  }).join("");
+  const st = MKT ? `${MKT.market_open ? "Live, about 15 minutes delayed" : "Latest close"}. Updated ${inAgo(MKT.updated)}.` : IV.mktBusy ? "Loading prices" : "Prices unavailable";
+  return `<section class="tape" aria-label="Market tape"><div class="tape-row">${it}</div><div class="tape-st">${st}</div></section>`;
+}
+
+function inTapeGo(k) { if (LIVE && inCountFor("i:" + k)) inLinkF("i:" + k); else inGo("markets"); }
+
+/* ----- section navigation ----- */
+function inSubnav() {
+  const V = [["overview", "Overview"], ["news", "News"], ["markets", "Markets"], ["stocks", "Stocks"], ["method", "Method"]];
+  const names = INAMES ? Object.keys(INAMES) : [];
+  return `<div class="ix-nav"><div class="ix-tabs" role="tablist" aria-label="Insights sections">${V.map(([k, l]) => `<button role="tab" aria-selected="${IV.view === k}" onclick="inGo('${k}')">${l}</button>`).join("")}</div>
+  <form class="ix-find" onsubmit="inPick(this.elements.q.value,'NSE');this.elements.q.value='';return false"><input id="ix-q" name="q" list="ix-syms" placeholder="Find a stock, e.g. TCS" aria-label="Find a stock" autocapitalize="characters" autocomplete="off"><datalist id="ix-syms">${names.slice(0, 900).map((s) => `<option value="${esc(s)}">`).join("")}</datalist></form></div>`;
+}
+function inGo(v) { IV.view = v; if (v === "stocks") loadFund(); render(); const e = $("vIns"); if (e && e.getBoundingClientRect().top < 0) window.scrollTo({ top: window.scrollY + e.getBoundingClientRect().top - 50 }); }
+function inTheme(t) { IV.theme = t; IV.who = ""; IV.linkF = ""; IV.shown = 30; inGo("news"); }
+function inLinkF(k) { IV.linkF = k; IV.theme = "all"; IV.shown = 30; inGo("news"); }
+
+/* ----- one story ----- */
+function inLinkChips(x, max) {
+  const L = inLinks(x); if (!L.sym.length && !L.idx.length) return "";
+  const idx = L.idx.slice(0, 3).map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="inLinkF('i:${k}')" title="Stories linked to ${esc(MK_NAMES[k] || k)}">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
+  const st = L.sym.slice(0, max || 5).map((s) => { const v = inPx(s); return `<button type="button" class="lk-s" onclick="inPick('${esc(s)}','NSE')" title="Open ${esc(s)}">${esc(s)}${v != null ? ` <span class="${inCl(v)}">${inPct(v)}</span>` : ""}</button>`; }).join("");
+  return `<div class="ns-l"><span class="ns-why">${L.why.length ? "Linked through " + esc(L.why.join(", ")) : "Named in the headline"}</span>${idx}${st}</div>`;
+}
+function inStory(x, o) {
+  o = o || {}; const N = LIVE || {}, th = (N.themes || []).find((t) => t.id === x.th);
+  const also = (x.also || []).map((a) => a.s || a).join(", ");
+  return `<li class="ns${o.lead ? " lead" : ""}"><a class="ns-h" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
+  <div class="ns-m"><span class="ns-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="Also reported by ${esc(also)}">${x.n} outlets</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}${th && o.theme !== false ? `<button type="button" class="ns-th" onclick="inTheme('${th.id}')">${esc(th.short || th.name)}</button>` : ""}</div>
+  ${inLinkChips(x, o.lead ? 6 : 4)}</li>`;
+}
+
+/* ----- overview ----- */
+function inOverview() {
+  const N = LIVE, top = (N && N.top) || [];
+  const news = !N ? `<p class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</p>`
+    : `<ol class="nsl">${top.slice(0, 1).map((x) => inStory(x, { lead: true })).join("")}${top.slice(1, 8).map((x) => inStory(x)).join("")}</ol>
+       <div class="ix-more"><button class="btn sm" onclick="inGo('news')">Open the news desk</button><span class="ix-fine">${ixN(N.pool)} headlines from ${(N.themes || []).length} themes over ${N.days || 7} days, refreshed every ${N.refresh_min === 60 ? "hour" : (N.refresh_min || 5) + " minutes"}${N.market_open ? " while the market is open" : " until the market opens"}.</span></div>`;
+  return `<div class="ix-grid"><div class="ix-main">
+    <section class="ix-sec o1"><header class="ix-h"><h2>Top stories</h2><p>The stories carried by the most outlets in the last 48 hours, with the indices and stocks they are linked to.</p></header>${news}</section>
+    ${inSectorChart(false)}</div>
+    <aside class="ix-rail">${inMarketRead()}${inHoldNews()}${inMostLinked(6)}</aside></div>`;
+}
+function inMarketRead() {
+  const R = inReadingsNow(), keys = ["trend", "rsi", "breadth", "vix", "crude", "rupee", "us10y", "global", "sectors", "geo"];
+  const rows = keys.map((k) => R.find((r) => r.k === k)).filter(Boolean);
+  if (!rows.length) return `<section class="ix-card o2"><h3>Market read</h3><p class="ix-empty">Loading…</p></section>`;
+  return `<section class="ix-card o2"><header class="ix-ch"><h3>Market read</h3><button class="btn ghost sm" onclick="inGo('markets')">All readings</button></header>
+  <ul class="mr">${rows.map((r) => { const id = "mr-" + r.k, open = IV.open.has(id); return `<li><button type="button" class="mr-row" aria-expanded="${open}" onclick="inTog('${id}')"><span class="tn ${r.tone}" title="${TONE[r.tone]}"></span><span class="mr-a">${esc(r.area)}</span><span class="mr-v">${esc(r.short || "")}</span></button>${open ? `<div class="mr-d">${esc(r.text)}${r.ref ? `<div>${inRefBtn(r.ref, id + "-r")}</div>` : ""}</div>` : ""}</li>`; }).join("")}</ul>
+  <p class="ix-fine"><span class="tn pos"></span> supportive <span class="tn neg"></span> caution <span class="tn neu"></span> neutral, as the cited NISM section reads such a number. Not a forecast.</p></section>`;
+}
+function inShort(s) { const v = INAMES && INAMES[s], n = Array.isArray(v) ? v[0] : v || ""; return n.replace(/\s+(Limited|Ltd\.?)$/i, ""); }
+function inDirectCounts() {
+  const c = {}; for (const x of inAllStories()) { const L = inLinks(x); for (const s of L.sym) { if (!c[s]) c[s] = { n: 0, d: 0 }; c[s].n++; } }
+  return c;
+}
+function inHoldNews() {
+  const H = (typeof openPos === "function" ? openPos() : []).filter((p) => p.exchange !== "BSE");
+  if (!H.length || !LIVE) return "";
+  const c = inDirectCounts(), rows = H.map((p) => ({ s: p.symbol, n: (c[p.symbol] || {}).n || 0 })).sort((a, b) => b.n - a.n);
+  return `<section class="ix-card o3"><header class="ix-ch"><h3>Your holdings in the news</h3></header><ul class="ml">${rows.map((r) => { const v = inPx(r.s); return `<li><button type="button" onclick="IV.stab='news';inPick('${esc(r.s)}','NSE')"><b>${esc(r.s)}</b><span class="ml-name">${esc(inShort(r.s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${r.n ? `${r.n} ${r.n === 1 ? "story" : "stories"}` : "No news"}</span></button></li>`; }).join("")}</ul></section>`;
+}
+function inMostLinked(n) {
+  if (!LIVE) return "";
+  const c = inDirectCounts(), rows = Object.entries(c).sort((a, b) => b[1].n - a[1].n).slice(0, n || 8);
+  if (!rows.length) return "";
+    return `<section class="ix-card o5"><header class="ix-ch"><h3>Stocks most in the news</h3></header><ul class="ml">${rows.map(([s, o]) => { const v = inPx(s); return `<li><button type="button" onclick="inLinkF('s:${esc(s)}')" title="Show the stories"><b>${esc(s)}</b><span class="ml-name">${esc(inShort(s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${o.n}</span></button></li>`; }).join("")}</ul></section>`;
+}
+
+/* ----- sector strength chart (relative to the Nifty 50) ----- */
+function inSectorData() {
+  const L = mkLive(), cov = ((INS && INS.sectors) || []).filter((x) => x.kind !== "index");
+  const idx = L ? L.sidx : ((INS && INS.sectors) || []).filter((x) => x.kind === "index");
+  // Yahoo only carries history for a few NSE sector indices; below six, the covered-stock medians are the better picture
+  const few = idx.filter((x) => x.rel3 != null).length < 6;
+  return IV.secSrc === "stocks" || few ? { rows: cov, src: "stocks", few } : { rows: idx, src: "index", few };
+}
+function inSectorChart(full) {
+  const D = inSectorData(), k = IV.secPer, rows = D.rows.filter((x) => x[k] != null).sort((a, b) => b[k] - a[k]);
+  if (!rows.length) return "";
+  const mx = Math.max(...rows.map((x) => Math.abs(x[k])), 1);
+  const bars = rows.map((x) => { const v = x[k], w = Math.abs(v) / mx * 40, key = x.kind === "index" ? x.k : SEC_IDX[x.name]; const nn = key && LIVE ? inCountFor("i:" + key) : 0;
+    return `<li><button type="button" class="sb" ${key ? `onclick="inLinkF('i:${key}')"` : "disabled"} title="${esc(x.name)}: ${inPct(v)} against the Nifty 50${nn ? `, ${nn} linked stories` : ""}"><span class="sb-n">${esc(x.name)}${x.n ? `<small>${x.n} stocks</small>` : ""}</span><span class="sb-t"><i class="${v >= 0 ? "up" : "dn"}" style="${v >= 0 ? "left:50%" : `right:50%`};width:${w.toFixed(2)}%"></i><em style="${v >= 0 ? `left:calc(50% + ${w.toFixed(2)}% + 6px)` : `right:calc(50% + ${w.toFixed(2)}% + 6px)`}">${inPct(v)}</em></span></button></li>`; }).join("");
+  const seg = (key, val, l) => `<button type="button" aria-pressed="${IV[key] === val}" onclick="IV.${key}='${val}';render()">${l}</button>`;
+  return `<section class="ix-sec o4"><header class="ix-h"><h2>Sector strength</h2><p>Each sector's return minus the Nifty 50's over the same period. Bars to the right did better than the index. ${inRefBtn("rsc", "sec-rsc")}</p></header>
+  <div class="ix-ctl"><div class="seg2">${seg("secPer", "rel1", "1 month")}${seg("secPer", "rel3", "3 months")}</div>${D.few ? "" : `<div class="seg2">${seg("secSrc", "index", "NSE sector indices")}${seg("secSrc", "stocks", "Covered stocks by sector")}</div>`}</div>
+  <ol class="sbars"><li class="sb-ax" aria-hidden="true"><span></span><span><span>Did worse than the Nifty 50</span><span>Did better</span></span></li>${bars}</ol><p class="ix-fine">${D.src === "index" ? "NSE sector indices, live prices." : "Median return of the covered stocks in each sector (sector names from Yahoo Finance), as of the last close."} Select a sector to see its linked news.</p></section>`;
+}
+
+/* ----- news desk ----- */
+function inFullFor(id) { const F = IV.full[id]; return F && F.stories && LIVE && F.updated === LIVE.updated ? F.stories : null; }
+async function inLoadFull(id) {   // every story of the last 7 days for a theme ("all" = every theme), fetched on request
+  IV.full[id] = { loading: true }; render();
+  try { const r = await fetch("/api/dma?a=theme&id=" + encodeURIComponent(id)), j = await r.json(); IV.full[id] = r.ok && j.stories ? j : { error: j.error || "The full list could not be loaded." }; }
+  catch (e) { IV.full[id] = { error: "The full list could not be loaded." }; }
+  if (IV.full[id].stories && LIVE && IV.full[id].updated !== LIVE.updated) IV.full[id].updated = LIVE.updated;   // newer than the page's copy is fine
+  IV.shown += 30; render();
+}
+function inStoriesFor() {
+  const N = LIVE; if (!N) return [];
+  let list;
+  if (IV.linkF) list = (inFullFor("all") || inAllStories()).filter((x) => inStoryMatchesLink(x, IV.linkF));
+  else if (IV.theme === "all") list = inFullFor("all") || inAllStories();
+  else { const t = (N.themes || []).find((t) => t.id === IV.theme), F = inFullFor(IV.theme); list = F ? F.map((s) => Object.assign({ th: IV.theme }, s)) : t ? t.stories.map((s) => Object.assign({ th: t.id }, s)) : []; if (IV.who) list = list.filter((x) => (x.who || []).includes(IV.who)); }
+  const byDate = (a, b) => String(b.d || "").localeCompare(String(a.d || ""));
+  const byRank = (a, b) => (Math.min(b.n || 1, 6) - Math.min(a.n || 1, 6)) || byDate(a, b);
+  return list.slice().sort(IV.list === "latest" || IV.linkF ? byDate : byRank);
+}
+function inNewsView() {
+  const N = LIVE;
+  if (!N) return `<div class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</div>`;
+  const themes = (N.themes || []).filter((t) => t.total);
+  const total = N.stories_total || inAllStories().length, list = inStoriesFor(), shown = list.slice(0, IV.shown);
+  const lf = IV.linkF, lfName = lf ? (lf.startsWith("i:") ? MK_NAMES[lf.slice(2)] || lf.slice(2) : lf.slice(2)) : "";
+  const nav = `<nav class="nd-nav" aria-label="News themes"><button type="button" aria-current="${IV.theme === "all" && !lf}" onclick="inTheme('all')"><span>All stories</span><b>${ixN(total)}</b></button>${themes.map((t) => `<button type="button" aria-current="${IV.theme === t.id && !lf}" onclick="inTheme('${t.id}')" title="${esc(t.name)}: ${t.total} stories in ${N.days} days, ${t.day} in the last 24 hours"><span>${esc(t.short || t.name)}</span><b>${ixN(t.total)}</b></button>`).join("")}<p class="nd-cap">Stories in the last ${N.days} days</p></nav>`;
+  const cur = themes.find((t) => t.id === IV.theme);
+  const people = cur && cur.id === "people" && N.people && N.people.length ? `<div class="nd-people">${[["", "Everyone"]].concat(N.people.map((p) => [p.name, `${p.name} (${p.n})`])).map(([k, l]) => `<button type="button" class="chip${(IV.who || "") === k ? " on" : ""}" onclick="IV.who='${esc(k)}';IV.shown=30;render()">${esc(l)}</button>`).join("")}</div>` : "";
+  const head = lf ? `<div class="nd-filter"><span>Stories linked to <b>${esc(lfName)}</b></span><button class="btn sm" onclick="IV.linkF='';render()">Clear</button></div>`
+    : cur ? `<div class="nd-about"><h2>${esc(cur.name)}</h2><p>${esc(cur.why)} <span class="ix-fine">Most exposed: ${esc(cur.sectors)}.</span></p>${inRefBtn(cur.ref, "th-" + cur.id)}</div>` : `<div class="nd-about"><h2>All stories</h2><p>Every story collected in the last ${N.days} days from established outlets, grouped when several outlets carry it.</p></div>`;
+  const bar = `<div class="nd-bar"><div class="seg2"><button type="button" aria-pressed="${IV.list !== "latest" && !lf}" ${lf ? "disabled" : ""} onclick="IV.list='top';render()">Most reported</button><button type="button" aria-pressed="${IV.list === "latest" || !!lf}" onclick="IV.list='latest';render()">Latest</button></div>
+    <span class="ix-fine">${inListNote(list, cur, lf, total)}</span><span class="nd-st"><span class="nd-live ${N.market_open ? "on" : ""}" title="${N.market_open ? "Refreshed every 5 minutes while the market is open" : "Refreshed every hour while the market is closed"}">${N.market_open ? "Live" : "Hourly"}</span><span class="ix-fine">Updated ${inAgo(N.updated)}</span><button class="btn sm" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing" : "Refresh"}</button></span></div>`;
+  const fid = lf ? "all" : IV.theme, F = IV.full[fid], avail = lf ? null : cur ? cur.total : total, canFull = !inFullFor(fid) && (lf || avail > list.length);
+  const more = list.length > IV.shown ? `<button class="btn nd-more" onclick="IV.shown+=30;render()">Show 30 more</button>`
+    : canFull ? `<button class="btn nd-more" onclick="inLoadFull('${fid}')" ${F && F.loading ? "disabled" : ""}>${F && F.loading ? "Loading…" : lf ? `Search all ${N.days} days of stories` : `Load all ${ixN(avail)} stories from the last ${N.days} days`}</button>${F && F.error ? `<p class="ix-fine">${esc(F.error)}</p>` : ""}` : "";
+  const items = shown.length ? `<ol class="nsl">${shown.map((x) => inStory(x, { theme: IV.theme === "all" || !!lf })).join("")}</ol>${more}` : `<p class="ix-empty">No stories here right now.</p>${more}`;
+  const rail = `<aside class="nd-rail">${inMostLinked(10)}${inIdxMentions()}<section class="ix-card"><h3>How this works</h3><p class="ix-fine" style="margin:0">${esc(N.note || "")}</p><div style="margin-top:6px">${inRefBtn("emh", "n-emh")}</div><div>${inRefBtn("bias", "n-bias")}</div></section></aside>`;
+  return `<div class="nd">${nav}<div class="nd-main">${head}${people}${bar}${items}</div>${rail}</div>`;
+}
+function inListNote(list, cur, lf, total) {
+  const n = list.length, sorted = IV.list === "latest" || lf ? "newest first" : "most reported first";
+  if (lf) return `${n} ${n === 1 ? "story" : "stories"}, ${sorted}`;
+  const all = cur ? cur.total : total;
+  return n < all ? `Top ${n} of ${ixN(all)}, ${sorted}` : `${ixN(n)} ${n === 1 ? "story" : "stories"}, ${sorted}`;
+}
+function inIdxMentions() {
+  if (!LIVE) return "";
+  const keys = ["^NSEI", "^NSEBANK", "NIFTY_FIN_SERVICE.NS", "^CNXIT", "^CNXPHARMA", "^CNXENERGY", "^CNXMETAL", "^CNXAUTO", "^CNXREALTY", "^CNXFMCG", "^CNXMEDIA", "BZ=F", "GC=F", "INR=X"];
+  const rows = keys.map((k) => [k, inCountFor("i:" + k)]).filter((r) => r[1]).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (!rows.length) return "";
+  return `<section class="ix-card"><header class="ix-ch"><h3>Indices and prices in the news</h3></header><ul class="ml">${rows.map(([k, n]) => { const dm = inDay(k); return `<li><button type="button" onclick="inLinkF('i:${k}')"><b>${esc(MK_NAMES[k] || k)}</b><span class="ml-name"></span><span>${dm ? inMove(dm) : ""}</span><span class="ml-n">${n}</span></button></li>`; }).join("")}</ul></section>`;
+}
+
+/* ----- markets ----- */
+function inMarketsView() {
+  const L = mkLive(), groups = L ? L.groups : (INS && INS.groups) || [];
+  const pc = (v) => `<td class="${inCl(v)}">${inPct(v)}</td>`;
+  const tbl = (g) => `<section class="ix-sec"><header class="ix-h"><h2>${esc(g.name)}</h2></header><div class="tw"><table class="mt"><thead><tr><th>Name</th><th>Last</th><th>Day</th><th>1 week</th><th>1 month</th><th>3 months</th><th>1 year</th><th>vs 200-day avg</th><th>From 52-week high</th><th class="c">Last 3 months</th><th>Linked news</th></tr></thead><tbody>${g.items.map((x) => { const dm = inDay(x.k), s = inSeries(x.k), n = LIVE ? inCountFor("i:" + x.k) : 0;
+    return `<tr><td><b>${esc(x.name)}</b></td><td>${inFmt(x.k, x.last)}</td><td>${dm ? inMove(dm) : inPct(x.d1)}</td>${pc(x.w1)}${pc(x.m1)}${pc(x.m3)}${pc(x.y1)}${pc(x.vs200)}<td>${inPct(x.hi52)}</td><td class="c">${s ? inSpark(s.c.slice(-63), "in") : inSpark(x.spark, "in")}</td><td>${n ? `<button class="btn ghost sm" onclick="inLinkF('i:${x.k}')">${n} ${n === 1 ? "story" : "stories"}</button>` : `<span class="ix-fine">None</span>`}</td></tr>`; }).join("")}</tbody></table></div></section>`;
+  const R = inReadingsNow(), mp = INS && INS.market_pe, br = INS && INS.breadth;
+  const stats = `<section class="ix-sec"><header class="ix-h"><h2>Breadth and valuation</h2><p>From the daily update after the close.</p></header><div class="kpis">${br ? `<div class="kpi"><span>Covered stocks above their 200-day average</span><b>${Math.round(br.above200)}%</b><small>${br.n} stocks; above the 50-day: ${Math.round(br.above50)}%</small></div>` : ""}${mp ? `<div class="kpi"><span>P/E of the ${mp.n} largest covered companies, combined</span><b>${inNum(mp.pe, 1)}</b><small>Earnings yield ${inNum(100 / mp.pe, 2)}%. Compare with the 10-year government bond yield.</small></div>` : ""}</div><div>${inRefBtn("dy", "v-dy")}</div></section>`;
+  const reads = `<section class="ix-sec"><header class="ix-h"><h2>All readings</h2><p>Each line is a fixed rule applied to the live numbers. Supportive or caution is what the cited NISM section says such a reading usually indicates, not a forecast.</p></header><ul class="rl">${R.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, "rl" + i) : `<span class="ix-fine">Data only; no NISM rule is attached to this number.</span>`}</div></li>`).join("")}</ul></section>`;
+  return `${groups.map(tbl).join("")}<div class="ix-cols2">${inSectorChart(true)}<div>${stats}</div></div>${reads}`;
+}
+
+/* ----- method ----- */
+function inMethodView() {
+  const R = (INS && INS.refs) || {};
+  return `<div class="ix-narrow"><section class="ix-sec"><header class="ix-h"><h2>Where the readings come from</h2><p>The rules on these pages paraphrase sections of the NISM certification workbooks. Where a number has no NISM rule (India VIX, market breadth, the 52-week range) it is shown as data only. Thresholds such as RSI 70 and 30, ADX 25, debt to equity of 1 and PEG of 1 are the ones the workbooks state.</p></header>
+  <dl class="refs">${Object.values(R).map((r) => `<div><dt>${esc(r.src)}</dt><dd>${esc(r.says)}</dd></div>`).join("")}</dl></section>
+  <section class="ix-sec"><header class="ix-h"><h2>How the news is collected</h2></header><p>${esc((LIVE && LIVE.note) || "Collected from Google News searches and sections, limited to established outlets.")}</p><p>Stories are linked to indices and stocks by fixed keyword rules (crude oil, interest rates, the rupee, H-1B visas, pharma tariffs and so on) and by company names in the headline. The link names the rule it used, so a link is a pointer to read further, not a judgement that the story will move the price.</p></section>
+  <section class="ix-sec"><header class="ix-h"><h2>What these pages are not</h2></header><p>Under SEBI's research analyst rules (NISM Series XV, chapter 14), research reports and recommendations for others need a registered analyst, disclosures and conflict checks. These pages apply written rules to public numbers for your own use. They give no price targets or buy and sell calls, and headlines are not verified.</p></section></div>`;
+}
+
+/* ----- stocks ----- */
+function inStocksView() {
+  if (FUND === null) { loadFund(); return `<div class="ix-empty">Loading…</div>`; }
+  const hold = (typeof openPos === "function" ? openPos() : []).map((p) => [p.symbol, p.exchange]);
+  const wl = (typeof WL !== "undefined" && Array.isArray(WL) ? WL : []).map((w) => [w.symbol, w.exchange]);
+  const hot = LIVE ? Object.entries(inDirectCounts()).sort((a, b) => b[1].n - a[1].n).slice(0, 8).map(([s]) => [s, "NSE"]) : [];
+  const pick = (lbl, arr) => (arr.length ? `<div class="pk"><span>${lbl}</span>${arr.slice(0, 16).map(([s, e]) => `<button class="chip${IV.sym === s && IV.ex === (e || "NSE") ? " on" : ""}" onclick="inPick('${esc(s)}','${e || "NSE"}')">${esc(s)}${e === "BSE" ? " (BSE)" : ""}</button>`).join("")}</div>` : "");
+  const finder = `<section class="ix-card sk-find"><form onsubmit="inPick(this.elements.q.value,this.elements.ex.value);return false" class="sk-form"><input name="q" id="in-q" list="ix-syms" placeholder="Symbol, e.g. RELIANCE" autocapitalize="characters" autocomplete="off" aria-label="Symbol"><select name="ex" aria-label="Exchange"><option${IV.ex === "NSE" ? " selected" : ""}>NSE</option><option${IV.ex === "BSE" ? " selected" : ""}>BSE</option></select><button class="btn pri">Show</button></form>${pick("Your holdings", hold)}${pick("Watchlist", wl)}${pick("Most in the news", hot)}
+  <p class="ix-fine" style="margin:8px 0 0">${esc((FUND && FUND.universe) || "")} have technical and financial numbers ready${FUND && FUND.fund_updated ? ` (financials refreshed ${new Date(FUND.fund_updated).toLocaleDateString("en-IN", { day: "numeric", month: "short" })})` : ""}. Any other NSE or BSE stock gets technical numbers fetched live.</p></section>`;
+  if (!IV.sym) return finder;
+  const strip = `<div class="pk-strip">${pick("Holdings", hold)}${pick("Watchlist", wl)}${pick("In the news", hot.slice(0, 6))}</div>`;
+  const key = IV.ex + ":" + IV.sym, pre = IV.ex === "NSE" && FUND.stocks ? FUND.stocks[IV.sym] : null, live = IV.chart[key];
+  const t = pre ? pre.t : live ? live.t : null, f = IV.ex === "NSE" && FUND.fund ? FUND.fund[IV.sym] : null;
+  if (!t && IV.busy) return strip + `<div class="ix-empty">Fetching ${esc(IV.sym)}…</div>`;
+  if (!t && !f) return finder + `<div class="ix-empty">${esc(IV.err || "No data for " + IV.sym + ".")}</div>`;
+  const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = inStockReadings(t, f, FUND.sector_med, mpe, IV.sym), all = R.T.concat(R.F);
+  const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
+  const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
+  const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${esc(f.sec)}${f.ind ? ", " + esc(f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
+   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}. <a href="${tv}" target="_blank" rel="noopener noreferrer">Chart on TradingView</a></small></div></section>
+   <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
+  const tabs = [["summary", "Summary"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
+  const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
+  const rl = (L, pre) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, pre + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings.</p>`);
+  let body = "";
+  if (IV.stab === "summary") {
+    const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
+    const keys = `<div class="sk-kv">${t ? kv("vs 44-day avg", inPct(t.vs44), inCl(t.vs44)) + kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("From 52-week high", inPct(t.hi52)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inPct(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>`;
+    const top = all.filter((r) => r.tone !== "neu").slice(0, 6);
+    const ln = inStockLinked().slice(0, 4);
+    body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
+  } else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
+  else if (IV.stab === "fin") {
+    const q = f && f.q && f.q.length ? `<h3>Quarterly results</h3><div class="tw"><table class="mt"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div>` : "";
+    body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${rl(R.F, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
+  } else if (IV.stab === "peers") {
+    const P = f && f.sec && FUND.fund ? Object.entries(FUND.fund).filter(([s, o]) => o.sec === f.sec && (o.ind === f.ind || !f.ind) && o.mcap).sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 12) : [];
+    body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td><button class="btn ghost sm" onclick="inPick('${esc(s)}','NSE')">${esc(s)}</button></td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
+  } else {
+    const ln = inStockLinked(), secK = f && SEC_IDX[f.sec];
+    const sector = secK ? inAllStories().filter((x) => !ln.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
+    const q = (name ? name.replace(/\b(limited|ltd\.?|ltd)\b/gi, "").trim() : IV.sym) + " share", N2 = IV.news[q];
+    body = `<div class="sk-2"><section><h3>Linked from the live feed</h3>${ln.length ? `<ol class="nsl sm">${ln.slice(0, 15).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}${sector.length ? `<h3 style="margin-top:16px">Its sector (${esc(MK_NAMES[secK])})</h3><ol class="nsl sm">${sector.map((x) => inStory(x)).join("")}</ol>` : ""}</section>
+    <section><h3>Company search, last 14 days</h3>${!N2 || N2.loading ? `<p class="ix-empty">Loading…</p>` : N2.error ? `<p class="ix-empty">${esc(N2.error)}</p>` : N2.items && N2.items.length ? `<ol class="nsl sm">${N2.items.slice(0, 15).map((x) => inStory({ t: x.t, u: x.u, s: x.s, d: x.d, n: 1 }, { theme: false })).join("")}</ol>` : `<p class="ix-empty">No headlines found.</p>`}</section></div>`;
+  }
+  return strip + `<article class="sk">${head}${tabbar}<div class="sk-body">${body}</div></article>`;
+}
+function inDate(d) { if (!d) return ""; const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? String(d) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
+function inStockLinked() { return IV.sym ? inAllStories().filter((x) => inLinks(x).sym.includes(IV.sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : []; }
+
+/* ----- entry point ----- */
+function renderIns() {
+  const el = $("vIns"); if (!el) return;
+  if (INS === null) loadIns();
+  if (MKT === null && !IV.mktBusy) loadMkt();
+  if (LIVE === null && !IV.feedBusy) loadFeed();
+  if (IV.view === "stocks" && FUND === null) loadFund();
+  const a = document.activeElement, keep = a && el.contains(a) && a.id && (a.tagName === "INPUT") ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
+  const body = IV.view === "news" ? inNewsView() : IV.view === "markets" ? inMarketsView() : IV.view === "stocks" ? inStocksView() : IV.view === "method" ? inMethodView() : inOverview();
+  el.innerHTML = `<div class="ix">${inTape()}${inSubnav()}<div class="ix-body">${body}</div></div>`;
+  if (keep) { const n = document.getElementById(keep.id); if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.e); } catch (e) {} } }
+}
+

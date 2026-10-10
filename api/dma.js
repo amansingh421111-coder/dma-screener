@@ -114,6 +114,15 @@ module.exports = async (req, res) => {
       await redis(["SET", "mkt:out", JSON.stringify(out)]);
       return send(res, out);
     }
+    if (a === "theme") {   // every story of the last 7 days for one news theme (the main feed carries the top 30)
+      if (!(await rl("rl:th:" + clientIp(req), 300, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
+      const id = String(req.query.id || "");
+      if (!/^[a-z]{2,12}$/.test(id)) return send(res, { error: "Unknown theme." }, 400);
+      const raw = await redis(["GET", "feed:full:" + id]);
+      if (!raw) return send(res, { error: "The full list is not ready yet. It is built on the next news refresh." }, 404);
+      try { return send(res, JSON.parse(require("zlib").inflateSync(Buffer.from(raw, "base64")).toString())); }
+      catch (e) { return send(res, { error: "The full list could not be read." }, 500); }
+    }
     if (a === "feed") {
       if (!(await rl("rl:feed:" + clientIp(req), 600, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
       const raw = await redis(["GET", "feed:out"]); let out = raw ? JSON.parse(raw) : null;
@@ -127,8 +136,10 @@ module.exports = async (req, res) => {
         const r = await FEED.refresh(old, k);
         if (r.answered > 0 || !out) {
           await redis(["SET", "feed:pool2", zlib.deflateSync(JSON.stringify(r.items)).toString("base64")]);
-          out = FEED.build(r.items); out.last_fetch = { requests: r.fetched, answered: r.answered, headlines: r.added };
+          out = FEED.build(r.items); const full = out.full; delete out.full; out.last_fetch = { requests: r.fetched, answered: r.answered, headlines: r.added };
           await redis(["SET", "feed:out", JSON.stringify(out)]);
+          // the complete 7-day list for each theme, one key per theme so each request stays small
+          await Promise.all(Object.entries(full).map(([id, st]) => redis(["SET", "feed:full:" + id, zlib.deflateSync(JSON.stringify({ id, updated: out.updated, stories: st })).toString("base64")])));
         }
       } finally { await redis(["DEL", "feed:lock"]); }
       return send(res, out);

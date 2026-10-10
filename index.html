@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
 <meta name="theme-color" content="#0f1b2d">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f5f9;--card:#fff;--ink:#0f1b2d;--mute:#5d6b82;--line:#e0e5ee;--buy:#0b8f5f;--sell:#d03a30;--near:#a8690c;--buy-bg:#e2f5ec;--sell-bg:#fcebe9;--near-bg:#fbf0d9;--accent:#1f4fd8}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1322;--card:#131d32;--ink:#e8edf7;--mute:#92a0ba;--line:#233150;--buy:#3ccb96;--sell:#ff7468;--near:#eab14d;--buy-bg:#12332b;--sell-bg:#3a1c22;--near-bg:#3a2e14;--accent:#7fa2ff}}
@@ -224,7 +224,6 @@ tr.dt td{padding:14px 16px}
 .card{padding:10px 12px}.ct b{font-size:15px}.ct .px{font-size:14.5px}
 .sc{padding:8px 11px}.sc b{font-size:18px}.pc{padding:11px}
 footer{font-size:11.5px;margin-top:18px}
-@media(min-width:761px){html{zoom:.92}}
 /* ===== Strategies page ===== */
 .sx-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:8px 16px;margin:2px 0 12px}
 .sx-head h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em}
@@ -300,22 +299,22 @@ table.sx th{vertical-align:bottom}
 .sx-checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}.sx-checks li{display:flex;gap:10px;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 .sx-checks .mk{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 .sx-checks li.ok .mk{background:var(--buy-bg);color:var(--buy)}.sx-checks li.no .mk{background:var(--sell-bg);color:var(--sell)}.sx-checks .m{font-size:12.5px;margin-top:1px}
-</style></head><body><main>
-<header><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></header>
+</style>
+<link rel="stylesheet" href="app.css"></head><body><main>
+<header class="app-h"><a class="brand" href="#screener" onclick="go('screen');return false"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></a><span class="grow"></span><span class="mstat" id="mstat"></span><span class="fresh" id="fresh"></span><details class="dstat"><summary>Data status</summary><div id="dstatb"></div></details></header>
 <div class="meta" id="meta"></div>
 <div class="meta" id="health" style="margin-top:2px"></div>
 <div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
 <div id="warn" class="warn" hidden></div>
-<nav class="nav" id="nav"></nav>
+<nav class="nav" id="nav" aria-label="Sections"></nav>
 
 <section id="vScreen">
-<details class="help"><summary>How to read this screen</summary>
+<div class="sc-head"><div class="seg3" id="secs" role="group" aria-label="Signal type"></div><div class="tiles" id="tiles"></div><span class="grow"></span><button type="button" class="btn ghost sm" id="hlpb" aria-expanded="false" aria-controls="hlp" onclick="tglHelp('read')">How to read this screen</button><button type="button" class="btn ghost sm" id="scnb" aria-expanded="false" aria-controls="scaninfo" onclick="tglHelp('scan')" hidden>What was scanned</button></div>
+<div class="help" id="hlp" hidden>
 <p><b>vs 44-DMA</b> is how far the price is from its 44-day moving average. "−0.17%" means 0.17% below the average of the last 44 closes.</p>
 <p><b>Two views.</b> <b>Crossed today</b> = stocks whose price crossed the average on the latest trading day (buy: crossed above, sell: crossed below). <b>In range</b> = stocks sitting near the average whether or not they crossed today. <b>Signals.</b> Buy: price is at or above the average, up to 5% above it. Approaching: price is below the average but within 2% of it. Sell: price just crossed below the average.</p>
-<p><b>Stars (0-3):</b> the candle agrees with the expected move, it closed near the day's high (buys) or low (sells), and volume is at least 1.5x its 20-day average. <b>Market cap</b> is in rupees crore (Large, Mid, Small, Micro are approximate buckets). <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>Days</b> is how long price has been on its current side of the average.</p></details>
-<div class="seg3" id="secs" role="group" aria-label="Signal type"></div>
-<div class="tiles" id="tiles"></div>
-<details class="help" id="scaninfo" hidden></details>
+<p><b>Stars (0-3):</b> the candle agrees with the expected move, it closed near the day's high (buys) or low (sells), and volume is at least 1.5x its 20-day average. <b>Market cap</b> is in rupees crore (Large, Mid, Small, Micro are approximate buckets). <b>RSI</b> above 70 is stretched, below 30 is oversold. <b>Days</b> is how long price has been on its current side of the average.</p></div>
+<div class="help" id="scaninfo" hidden></div>
 <button class="btn" id="ft" onclick="$('filters').hidden=!$('filters').hidden" style="margin-bottom:10px">Filters</button>
 <div class="wrap">
 <aside id="filters" hidden>
@@ -354,15 +353,15 @@ table.sx th{vertical-align:bottom}
 </form>
 </div>
 <div id="posapp" hidden>
-<div class="fm" id="acctbar"><div class="tgrow"><div><b>Signed in as <span id="who"></span></b></div><button class="btn sm" onclick="logout()">Log out</button></div>
-<details class="set"><summary>Account settings</summary>
+<div class="fm" id="acctbar"><div class="acct-row"><span class="acct-who">Signed in as <b id="who"></b></span><span id="tgpill" class="tgpill"></span><span class="grow"></span><button type="button" class="btn ghost sm" id="acctb" aria-expanded="false" aria-controls="acctset" onclick="tglAcct()">Account settings</button><button class="btn sm" onclick="logout()">Log out</button></div>
+<div class="set" id="acctset" hidden><div id="tgset"></div>
 <div class="fg"><div><label for="pw0">Current password</label><input id="pw0" type="password" autocomplete="current-password"></div><div><label for="pw1">New password (8+ characters)</label><input id="pw1" type="password" autocomplete="new-password"></div></div>
 <div class="act"><button class="btn sm" onclick="changePw()">Change password</button><button class="btn sm danger" onclick="deleteAcct()">Delete account</button></div><div class="msg" id="pwmsg"></div>
-<p class="sub">Delete account removes your positions and Telegram link. Enter your current password above first.</p></details></div>
+<p class="sub">Delete account removes your positions and Telegram link. Enter your current password above first.</p></div></div>
 <div class="fm" id="tgcard"></div>
 <div class="sum" id="psum"></div>
-<div class="bar"><div class="seg2" id="pview"></div><span style="flex:1"></span><select id="psort" class="always" aria-label="Sort positions"></select><button class="btn pri" onclick="openForm()">＋ Add position</button><button class="btn" onclick="exportPos()">Backup</button><button class="btn" onclick="exportTxns()">Transactions CSV</button><label class="btn" style="cursor:pointer">Read screenshot<input type="file" id="pscr" accept="image/*" multiple hidden></label><label class="btn" style="cursor:pointer">Import<input type="file" id="pimp" accept=".json,application/json" hidden></label></div>
-<div class="fm" id="szcard" hidden><details id="szdet" open><summary><b>Position size calculator</b> <span class="sub">how many shares to buy so a stop-out costs only what you chose to risk</span></summary>
+<div class="bar pbar"><div class="seg2" id="pview"></div><span class="grow"></span><select id="psort" class="always" aria-label="Sort positions"></select><label class="btn" style="cursor:pointer" title="Read buy or sell orders from broker screenshots">Read screenshot<input type="file" id="pscr" accept="image/*" multiple hidden></label><button class="btn pri" onclick="openForm()">＋ Add position</button><details class="menu" id="pmore"><summary class="btn" aria-label="More actions">More</summary><div class="menu-p"><button type="button" onclick="pmoreClose();exportPos()">Back up positions (JSON file)</button><button type="button" onclick="pmoreClose();exportTxns()">Download transactions (CSV)</button><label>Import a backup<input type="file" id="pimp" accept=".json,application/json" hidden onclick="pmoreClose()"></label></div></details></div>
+<div class="fm" id="szcard" hidden><div id="szdet"><div class="sz-h"><h3>Position size calculator</h3><p class="sub">How many shares to buy so that a stop-out costs only what you chose to risk, after brokerage and taxes.</p></div>
 <div class="sz">
 <div class="szg">
 <div><label for="sz-sym">Stock (optional)</label><input id="sz-sym" list="syms" placeholder="e.g. RELIANCE" autocapitalize="characters" autocomplete="off" oninput="szPick()"></div>
@@ -376,7 +375,7 @@ table.sx th{vertical-align:bottom}
 </div>
 <div class="sub" id="sz-q" style="margin:6px 0"></div>
 <div id="sz-out" class="szo" aria-live="polite">Enter your capital, the entry price and a stop loss. The calculator then works out the number of shares, including brokerage and tax charges.</div>
-</div></details></div>
+</div></div></div>
 <div class="bar" id="wbar" hidden><span class="sub" style="flex:1">Stocks you are watching but do not own. Alerts go to Telegram, once a day per condition.</span><button class="btn pri" onclick="openWatch()">＋ Add to watchlist</button></div>
 <div class="fm" id="scrcard" hidden></div>
 <div class="fm" id="wform" hidden><h3>Watchlist stock</h3><div class="fg">
@@ -424,7 +423,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-10.20</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.1</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -447,7 +446,7 @@ const mem={};const rd=k=>{try{return localStorage.getItem(k)}catch(e){return mem
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
 const inr=n=>(n<0?"−":"")+"₹"+fmt(Math.abs(n));
-const sg=n=>(n>0?"+":"")+n;
+const sg=n=>{const v=Number(n);if(n==null||!isFinite(v))return"–";const a=Math.abs(v).toFixed(2);return(+a===0?"":v>0?"+":"−")+a};
 const cr=n=>n==null?"–":n>=1e5?`₹${(n/1e5).toFixed(2)} L Cr`:`₹${Math.round(n).toLocaleString("en-IN")} Cr`;
 const num=id=>{const v=$(id).value.trim();return v===""||isNaN(v)?null:Number(v)};
 const ex=s=>s.exchange||"NSE",key=s=>ex(s)+":"+s.symbol;
@@ -472,7 +471,7 @@ function pass(s){
  if(has("hi")&&!ok(s.from_hi,hh===null?null:-hh,null))return false;
  if(has("since")&&!ok(s.since,null,num("since")))return false;
  return true}
-const COLS=[["symbol","Symbol","Stock symbol and company"],["exchange","Exch","NSE or BSE"],["price","Price","Last price in rupees"],["chg","Day %","Change versus yesterday's close"],["pct","vs 44-DMA","Distance from the moving average"],["mcap","Mkt cap","Market capitalisation in rupees crore"],["candle","Candle","Latest candle pattern (click to group by pattern, then stars)"],["score","Rating","0-3 star conviction"],["vol_x","Vol ×","Volume versus its 20-day average"],["rsi","RSI","Relative strength index, 14 days"],["above200","200-DMA","Above or below the 200-day average"],["since","Days","Trading days on the current side of the average"],["from_hi","From 52W high","Distance below the 52-week high"]];
+const COLS=[["symbol","Symbol","Stock symbol and company"],["exchange","Exch","NSE or BSE"],["price","Price","Last price in rupees"],["chg","Day %","Change versus yesterday's close"],["pct","vs 44-DMA","Distance from the moving average"],["mcap","Mkt cap","Market capitalisation in rupees crore"],["candle","Candle","Latest candle pattern (click to group by pattern, then stars)"],["score","Rating","0-3 star conviction"],["vol_x","Vol ×","Volume versus its 20-day average"],["rsi","RSI","Relative strength index, 14 days"],["above200","200-DMA","Above or below the 200-day average"],["since","Days","Trading days on the current side of the average"],["from_hi","52W high","Distance below the 52-week high"]];
 const SORTS=[["score|-1","Highest rating first"],["candle|-1","Candle: bullish first"],["candle|1","Candle: bearish first"],["abs|1","Closest to average"],["mcap|-1","Market cap, high to low"],["vol_x|-1","Volume surge"],["chg|-1","Top gainers today"],["chg|1","Top losers today"],["rsi|1","RSI, low to high"],["symbol|1","A to Z"]];
 function val(s,k){return k==="symbol"?s.symbol:k==="exchange"?ex(s):k==="abs"?Math.abs(s.pct):k==="above200"?(s.above200==null?null:+s.above200):k==="score"?(s.candle?s.score||0:null):k==="candle"?(s.candle?({bullish:5,hammer:4,doji:3,shooting_star:2,bearish:1}[s.candle]||0):null):s[k]}
 function cmp(a,b){const x=val(a,sortKey),y=val(b,sortKey);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
@@ -506,7 +505,7 @@ const LAB={buy:"Buy",sell:"Sell",near:"Near"},COL={buy:"var(--buy)",sell:"var(--
 const pc=n=>n==null?"–":`<span class="${n>0?"pos":n<0?"neg":""}">${sg(n)}%</span>`;
 const stars=s=>s.candle?`${SHORT[s.candle]||esc(s.candle)} <span class="star">${"★".repeat(s.score||0)}${"☆".repeat(3-(s.score||0))}</span>`:"–";
 function tr(s){const o=opened.has(key(s)),sc=`data-k="${esc(key(s))}"`;
- let h=`<tr class="r" ${sc} onclick="tog(this.dataset.k)"><td><b>${esc(s.symbol)}</b><span class="tag ${s.type}">${LAB[s.type]}</span><span class="nm">${esc(s.name||"")}</span></td><td><span class="tag ex">${ex(s)}</span></td><td>${inr(s.price)}</td><td>${pc(s.chg)}</td><td style="color:${COL[s.type]};font-weight:600">${sg(s.pct)}%</td><td>${cr(s.mcap)}</td><td>${s.candle?SHORT[s.candle]||esc(s.candle):"–"}</td><td><span class="star">${s.candle?"★".repeat(s.score||0)+"☆".repeat(3-(s.score||0)):"–"}</span></td><td>${s.vol_x!=null?s.vol_x+"×":"–"}</td><td>${s.rsi??"–"}</td><td>${s.above200==null?"–":s.above200?"Above":"Below"}</td><td>${s.since??"–"}</td><td>${s.from_hi!=null?s.from_hi+"%":"–"}</td></tr>`;
+ let h=`<tr class="r" ${sc} onclick="tog(this.dataset.k)"><td><b>${esc(s.symbol)}</b><span class="tag ${s.type}">${LAB[s.type]}</span><span class="nm">${esc(s.name||"")}</span></td><td><span class="tag ex">${ex(s)}</span></td><td>${inr(s.price)}</td><td>${pc(s.chg)}</td><td style="color:${COL[s.type]};font-weight:600">${sg(s.pct)}%</td><td>${cr(s.mcap)}</td><td>${s.candle?SHORT[s.candle]||esc(s.candle):"–"}</td><td><span class="star">${s.candle?"★".repeat(s.score||0)+"☆".repeat(3-(s.score||0)):"–"}</span></td><td>${s.vol_x!=null?s.vol_x+"×":"–"}</td><td>${s.rsi??"–"}</td><td>${s.above200==null?"–":s.above200?"Above":"Below"}</td><td>${s.since??"–"}</td><td>${s.from_hi!=null?sg(s.from_hi)+"%":"–"}</td></tr>`;
  if(o)h+=`<tr class="dt"><td colspan="13" style="--c:${COL[s.type]};--cb:${COLB[s.type]}">${detail(s)}</td></tr>`;return h}
 function card(s){const o=opened.has(key(s));
  return `<article class="card ${s.type}" data-k="${esc(key(s))}" onclick="tog(this.dataset.k)"><div class="ct"><div><b>${esc(s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span><div class="sub">${esc(s.name||"")}</div></div><div class="px">${inr(s.price)}<div class="sub">${s.mcap!=null?cr(s.mcap):""}</div></div></div>
@@ -516,6 +515,7 @@ const mobile=()=>matchMedia("(max-width:760px)").matches;
 function active(){let n=0;["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>{if($(i).value.trim()!=="")n++});return n+(minStars?1:0)+(candles.size?1:0)+(exch.size?1:0)+(caps.size?1:0)}
 function chipset(id,names,set){$(id).innerHTML=names.map(([k,l])=>`<button class="chip" aria-pressed="${set.has(k)}" onclick="set_('${id}','${k}')">${l}</button>`).join("")}
 function set_(id,k){const S={exch,caps,candles}[id];S.has(k)?S.delete(k):S.add(k);shown=50;render()}
+let helpOpen=null;function tglHelp(k){helpOpen=helpOpen===k?null:k;render()}
 function renderScreen(){
  const miss=["candle","rsi","trend","hi","since","mcap"].filter(k=>!has(k)),msgs=[];
  if(miss.length&&data.signals.length)msgs.push(`<b>Some data is missing (${miss.join(", ")}).</b> Update <b>screen.py</b> in GitHub, then run <b>Actions → screener → Run workflow → run</b>. Related filters are greyed out until then.`);
@@ -526,7 +526,7 @@ function renderScreen(){
  $("tiles").innerHTML=TABS_().map(([k,l])=>`<button class="tile ${k==="all"?"all":k}" aria-pressed="${k===tab}" onclick="tab='${k}';shown=50;render()"><b>${k==="all"?L.length:L.filter(s=>s.type===k).length}</b><span>${l}</span></button>`).join("")}
  {const sc=data.scan,el=$("scaninfo");if(sc){const N=x=>Number(x||0).toLocaleString("en-IN"),L={low_price:"price below ₹"+(data.min_price||50),low_volume:"too little trading volume",no_trade_latest_day:"did not trade on the latest day",short_history:"under 46 days of price history",not_near_average:"not within the signal range of the average"};
  const row=(ex,x)=>{if(!x||!x.listed)return"";const d=Object.entries(Object.assign({},x.dropped_before_download,x.rejected_after_download)).filter(([,v])=>v).map(([k,v])=>`<li>${N(v)} · ${L[k]||k.replace(/_/g," ")}</li>`).join("");return `<p><b>${ex}</b>: ${N(x.listed)} listed stocks checked, ${N(x.signals)} signals.</p><ul>${d}</ul>`};
- el.hidden=false;el.innerHTML=`<summary>What was scanned (every listed stock, then filtered)</summary>${row("NSE",sc.NSE)}${row("BSE",sc.BSE)}<p class="sub">BSE counts only stocks not already on NSE. Filters: minimum price, minimum average volume, and at least 46 days of history. Change them in config.yaml.</p>`}else el.hidden=true}
+ el.hidden=helpOpen!=="scan";el.innerHTML=`<p><b>What was scanned</b>: every listed stock, then filtered.</p>${row("NSE",sc.NSE)}${row("BSE",sc.BSE)}<p class="sub">BSE counts only stocks not already on NSE. Filters: minimum price, minimum average volume, and at least 46 days of history. Change them in config.yaml.</p>`}else el.hidden=true;$("scnb").hidden=!sc;$("scnb").setAttribute("aria-expanded",helpOpen==="scan");$("hlp").hidden=helpOpen!=="read";$("hlpb").setAttribute("aria-expanded",helpOpen==="read")}
  chipset("exch",[["NSE","NSE"],["BSE","BSE"]],exch);chipset("caps",[["Large","Large"],["Mid","Mid"],["Small","Small"],["Micro","Micro"]],caps);
  chipset("candles",Object.entries(NAMES).map(([k,l])=>[k,l.replace(" candle","")]),candles);
  $("stars").innerHTML=[0,1,2,3].map(n=>`<button class="chip" aria-pressed="${minStars===n}" onclick="minStars=${n};shown=50;render()">${n?"★".repeat(n):"Any"}</button>`).join("");
@@ -605,11 +605,16 @@ function pollTg(t0){clearTimeout(pollT);pollT=setTimeout(async()=>{try{if((await
  if(Date.now()-t0<18e4)pollTg(t0);else{CLOUD.link=null;render()}},POLL)}
 async function disconnectTg(){try{await api("unlink",{});CLOUD.connected=false}catch(e){alert("Could not disconnect: "+e.message)}render()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ME&&CLOUD.ok&&!CLOUD.connected)api("status",null,"GET").then(s=>{CLOUD.connected=s.connected;render()}).catch(()=>{})});
-function renderTg(){const c=$("tgcard");
- if(CLOUD.ok===null){c.innerHTML=`<b>Telegram alerts</b><div class="sub">Checking…</div>`;return}
+function tglAcct(){const e=$("acctset");e.hidden=!e.hidden;$("acctb").setAttribute("aria-expanded",!e.hidden)}
+function pmoreClose(){const m=$("pmore");if(m)m.open=false}
+document.addEventListener("click",e=>{const m=$("pmore");if(m&&m.open&&!m.contains(e.target))m.open=false});
+function renderTg(){const c=$("tgcard"),pill=$("tgpill"),ts=$("tgset");c.hidden=false;pill.className="tgpill";pill.textContent="";pill.title="";ts.innerHTML="";
+ if(CLOUD.ok===null){c.hidden=true;pill.textContent="Checking Telegram…";return}
  if(CLOUD.ok===false){c.innerHTML=`<b>Telegram alerts</b><div class="sub">The alerts server is not set up yet (${esc(CLOUD.err)}). Positions are saved on this device only. Finish the Telegram setup steps, then reload.</div>`;return}
- c.innerHTML=CLOUD.connected?`<div class="tgrow"><div><b>✅ Telegram connected</b><div class="sub">You'll get stop-loss, target and 44-DMA alerts on Telegram. Positions save online automatically.</div></div><button class="btn sm danger" onclick="disconnectTg()">Disconnect</button></div>`
- :`<div class="tgrow"><div><b>Get alerts on Telegram</b><div class="sub">Tap Connect, then press Start in Telegram. That's it.</div>${CLOUD.link?`<div class="sub"><a class="btn pri" style="display:inline-block;margin-top:6px" href="${esc(CLOUD.link)}" target="_blank" rel="noopener">Open Telegram and press Start</a></div>`:""}${CLOUD.err?`<div class="sub" style="color:#f87171">Could not connect: ${esc(CLOUD.err)}${CLOUD.diag?" — "+esc(CLOUD.diag):""}</div>`:""}</div><button class="btn pri" onclick="connectTg()">Connect Telegram</button></div>`}
+ if(CLOUD.connected){c.hidden=true;c.innerHTML="";pill.className="tgpill on";pill.textContent="Telegram alerts on";pill.title="Stop-loss, target and 44-DMA alerts go to your Telegram. Positions save online automatically.";
+  ts.innerHTML=`<div class="tgrow"><div><b>Telegram connected</b><div class="sub">You get stop-loss, target and 44-DMA alerts on Telegram. Positions save online automatically.</div></div><button class="btn sm danger" onclick="disconnectTg()">Disconnect Telegram</button></div>`;return}
+ pill.className="tgpill off";pill.textContent="Telegram alerts off";
+ c.innerHTML=`<div class="tgrow"><div><b>Get alerts on Telegram</b><div class="sub">Tap Connect, then press Start in Telegram. That's it.</div>${CLOUD.link?`<div class="sub"><a class="btn pri" style="display:inline-block;margin-top:6px" href="${esc(CLOUD.link)}" target="_blank" rel="noopener">Open Telegram and press Start</a></div>`:""}${CLOUD.err?`<div class="sub" style="color:#f87171">Could not connect: ${esc(CLOUD.err)}${CLOUD.diag?" — "+esc(CLOUD.diag):""}</div>`:""}</div><button class="btn pri" onclick="connectTg()">Connect Telegram</button></div>`}
 const uidn=()=>{const a=new Uint8Array(8);crypto.getRandomValues(a);return[...a].map(b=>b.toString(16).padStart(2,"0")).join("")};
 const todayStr=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const pad2=n=>String(n).padStart(2,"0");
@@ -803,17 +808,18 @@ function renderPos(){
  const all=POS.map(p=>({p,c:calc(p)})),oc=all.filter(x=>x.c.open),cc=all.filter(x=>!x.c.open);
  let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;oc.forEach(({p,c})=>{if(p.sl)riskAmt+=Math.max(0,c.L.qty*(c.L.avg-p.sl));else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
  all.forEach(({c})=>{re+=c.L.real});const un=val-inv,unp=inv?un/inv*100:0,sells=all.filter(x=>x.c.L.sold>0).length;
- $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}${dayBase?` · Today <span class="${pcl(day)}">${mny(day)}</span>`:""}</small></div>
+ $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}</small>${dayBase?`<small>Today <span class="${pcl(day)}">${mny(day)}</span></small>`:""}</div>
  <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
  <div class="sc"><span>Realised P&amp;L</span><b class="${pcl(re)}">${sells?mny(re):"₹0"}</b><small>${sells?"From "+sells+" holding"+(sells>1?"s":"")+" with sales":"No sales yet"}</small></div>
  <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" with a price"}</small></div>
  <div class="sc"><span>At risk if all stops hit</span><b>${nostop===oc.length&&oc.length?"–":inr(riskAmt)}</b><small>${val&&riskAmt?(riskAmt/val*100).toFixed(1)+"% of value":""}${nostop?(riskAmt?" · ":"")+nostop+" without a stop":""}</small></div>`;
- $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button><button aria-pressed="${PVIEW==="watch"}" onclick="PVIEW='watch';render()">Watchlist (${WL.length})</button><button aria-pressed="${PVIEW==="reports"}" onclick="PVIEW='reports';render()">Reports</button>`;
- $("szcard").hidden=PVIEW!=="open";$("setcard").hidden=PVIEW!=="reports";if(PVIEW!=="watch")$("wform").hidden=true;$("wbar").hidden=PVIEW!=="watch";fillSettings();
+ $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button><button aria-pressed="${PVIEW==="watch"}" onclick="PVIEW='watch';render()">Watchlist (${WL.length})</button><button aria-pressed="${PVIEW==="size"}" onclick="PVIEW='size';render()">Position size</button><button aria-pressed="${PVIEW==="reports"}" onclick="PVIEW='reports';render()">Reports</button>`;
+ $("szcard").hidden=PVIEW!=="size";$("psort").hidden=PVIEW!=="open"&&PVIEW!=="closed";$("setcard").hidden=PVIEW!=="reports";if(PVIEW!=="watch")$("wform").hidden=true;$("wbar").hidden=PVIEW!=="watch";fillSettings();
  $("psort").value=PSORT;
  let out="";
  if(PVIEW==="watch"){out=renderWatch()}
  else if(PVIEW==="reports"){out=renderReports()}
+ else if(PVIEW==="size"){out=""}
  else if(PVIEW==="open"){const rows=sortRows(oc,false);
   if(!rows.length)out=`<div class="empty">No holdings yet.<br>Add your first purchase with ＋ Add position, or tap Track on any stock in the Screener.<br>Buying the same share again adds to the same holding and updates its average cost.</div>`;
   else out=`<div class="ptable"><div class="tw"><table class="pt"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th>LTP</th><th class="cx">Day</th><th class="cx">Invested</th><th>Value</th><th>P&amp;L</th><th>P&amp;L %</th><th class="cx">Weight</th><th>Stop loss</th><th>Target</th><th class="cx">vs ${data.ma_period}-DMA</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>openRow(p,c,val)).join("")}
@@ -1181,15 +1187,21 @@ function sxDetail(s){const t=s.test||{},pm=s.params,td=s.today||{},src=s.source,
  const mood=(l,x)=>x?`<tr><td>${l}</td><td>${x.n.toLocaleString("en-IN")}</td><td>${pu(x.win_rate)}</td><td class="${sxc(x.avg_ret)}">${pp(x.avg_ret)}</td><td>${pf2(x.profit_factor)}</td><td>${pu(x.worst)}</td><td class="${sxc(x.edge)}">${x.edge==null?"–":pp(x.edge)+" (t "+(x.t==null?"–":x.t)+")"}</td></tr>`:`<tr><td>${l}</td><td colspan="6" class="sx-mut" style="text-align:left">Too few trades</td></tr>`;
  const IC=(s.ind&&td.buy&&td.buy.some(x=>Array.isArray(x.i)))?s.ind:[],ifmt=(c,v)=>v==null?"–":c.fmt==="pct"?`<span class="${sxc(v/100)}">${pp(v/100)}</span>`:c.fmt==="x"?v.toFixed(1)+"×":(Math.abs(v)<10&&c.k!=="rsi14"&&c.k!=="rsi2"?v.toFixed(2):v.toFixed(1));
  const sig=(td.buy||[]).length?`<div class="sx-w sx-sig"><table class="sx2" style="min-width:${420+IC.length*110}px"><thead><tr><th>Stock</th><th>Today’s close</th>${IC.map(c=>`<th>${esc(c.label)}</th>`).join("")}<th>Stop loss (guide)</th><th>Target (guide)</th></tr></thead><tbody>${td.buy.slice(0,30).map(x=>`<tr><td><a target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent("NSE:"+x.s)}">${esc(x.s)}</a></td><td>${inr(x.c)}</td>${IC.map((c,j)=>`<td>${ifmt(c,x.i?x.i[j]:null)}</td>`).join("")}<td>${inr(x.stop)}</td><td>${inr(x.target)}</td></tr>`).join("")}</tbody></table></div>${td.buy_n>30?`<p class="m" style="margin-top:6px">+${td.buy_n-30} more not shown</p>`:""}`:`<p class="m">No stock is signalling today.</p>`;
- return `<div class="sx-panel"><p class="sx-plain"><b>In plain words:</b> ${sxPlain(s)}</p><div class="sx-tiles">${tile("Better than random by",pp(t.edge),sxc(t.edge),"edge")}${tile("How sure (t)",t.t??"–","","t")}${tile("Average profit per trade",pp(t.avg_ret),sxc(t.avg_ret),"avg")}${tile("Random entries made",t.baseline!=null?pp(t.baseline):"–","","random")}${tile("Win rate",pu(t.win_rate),"","win")}${tile("Profit factor",pf2(t.profit_factor),"","pf")}${tile("Trades tested",t.n!=null?t.n.toLocaleString("en-IN"):"–","","trades")}</div>
+ const tab=STAB[s.id]||"summary",T=[["summary","Summary"],["today",`Today’s stocks (${td.buy_n||0})`],["backtest","Backtest"],["checks","Extra checks"]].concat(s.id==="dma44_zone"?[["deep","Deep test"]]:[],[["live","Live record"]]);
+ const bar=`<div class="sx-tabs" role="tablist" aria-label="${esc(s.name)}">${T.map(([k,l])=>`<button type="button" role="tab" aria-selected="${tab===k}" onclick="event.stopPropagation();sxTab('${s.id}','${k}')">${l}</button>`).join("")}</div>`;
+ let body;
+ if(tab==="today")body=`<h4 class="sx-sub" style="margin-top:0">Stocks meeting this rule today (${td.buy_n||0}) ${ii("signals")}</h4>${sig}<p class="m" style="margin-top:6px">Stop and target are measured from your actual buy price (tomorrow’s open); these levels use today’s close as a guide.</p>`;
+ else if(tab==="backtest")body=`<h4 class="sx-sub">Backtest: how the rule did on past data</h4><p class="m" style="margin-bottom:6px">“Earlier” is where the stop loss and target were chosen. “Later” is the fair test the rule never saw; the score comes only from that row. ${ii("earlier")}</p>${sxTbl([["Earlier (stop and target chosen here)",s.train],["Later (score is based on this)",s.test]])}
+ <h4 class="sx-sub">Does it depend on the market? (later period)</h4><p class="m" style="margin-bottom:6px">The same trades split by whether the Nifty 50 was above or below its 200-day average when the signal appeared. ${ii("mood")}</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Nifty 50 when the signal appeared</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Profit factor</th><th>Worst trade</th><th>Better than random</th></tr></thead><tbody>${mood("Above its 200-day average"+(up===true?" (today)":""),s.test_up)}${mood("Below its 200-day average"+(up===false?" (today)":""),s.test_down)}</tbody></table></div>
+ ${s.trail&&s.trail.test?(()=>{const T=s.trail.test,F=s.test;return `<h4 class="sx-sub">Same entries with a trailing stop instead of a fixed target (later period) ${ii("trail")}</h4><p class="m" style="margin-bottom:6px">The stop starts ${s.trail.trail}% below the buy price and then follows the highest price reached, so it only moves up. There is no target; the trade ends when the price falls ${s.trail.trail}% from its peak or after ${s.params.max_hold} trading days. The width was picked on the earlier period.</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Exit rule</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Better than random</th><th>Worst trade</th></tr></thead><tbody><tr><td>Fixed stop −${s.params.stop}% and target +${s.params.target}% (used above)</td><td>${F.n.toLocaleString("en-IN")}</td><td>${pu(F.win_rate)}</td><td class="${sxc(F.avg_ret)}">${pp(F.avg_ret)}</td><td class="${sxc(F.edge)}">${pp(F.edge)} (t ${F.t==null?"–":F.t})</td><td>${pu(F.worst)}</td></tr><tr><td>Trailing stop ${s.trail.trail}% below the peak</td><td>${T.n.toLocaleString("en-IN")}</td><td>${pu(T.win_rate)}</td><td class="${sxc(T.avg_ret)}">${pp(T.avg_ret)}</td><td class="${sxc(T.edge)}">${T.edge==null?"–":pp(T.edge)+" (t "+(T.t==null?"–":T.t)+")"}</td><td>${pu(T.worst)}</td></tr></tbody></table></div>`})():""}`;
+ else if(tab==="checks")body=sxFurther(s)||`<p class="m">No extra checks were run for this strategy.</p>`;
+ else if(tab==="deep")body=sxDeep();
+ else if(tab==="live")body=sxLive(s);
+ else body=`<p class="sx-plain"><b>In plain words:</b> ${sxPlain(s)}</p><div class="sx-tiles">${tile("Better than random by",pp(t.edge),sxc(t.edge),"edge")}${tile("How sure (t)",t.t??"–","","t")}${tile("Average profit per trade",pp(t.avg_ret),sxc(t.avg_ret),"avg")}${tile("Random entries made",t.baseline!=null?pp(t.baseline):"–","","random")}${tile("Win rate",pu(t.win_rate),"","win")}${tile("Profit factor",pf2(t.profit_factor),"","pf")}${tile("Trades tested",t.n!=null?t.n.toLocaleString("en-IN"):"–","","trades")}</div>
  <div class="sx-cols"><div><h4>The rule</h4><p>${esc(s.rule)}</p></div>
  <div><h4>How a trade ends (sell rules) ${ii("stop")}</h4><p>Stop loss <b>${pm.stop}%</b> below your buy price. Target <b>${pm.target}%</b> above it (risk to reward 1 : ${(pm.target/pm.stop).toFixed(1)}). Otherwise sell at the close after <b>${pm.max_hold}</b> trading days.</p><p class="m" style="margin-top:4px">Picked from ${(s.grid||[]).length} combinations using only the earlier period.</p></div>
- <div><h4>Where it comes from</h4><p>${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(src.url)}" style="color:var(--accent)">${esc(src.name)}</a>`:"A common technical-analysis rule. No single published source was checked."}</p>${src&&src.note?`<p class="m" style="margin-top:4px">${esc(src.note)}</p>`:""}</div></div>
- <h4 class="sx-sub">Backtest: how the rule did on past data</h4><p class="m" style="margin-bottom:6px">“Earlier” is where the stop loss and target were chosen. “Later” is the fair test the rule never saw; the score comes only from that row. ${ii("earlier")}</p>${sxTbl([["Earlier (stop and target chosen here)",s.train],["Later (score is based on this)",s.test]])}
- <h4 class="sx-sub">Does it depend on the market? (later period)</h4><p class="m" style="margin-bottom:6px">The same trades split by whether the Nifty 50 was above or below its 200-day average when the signal appeared. ${ii("mood")}</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Nifty 50 when the signal appeared</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Profit factor</th><th>Worst trade</th><th>Better than random</th></tr></thead><tbody>${mood("Above its 200-day average"+(up===true?" (today)":""),s.test_up)}${mood("Below its 200-day average"+(up===false?" (today)":""),s.test_down)}</tbody></table></div>
- ${s.trail&&s.trail.test?(()=>{const T=s.trail.test,F=s.test;return `<h4 class="sx-sub">Same entries with a trailing stop instead of a fixed target (later period) ${ii("trail")}</h4><p class="m" style="margin-bottom:6px">The stop starts ${s.trail.trail}% below the buy price and then follows the highest price reached, so it only moves up. There is no target; the trade ends when the price falls ${s.trail.trail}% from its peak or after ${s.params.max_hold} trading days. The width was picked on the earlier period.</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Exit rule</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Better than random</th><th>Worst trade</th></tr></thead><tbody><tr><td>Fixed stop −${s.params.stop}% and target +${s.params.target}% (used above)</td><td>${F.n.toLocaleString("en-IN")}</td><td>${pu(F.win_rate)}</td><td class="${sxc(F.avg_ret)}">${pp(F.avg_ret)}</td><td class="${sxc(F.edge)}">${pp(F.edge)} (t ${F.t==null?"–":F.t})</td><td>${pu(F.worst)}</td></tr><tr><td>Trailing stop ${s.trail.trail}% below the peak</td><td>${T.n.toLocaleString("en-IN")}</td><td>${pu(T.win_rate)}</td><td class="${sxc(T.avg_ret)}">${pp(T.avg_ret)}</td><td class="${sxc(T.edge)}">${T.edge==null?"–":pp(T.edge)+" (t "+(T.t==null?"–":T.t)+")"}</td><td>${pu(T.worst)}</td></tr></tbody></table></div>`})():""}
- ${sxFurther(s)}${s.id==="dma44_zone"?sxDeep():""}${sxLive(s)}<div class="sx-cols" style="margin-top:16px"><div><h4>How the score was worked out ${ii("score")}</h4><ul class="sx-parts">${(s.score_parts||[]).map(x=>`<li><span>${esc(x[0])}</span><b class="${x[1]<0?"sx-neg":""}">${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}<li><span><b>Total</b></span><b>${(s.stars||0).toFixed(1)} of 5</b></li></ul></div>
- <div${IC.length?' style="grid-column:1/-1"':""}><h4>Stocks meeting this rule today (${td.buy_n||0}) ${ii("signals")}</h4>${sig}<p class="m" style="margin-top:6px">Stop and target are measured from your actual buy price (tomorrow’s open); these levels use today’s close as a guide.</p></div></div></div>`}
+ <div><h4>Where it comes from</h4><p>${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(src.url)}" style="color:var(--accent)">${esc(src.name)}</a>`:"A common technical-analysis rule. No single published source was checked."}</p>${src&&src.note?`<p class="m" style="margin-top:4px">${esc(src.note)}</p>`:""}</div></div><div class="sx-cols" style="margin-top:16px"><div><h4>How the score was worked out ${ii("score")}</h4><ul class="sx-parts">${(s.score_parts||[]).map(x=>`<li><span>${esc(x[0])}</span><b class="${x[1]<0?"sx-neg":""}">${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}<li><span><b>Total</b></span><b>${(s.stars||0).toFixed(1)} of 5</b></li></ul></div></div>`;
+ return `<div class="sx-panel">${bar}<div class="sx-tb">${body}</div></div>`}
 function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div class="empty">Loading…</div>`;
  if(!S.strategies||!S.strategies.length||!S.strategies[0].params)return $("vStrat").innerHTML=`<div class="empty">No strategy results yet.<br>They are built by the “strategies” workflow on GitHub (Saturday morning, or run it by hand).</div>`;
  const M=S.market||{},up=M.above_200,all=S.strategies;
@@ -1205,7 +1217,7 @@ function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div cl
  const cards=list.map(s=>{const t=s.test,on=SOPEN.has(s.id),pm=s.params;
   return `<div class="sx-mc"><div class="tp" onclick="sxTog('${s.id}')"><div><div class="sx-nm">${esc(s.name)}</div><div class="sx-fam">${esc(s.family||"")} · −${pm.stop}% / +${pm.target}%</div></div>${smeter(s.stars||0)}</div>
   <div class="mg"><div>Better than random<b class="${t?sxc(t.edge):""}">${t?pp(t.edge):"–"}</b></div><div>Avg profit / trade<b class="${t?sxc(t.avg_ret):""}">${t?pp(t.avg_ret):"–"}</b></div><div>How sure<b>${t&&t.t!=null?"t "+t.t.toFixed(1):"–"}</b></div><div>Trades<b>${t?t.n.toLocaleString("en-IN"):"–"}</b></div><div>Win rate<b>${t?pu(t.win_rate):"–"}</b></div><div>Extra checks<b>${s.robust?s.robust.passed+" of "+s.robust.total:"–"}</b></div><div>Signals today<b>${(s.today||{}).buy_n||0}</b></div></div>${on?sxDetail(s):""}</div>`}).join("");
- $("vStrat").innerHTML=`<div class="sx-head"><div><h2>Strategy library</h2><p>${all.length} written strategies, each with its own stop loss, profit target and time limit, backtested on about ${S.years||6} years of adjusted prices (${esc(S.universe||"")}). The numbers describe what the rules did in the past; they are not recommendations.</p></div><span class="sx-asof">Prices as of ${esc(S.price_date||"–")}${S.stale?" (stale)":""}</span></div>
+ $("vStrat").innerHTML=`<div class="sx-head"><div><h2>Strategy library</h2><p>${all.length} written strategies, each with its own stop loss, profit target and time limit, backtested on about ${S.years||6} years of adjusted prices (${esc(S.universe||"")}). The numbers describe what the rules did in the past; they are not recommendations.</p></div><span class="sx-asof">Prices as of ${S.price_date?new Date(S.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"–"}${S.stale?" (stale)":""}</span></div>
  <div class="sx-kpis">${kpi("Nifty 50",M.nifty!=null?M.nifty.toLocaleString("en-IN"):"–",up===true?"Above its 200-day average":up===false?"Below its 200-day average":"–",up===true?"sx-pos":up===false?"sx-neg":"","mood")}${kpi("Market breadth",M.breadth50!=null?pu(M.breadth50):"–","of stocks are above their 50-day average",null,"breadth")}${kpi("Beat random, likely not luck",solid+" of "+all.length,"strategies with a positive edge and “How sure” of 2 or more",solid?"sx-pos":"","t")}${kpi("Signals today",nSig,"stocks meeting a strategy scoring "+SMIN()+" or more",null,"signals")}</div>
  ${sxGuide(S)}
  <div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
@@ -1213,11 +1225,25 @@ function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div cl
  <label>Show “Buy” on My Positions only for scores of at least ${ii("buy")} <select onchange="setSmin(this.value)">${[0,1,1.5,2,2.5,3,3.5,4].map(v=>`<option value="${v}" ${v===SMINV?"selected":""}>${v}</option>`).join("")}</select></label></div>
  <div class="sx-card"><div class="sx-t"><table class="sx"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div><div class="sx-m">${cards}</div></div>
  <p class="sx-mut" style="font-size:12.5px;margin:8px 2px 0">All figures in the table are from the later, fair-test period. Click a column heading to sort, click the small “i” next to any heading for its meaning, and click a row to open the strategy.</p>`}
+let STAB={};function sxTab(id,k){STAB[id]=k;render()}
 function sxTog(id){if(SOPEN.has(id))SOPEN.delete(id);else SOPEN.add(id);render()}
 
 normalize();
 
 /* ---------- navigation & render ---------- */
+function mktState(d=new Date()){const t=new Date(d.getTime()+330*6e4),wd=t.getUTCDay(),m=t.getUTCHours()*60+t.getUTCMinutes();
+ if(wd>=1&&wd<=5&&m>=555&&m<=930)return{k:"open",t:"Market open"};if(wd>=1&&wd<=5&&m>=540&&m<555)return{k:"pre",t:"Pre-open session"};
+ const nx=wd===5&&m>930||wd===6?"Monday":wd===0?"Monday":m>930?"tomorrow":"today";return{k:"closed",t:`Market closed, opens ${nx} 9:15 am`}}
+function lastClose(d=new Date()){const Z=330*6e4;let t=new Date(d.getTime()+Z);   // the latest weekday 3:30 pm IST at or before d
+ for(let i=0;i<8;i++){const wd=t.getUTCDay(),m=t.getUTCHours()*60+t.getUTCMinutes();if(wd>=1&&wd<=5&&(i>0||m>=930))return Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate(),15,30)-Z;
+  t=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()-1,23,59))}return 0}
+function dataStale(d=new Date()){const u=new Date(data.updated).getTime(),M=mktState(d),after=u>=lastClose(d)-20*6e4;   // scans run every 15 minutes in market hours, the last one after the close
+ if(M.k!=="open")return!after;const t=new Date(d.getTime()+330*6e4),sinceOpen=t.getUTCHours()*60+t.getUTCMinutes()-555;return!(d-u<40*6e4||(sinceOpen<40&&after))}
+function renderShell(stale){const M=mktState();$("mstat").className="mstat "+M.k;$("mstat").innerHTML=`<i></i>${M.t}`;$("mstat").title="NSE and BSE regular session, 9:15 am to 3:30 pm IST, Monday to Friday. Exchange holidays are not accounted for.";
+ const pd=data.price_date?new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"}):"";
+ $("fresh").className="fresh"+(stale?" stale":"");$("fresh").textContent=stale?(pd?`Screener prices of ${pd}, `:"")+`updated ${ago(data.updated)}`:M.k==="open"?`Screener updated ${ago(data.updated)}`:`Screener: closing prices of ${pd||"the last session"}`;
+ $("fresh").title=stale?"The latest scheduled scan has not arrived yet. Scans run every 15 minutes from 9:15 am to 4:30 pm IST on trading days.":"Screener scans run every 15 minutes from 9:15 am to 4:30 pm IST on trading days.";
+ $("dstatb").innerHTML=`<div><b>Screener data</b>: ${esc(data.ma_period+"-day "+(data.ma_type||"SMA")+", "+(data.universe||"NSE"))}. Updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST.</div>${data.health?`<div style="margin-top:6px">${healthLine(data.health)}</div>`:""}<div style="margin-top:6px">Prices are about 15 minutes delayed during market hours. Insights news refreshes every 5 minutes while the market is open and hourly otherwise.</div>`}
 function healthLine(H){const n=v=>Number(v||0).toLocaleString("en-IN"),x=H.xcheck,parts=[`Source: ${H.source==="official"?"official NSE/BSE close":"exchange data, intraday (about 15 minutes delayed)"}`,`${n(H.scanned)} stocks scanned, ${n(H.skipped)} skipped (no data)`];
  if(H.checked)parts.push(`${n(H.corrected)} price${H.corrected===1?"":"s"} corrected against official files (${n(H.checked)} checked)`);
  if(x)parts.push(`NSE vs BSE cross-check: ${n(x.pairs)} stocks, ${x.mismatch?`<b class="neg">${x.mismatch} differ by over 0.5%</b>`:"all within 0.5%"}`);
@@ -1226,9 +1252,9 @@ let view_="screen";
 function go(v){location.hash=v==="pos"?"#positions":v==="strat"?"#strategies":v==="ins"?"#insights":"#screener";route()}
 function route(){view_=location.hash==="#positions"?"pos":location.hash==="#strategies"?"strat":location.hash==="#insights"?"ins":"screen";if(view_==="strat")loadStrat();if(view_==="ins"){loadIns();loadStrat()}render()}
 function render(){
- const stale=(Date.now()-new Date(data.updated))>864e5;$("meta").className="meta"+(stale?" stale":"");
+ const stale=data===SAMPLE?false:dataStale();$("meta").className="meta"+(stale?" stale":"");
  $("meta").innerHTML=`<span class="live"></span><span>${data.ma_period}-day ${data.ma_type||"SMA"} · ${esc(data.universe||"NSE")} · ${data.price_date?`prices as of ${new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"})} · `:""}updated ${new Date(data.updated).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit",day:"numeric",month:"short"})} IST (${ago(data.updated)})</span>`;
- $("health").innerHTML=data.health?healthLine(data.health):"";
+ $("health").innerHTML=data.health?healthLine(data.health):"";renderShell(stale);
  $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button><button class="seg" aria-pressed="${view_==="ins"}" onclick="go('ins')">Insights</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";$("vIns").hidden=view_!=="ins";
  if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else if(view_==="ins")renderIns();else renderStrat()}
