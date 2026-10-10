@@ -29,7 +29,7 @@ a{color:var(--accent)}
 /* ---------- app header ---------- */
 .app-h{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 0 10px}
 .app-h .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-.app-h .brand svg{width:30px;height:30px;border-radius:8px;box-shadow:none}
+.app-h .brand svg{width:36px;height:36px;border-radius:9px;box-shadow:none}
 .app-h h1{font-size:17px;font-weight:700;letter-spacing:-.01em;margin:0}
 .app-h .grow{flex:1}
 .mstat{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 11px 4px 9px;white-space:nowrap}
@@ -509,3 +509,25 @@ html.eq-on{overflow:hidden}
 .eq-chips .ent small{color:var(--mute)}
 @media(max-width:600px){.eq-p{width:100vw;border-left:0}.eq-b{padding:14px 14px 28px}.eq-px{align-items:flex-start;text-align:left}}
 .eq-tip[hidden]{display:none}
+/* strategies: view switch and year-by-year ranking */
+.sx-views{display:flex;gap:4px;margin:0 0 14px;border-bottom:1px solid var(--line)}
+.sx-views button{margin-bottom:-1px;padding:11px 12px 10px;border:0;border-bottom:2px solid transparent;background:none;color:var(--mute);font:500 14px/1 var(--f-ui);cursor:pointer}
+.sx-views button[aria-selected=true]{border-bottom-color:var(--accent);color:var(--ink);font-weight:600}
+.sx-rk{width:54px;color:var(--mute);font-weight:600}
+.sx-ytab td,.sx-heat td{white-space:nowrap}
+.sx-heat td.sx-hc{text-align:center;padding:6px 8px;border-left:2px solid var(--surface)}
+.sx-hc b{display:block;font-size:12.5px;font-weight:600;color:var(--ink)}
+.sx-hc small{display:block;color:var(--ink-2);font-size:11px}
+.sx-heat th{text-align:center}
+.sx-h3{margin:4px 2px 0;font-size:16px;font-weight:650}
+/* stock insights inside screener and position rows */
+.sci{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);text-align:left;white-space:normal}
+.sci-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.sci-h h4{margin:0;font-size:14.5px;font-weight:650;color:var(--ink);text-transform:none;letter-spacing:0}
+.sci-t{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);font-size:13px}
+.sci-t .tn{margin-left:6px}
+.sci-tabs{margin:10px 0 0;padding:0;border-top:0}
+.sci-b{padding:14px 0 4px}
+.sci-b .sk-kv{margin-bottom:14px}
+.sci-b .rl p,.sci-b .rl b{white-space:normal}
+.sci-f{margin:6px 0 0}

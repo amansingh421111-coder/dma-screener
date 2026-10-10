@@ -12,6 +12,7 @@ const TAPE_NM = { "^NSEI": "Nifty 50", "^BSESN": "Sensex", "^NSEBANK": "Bank Nif
 const ixN = (v) => Number(v || 0).toLocaleString("en-IN");
 
 /* ===================== data loading, linking, numbers ===================== */
+let AUDITI = null;
 let INS = null, FUND = null, DEEPI = null, BSEU = null, LIVE = null, INAMES = null, CMATCH = null, LIVET = null;
 async function loadFeed(fresh) {
   if (IV.feedBusy) return; IV.feedBusy = true; if (fresh) render();
@@ -51,6 +52,7 @@ async function loadFund() {
   if (FUND !== null) return; FUND = {};
   try { const r = await fetch("/fund.json", { cache: "no-cache" }); if (r.ok) FUND = await r.json(); } catch (e) {}
   try { const r = await fetch("/dma44_deep.json", { cache: "no-cache" }); if (r.ok) DEEPI = await r.json(); } catch (e) {}
+  try { const r = await fetch("/dma44_audit.json", { cache: "no-cache" }); if (r.ok) AUDITI = await r.json(); } catch (e) {}
   render();
 }
 
@@ -190,7 +192,7 @@ function inStockReadings(t, f, sm, mpe, sym) {
   const T = [], F = [], add = (L, area, tone, text, ref) => L.push({ area, tone, text, ref });
   if (t) {
     if (t.vs200 != null) { const up = t.vs200 > 0, ris = (t.s200 || 0) > 0; add(T, "Trend", up && ris ? "pos" : !up && !ris ? "neg" : "neu", `Price is ${Math.abs(t.vs200).toFixed(1)}% ${up ? "above" : "below"} its 200-day average, which is ${ris ? "rising" : "falling"}${t.s200 != null ? ` (${inPct(t.s200)} over 20 days)` : ""}: the long-term trend reads as ${up && ris ? "up" : !up && !ris ? "down" : "mixed"}.`, "trend"); }
-    if (t.vs44 != null) { const zone = t.vs44 >= 0 && t.vs44 <= 5 && (t.s44 || 0) > 0; add(T, "44-day average", zone ? "pos" : t.vs44 < 0 && (t.s44 || 0) < 0 ? "neg" : "neu", `Price is ${inPct(t.vs44)} from its 44-day average, which is ${(t.s44 || 0) > 0 ? "rising" : "falling"} (${inPct(t.s44)} over 5 days).${zone ? " That is the 44-DMA buy zone (0 to 5% above a rising average)." : ""}${zone && DEEPI && DEEPI.rows ? inDeepLine(sym) : ""}`, "ma"); }
+    if (t.vs44 != null) { const zone = t.vs44 >= 0 && t.vs44 <= 5 && (t.s44 || 0) > 0; add(T, "44-day average", zone ? "pos" : t.vs44 < 0 && (t.s44 || 0) < 0 ? "neg" : "neu", `Price is ${inPct(t.vs44)} from its 44-day average, which is ${(t.s44 || 0) > 0 ? "rising" : "falling"} (${inPct(t.s44)} over 5 days).${zone ? " That is the 44-DMA buy zone (0 to 5% above a rising average)." : ""}${zone && (AUDITI || (DEEPI && DEEPI.rows)) ? inDeepLine(sym) : ""}`, "ma"); }
     if (t.ema) add(T, "Averages 13/21/34", t.ema === "up" ? "pos" : t.ema === "down" ? "neg" : "neu", t.ema === "up" ? "Price is above the 13-day EMA, which is above the 21-day, which is above the 34-day: the uptrend order." : t.ema === "down" ? "Price is below the 13-day EMA, below the 21-day, below the 34-day: the downtrend order." : "The 13/21/34-day EMAs are not in a clean up or down order.", "ma");
     if (t.rsi != null) { const r = t.rsi; add(T, "RSI (14)", r > 70 ? "neg" : r < 30 ? "pos" : r >= 55 ? "pos" : r < 44 ? "neg" : "neu", `RSI is ${r.toFixed(0)}: ${r > 70 ? "above 70, usually called overbought (it can stay there in strong uptrends)" : r < 30 ? "below 30, usually called oversold (it can stay there in strong downtrends)" : r >= 55 ? "above the 50-55 zone that RSI rarely exceeds in a bear phase" : r < 44 ? "below the 44-45 zone that RSI rarely falls under in a bull phase" : "in the 44-55 middle band"}.`, "rsi"); }
     if (t.macd != null) add(T, "MACD", t.macd > t.msig && t.mup && t.sup ? "pos" : t.macd < t.msig && !t.mup && !t.sup ? "neg" : "neu", `MACD is ${t.macd > t.msig ? "above" : "below"} its signal line and ${t.macd > 0 ? "above" : "below"} zero; MACD is ${t.mup ? "rising" : "falling"} and the signal line ${t.sup ? "rising" : "falling"}.`, "macd");
@@ -221,6 +223,8 @@ function inStockReadings(t, f, sm, mpe, sym) {
   return { T, F };
 }
 function inDeepLine() {
+  const A = AUDITI;
+  try { const n = A.groups.nse.periods.all, b = A.groups.bse.periods.all; return ` In this app's 12-year audit (${n.signals.n.toLocaleString("en-IN")} NSE trades, stop −8% / target +20%), this rule beat random stocks bought the same day by ${inPct(n.edge_vs_same_day.edge * 100, 2)} per trade on NSE (monthly t ${n.monthly_vs_same_day.t}), and ${inPct(b.edge_vs_same_day.edge * 100, 2)} on BSE-only stocks, mostly when the Nifty 50 was above its 200-day average.`; } catch (e) {}
   const D = DEEPI; try { const h = D.rows[D.head_index].r[1]; const n = h.nse.te, b = h.bse.te; return ` In this app's deep test (later period, stop −8% / target +20%), this rule beat random entries by ${inPct(n.edge * 100, 2)} per trade on NSE stocks and ${inPct(b.edge * 100, 2)} on BSE-only stocks.`; } catch (e) { return ""; }
 }
 
@@ -568,3 +572,43 @@ function renderIns() {
   if (keep) { const n = document.getElementById(keep.id); if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.e); } catch (e) {} } }
 }
 
+
+
+/* ---------- the same stock insights inside the Screener and My Positions rows ---------- */
+const SCRT = {};   // open tab per stock
+async function scrTech(sym, ex) {   // technical numbers for a stock the daily update does not cover: fetched live once
+  const key = ex + ":" + sym; if (IV.chart[key] || IV.chart[key] === 0) return; IV.chart[key] = 0;
+  try {
+    let t = sym + ".NS";
+    if (ex === "BSE") { const c = typeof entBseCode === "function" ? await entBseCode(sym) : null; t = (c || sym) + ".BO"; }
+    const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json();
+    IV.chart[key] = r.ok && j.c ? { name: j.name, t: inTech(j, INS && INS.nifty) } : { err: j.error || "No price history." };
+  } catch (e) { IV.chart[key] = { err: "Could not reach the price source." }; }
+  render();
+}
+function scrTab(k, t) { SCRT[k] = t; render(); }
+function scrIns(sym, ex) {
+  if (FUND === null) loadFund(); if (INS === null) loadIns(); if (LIVE === null && !IV.feedBusy) loadFeed();
+  const k = ex + ":" + sym, pre = ex === "NSE" && FUND && FUND.stocks ? FUND.stocks[sym] : null, f = ex === "NSE" && FUND && FUND.fund ? FUND.fund[sym] : null;
+  if (!pre && FUND) scrTech(sym, ex);
+  const live = IV.chart[k], t = pre ? pre.t : live && live.t ? live.t : null;
+  const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
+  const news = ex === "NSE" ? inAllStories().filter((x) => inLinks(x).sym.includes(sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : [];
+  const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
+  const tabs = [["read", "Key readings"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
+  const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");
+  const wait = !FUND || (!pre && (live === 0 || live === undefined)) ? `<p class="ix-empty">Loading the readings…</p>` : "";
+  let body = "";
+  if (tab === "read") {
+    const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
+    const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inPct(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
+    const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
+    body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
+  } else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
+  else if (tab === "fin") body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${rl(R.F, "sf")}` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
+  else if (tab === "news") body = news.length ? `<ol class="nsl sm">${news.slice(0, 8).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">${LIVE ? "No story in the live feed (last 7 days) names this stock." : "Loading the news feed…"}</p>`;
+  else body = `${typeof entStockLinks === "function" ? `<div class="eq-links">${entStockLinks(sym, ex)}</div>` : ""}<ul class="eq-app" style="margin-top:12px">${typeof entStratToday === "function" ? entStratToday(sym, ex) : ""}</ul>`;
+  return `<section class="sci" onclick="event.stopPropagation()"><div class="sci-h"><h4>Stock insights</h4>${all.length ? `<span class="sci-t"><span class="tn pos"></span>${cnt("pos")} supportive <span class="tn neg"></span>${cnt("neg")} caution <span class="tn neu"></span>${cnt("neu")} neutral</span>` : ""}<span class="grow"></span><button type="button" class="btn ghost sm" onclick="openStock('${esc(sym)}','${ex}')">Interactive chart</button><button type="button" class="btn ghost sm" onclick="go('ins');inPick('${esc(sym)}','${ex}')">Full analysis</button></div>
+   <div class="sk-tabs sci-tabs" role="tablist">${tabs.map(([x, l]) => `<button type="button" role="tab" aria-selected="${tab === x}" onclick="event.stopPropagation();scrTab('${k}','${x}')">${l}</button>`).join("")}</div><div class="sci-b">${body}</div>
+   <p class="ix-fine sci-f">Readings apply fixed rules from the NISM workbooks to public numbers. A count of readings, not a verdict.</p></section>`;
+}

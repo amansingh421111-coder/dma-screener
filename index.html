@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>44-DMA Watch</title>
-<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0f1b2d">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
@@ -301,7 +301,17 @@ table.sx th{vertical-align:bottom}
 .sx-checks li.ok .mk{background:var(--buy-bg);color:var(--buy)}.sx-checks li.no .mk{background:var(--sell-bg);color:var(--sell)}.sx-checks .m{font-size:12.5px;margin-top:1px}
 </style>
 <link rel="stylesheet" href="app.css"></head><body><main>
-<header class="app-h"><a class="brand" href="#screener" onclick="go('screen');return false"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="110" fill="#0f1b2d"/><path d="M90 340 L190 230 L270 290 L430 140" fill="none" stroke="#3ccb96" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 300 Q256 220 430 260" fill="none" stroke="#eab14d" stroke-width="20" stroke-linecap="round"/></svg><h1>44-DMA Watch</h1></a><span class="grow"></span><span class="mstat" id="mstat"></span><span class="fresh" id="fresh"></span><details class="dstat"><summary>Data status</summary><div id="dstatb"></div></details></header>
+<header class="app-h"><a class="brand" href="#screener" onclick="go('screen');return false"><svg viewBox="0 0 512 512" aria-hidden="true">
+<defs><linearGradient id="lg-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2f52"/><stop offset="1" stop-color="#0a1424"/></linearGradient></defs>
+<rect width="512" height="512" rx="116" fill="url(#lg-bg)"/>
+<g stroke-linecap="round" stroke-width="16">
+<line x1="140" y1="248" x2="140" y2="408" stroke="#ff8a7a"/><rect x="104" y="272" width="72" height="104" rx="14" fill="#ff8a7a"/>
+<line x1="256" y1="196" x2="256" y2="372" stroke="#3fd79a"/><rect x="220" y="222" width="72" height="118" rx="14" fill="#3fd79a"/>
+<line x1="372" y1="92" x2="372" y2="300" stroke="#3fd79a"/><rect x="336" y="118" width="72" height="150" rx="14" fill="#3fd79a"/>
+</g>
+<path d="M70 368 C 180 344, 300 318, 444 300" fill="none" stroke="#0a1424" stroke-width="52" stroke-linecap="round"/>
+<path d="M70 368 C 180 344, 300 318, 444 300" fill="none" stroke="#f2b84b" stroke-width="26" stroke-linecap="round"/>
+</svg><h1>44-DMA Watch</h1></a><span class="grow"></span><span class="mstat" id="mstat"></span><span class="fresh" id="fresh"></span><details class="dstat"><summary>Data status</summary><div id="dstatb"></div></details></header>
 <div class="meta" id="meta"></div>
 <div class="meta" id="health" style="margin-top:2px"></div>
 <div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
@@ -423,7 +433,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.3</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.4</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -494,7 +504,8 @@ function reading(s){const side=s.pct>=0?"above":"below";
  let t=`Price is ${Math.abs(s.pct).toFixed(2)}% ${side} its ${data.ma_period}-day average`+(s.since!=null?`, and has been ${side} it for ${s.since} trading day${s.since==1?"":"s"}.`:".");
  t+=s.type==="buy"?(s.since===1?" It has just crossed above the average, which trend followers read as a possible buy.":" It is in the buy zone, at or above the average and within "+(data.buy_max_pct||5)+"% of it."):s.type==="sell"?" It has just crossed below the average, which trend followers read as a possible sell.":s.pct<0?" It is close: a close above the average would trigger a buy signal.":" It is close: a close below the average would trigger a sell signal.";
  return t+" "+(WHY[s.candle]||"")}
-function detail(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.volume;
+function detail(s){return detail0(s)+(typeof scrIns==="function"?scrIns(s.symbol,ex(s)):"")}
+function detail0(s){const tv=ex(s)==="BSE"?"BSE:"+s.symbol:"NSE:"+s.symbol,v=s.volume;
  const vol=v>=1e7?(v/1e7).toFixed(2)+" Cr":v>=1e5?(v/1e5).toFixed(1)+" lakh":Number(v).toLocaleString("en-IN");
  const st=(l,x,c)=>`<div class="st"><span>${l}</span><b${c?` class="${c}"`:""}>${x}</b></div>`;
  return `<div class="dg"><div class="dl"><div class="dh"><b>${esc(s.name||s.symbol)}</b><span class="tag ex">${ex(s)}</span><span class="tag ${s.type}">${LAB[s.type]}</span></div>${chart(s)}${rng(s)}</div>
@@ -788,20 +799,20 @@ function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%
  <td class="cx">${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td class="cx">${inr(c.invested)}</td><td>${inr(c.value)}</td><td>${c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`}</td><td>${pcs(c.unrealPct)}</td><td class="cx">${w}</td>
  <td>${p.sl?inr(p.sl)+(c.px!=null?`<small>${((c.px/p.sl-1)*100).toFixed(1)}% away</small>`:""):"–"}</td><td>${p.target?inr(p.target)+(c.px!=null?`<small>${((p.target/c.px-1)*100).toFixed(1)}% to go</small>`:""):"–"}</td>
  <td class="cx">${q&&q.pct!=null?pcs(q.pct):"–"}</td><td><span class="tag ${st[1]}" style="margin:0">${st[0]}</span></td><td class="ac">${acts(p,c)}</td></tr>`;
- if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="15">${pdetail(p,c)}</td></tr>`;return h}
+ if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="15">${pdetail(p,c)}${c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""}</td></tr>`;return h}
 function openCard(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1):"0",L=c.L;
  return `<article class="pc"><div class="ph"><div>${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}</div>
  <div style="text-align:right"><b>${c.px!=null?inr(c.px):"–"}</b>${c.unreal!=null?`<div class="${pcl(c.unreal)}" style="font-weight:600">${mny(c.unreal)} (${sg(+c.unrealPct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
  <div class="fcs"><div><span>Quantity</span><b>${L.qty}</b></div><div><span>Avg cost</span><b>${inr(L.avg)}</b></div><div><span>Invested</span><b>${inr(c.invested)}</b></div><div><span>Value</span><b>${inr(c.value)}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Holding</span><b>${held(c.days)}</b></div></div>
  ${pbar(p,L.avg,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${c.px!=null&&p.sl?`<span>${((c.px/p.sl-1)*100).toFixed(1)}% above stop</span>`:""}${c.px!=null&&p.target?`<span>${((p.target/c.px-1)*100).toFixed(1)}% to target</span>`:""}</div>
- <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c):""}</article>`}
+ <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c)+(c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""):""}</article>`}
 function closedRow(p,c){const L=c.L;
  let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer">${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span></td><td>${L.bought}</td><td>${inr(L.boughtCost/L.bought)}</td><td>${L.sold?inr(L.soldVal/L.sold):"–"}</td><td>${L.sold?`<span class="${pcl(L.real)}">${mny(L.real)}</span>`:"–"}</td><td>${pcs(c.realPct)}</td><td>${fdate(L.first)}</td><td>${fdate(L.last)}</td><td>${held(c.days)}</td><td class="ac">${acts(p,c)}</td></tr>`;
- if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="10">${pdetail(p,c)}</td></tr>`;return h}
+ if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="10">${pdetail(p,c)}${c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""}</td></tr>`;return h}
 function closedCard(p,c){const L=c.L;return `<article class="pc"><div class="ph"><div>${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span><span class="tag ${L.real>=0?"buy":"sell"}">${L.real>=0?"Profit":"Loss"}</span></div>
  <div style="text-align:right"><b class="${pcl(L.real)}">${mny(L.real)}</b><div style="font-weight:600">${pcs(c.realPct)}</div></div></div>
  <div class="fcs"><div><span>Bought</span><b>${L.bought} @ ${inr(L.boughtCost/L.bought)}</b></div><div><span>Sold</span><b>${L.sold} @ ${L.sold?inr(L.soldVal/L.sold):"–"}</b></div><div><span>Held</span><b>${held(c.days)}</b></div></div>
- <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c):""}</article>`}
+ <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c)+(c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""):""}</article>`}
 function renderPos(){
  $("authcard").hidden=!!ME;$("posapp").hidden=!ME;
  if(!ME){renderAuth();return}
@@ -1229,11 +1240,32 @@ function renderStrat(){const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div cl
  $("vStrat").innerHTML=`<div class="sx-head"><div><h2>Strategy library</h2><p>${all.length} written strategies, each with its own stop loss, profit target and time limit, backtested on about ${S.years||6} years of adjusted prices (${esc(S.universe||"")}). The numbers describe what the rules did in the past; they are not recommendations.</p></div><span class="sx-asof">Prices as of ${S.price_date?new Date(S.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"–"}${S.stale?" (stale)":""}</span></div>
  <div class="sx-kpis">${kpi("Nifty 50",M.nifty!=null?M.nifty.toLocaleString("en-IN"):"–",up===true?"Above its 200-day average":up===false?"Below its 200-day average":"–",up===true?"sx-pos":up===false?"sx-neg":"","mood")}${kpi("Market breadth",M.breadth50!=null?pu(M.breadth50):"–","of stocks are above their 50-day average",null,"breadth")}${kpi("Beat random, likely not luck",solid+" of "+all.length,"strategies with a positive edge and “How sure” of 2 or more",solid?"sx-pos":"","t")}${kpi("Signals today",nSig,"stocks meeting a strategy scoring "+SMIN()+" or more",null,"signals")}</div>
  ${sxGuide(S)}
- <div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
+ <div class="sx-views" role="tablist" aria-label="View"><button role="tab" aria-selected="${SVIEW!=="years"}" onclick="SVIEW='list';render()">All strategies</button><button role="tab" aria-selected="${SVIEW==="years"}" onclick="SVIEW='years';render()">Year by year ranking</button></div>
+ ${SVIEW==="years"?sxYears(S):`<div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
  <label>Sort by <select onchange="sxSort(this.value)">${SCOLS.map(c=>`<option value="${c[0]}" ${SSORT===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label>
  <label>Show “Buy” on My Positions only for scores of at least ${ii("buy")} <select onchange="setSmin(this.value)">${[0,1,1.5,2,2.5,3,3.5,4].map(v=>`<option value="${v}" ${v===SMINV?"selected":""}>${v}</option>`).join("")}</select></label></div>
  <div class="sx-card"><div class="sx-t"><table class="sx"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div><div class="sx-m">${cards}</div></div>
- <p class="sx-mut" style="font-size:12.5px;margin:8px 2px 0">All figures in the table are from the later, fair-test period. Click a column heading to sort, click the small “i” next to any heading for its meaning, and click a row to open the strategy.</p>`}
+ <p class="sx-mut" style="font-size:12.5px;margin:8px 2px 0">All figures in the table are from the later, fair-test period. Click a column heading to sort, click the small “i” next to any heading for its meaning, and click a row to open the strategy.</p>`}`}
+let SVIEW="list",SYEAR=null;
+function sxYears(S){const all=S.strategies.filter(s=>s.robust&&s.robust.years),yrs=[...new Set(all.flatMap(s=>s.robust.years.map(y=>y.year)))].sort();
+ if(!yrs.length)return `<div class="empty">No year-by-year results yet.</div>`;
+ const MIN=30,cell=(s,y)=>{const r=s.robust.years.find(x=>x.year===y);return r&&r.n>=MIN&&r.edge!=null?r:null};
+ const rankIn=y=>{const L=all.map(s=>[s,cell(s,y)]).filter(x=>x[1]).sort((a,b)=>b[1].edge-a[1].edge);const m={};L.forEach(([s],i)=>m[s.id]=i+1);return{L,m}};
+ const R={};yrs.forEach(y=>R[y]=rankIn(y));
+ const sy=SYEAR&&yrs.includes(SYEAR)?SYEAR:yrs[yrs.length-1],prev=yrs[yrs.indexOf(sy)-1],cur=R[sy],splitY=(S.split||"").slice(0,4);
+ const fair=y=>y>splitY?"later, fair-test years":y===splitY?"partly fair-test":"years where the stop and target were chosen";
+ const open=id=>`SVIEW='list';SFAM='All';SOPEN.add('${id}');render();setTimeout(()=>{const r=document.querySelector('#vStrat tr.r.on');if(r)r.scrollIntoView({block:'center'})},60)`;
+ const chips=`<div class="sx-seg">${yrs.map(y=>`<button aria-pressed="${y===sy}" onclick="SYEAR='${y}';render()">${y}</button>`).join("")}</div>`;
+ const rk=cur.L.map(([s,r],i)=>{const pr=prev&&R[prev].m[s.id],mv=pr?pr-(i+1):null;return `<tr><td class="sx-rk">${i+1}</td><td class="l"><button type="button" class="ent" onclick="${open(s.id)}">${esc(s.name)}</button><div class="sx-fam">${esc(s.family||"")} · −${s.params.stop}% / +${s.params.target}%</div></td><td>${r.n.toLocaleString("en-IN")}</td><td class="${sxc(r.avg)}">${pp(r.avg)}</td><td class="${sxc(r.base)}">${pp(r.base)}</td><td class="${sxc(r.edge)}"><b>${pp(r.edge)}</b></td><td>${pr?`${pr}${mv?` <span class="${mv>0?"sx-pos":"sx-neg"}">${mv>0?"▲":"▼"}${Math.abs(mv)}</span>`:""}`:"–"}</td></tr>`}).join("");
+ // consistency across all years
+ const cons=all.map(s=>{const c=yrs.map(y=>cell(s,y)).filter(Boolean),pos=c.filter(r=>r.edge>0).length,ranks=yrs.map(y=>R[y].m[s.id]).filter(Boolean);return{s,pos,n:c.length,avgEdge:c.length?c.reduce((t,r)=>t+r.edge,0)/c.length:null,avgRank:ranks.length?ranks.reduce((t,x)=>t+x,0)/ranks.length:null,top3:ranks.filter(x=>x<=3).length}}).filter(x=>x.n).sort((a,b)=>(a.avgRank-b.avgRank)||(b.pos-a.pos));
+ const tint=e=>{const k=Math.min(1,Math.abs(e)/0.015);return `background:color-mix(in srgb,var(${e>=0?"--up":"--down"}) ${Math.round(8+k*30)}%,var(--surface))`};
+ const heat=cons.map(x=>`<tr><td class="l"><button type="button" class="ent" onclick="${open(x.s.id)}">${esc(x.s.name)}</button></td>${yrs.map(y=>{const r=cell(x.s,y),m=R[y].m[x.s.id];return r?`<td class="sx-hc" style="${tint(r.edge)}" title="${esc(x.s.name)}, ${y}: ${pp(r.edge)} better than random over ${r.n} trades, rank ${m} of ${R[y].L.length}"><b>${pp(r.edge)}</b><small>#${m}</small></td>`:`<td class="sx-hc sx-mut">–</td>`}).join("")}<td><b>${x.pos} of ${x.n}</b></td><td>${x.avgRank.toFixed(1)}</td><td>${x.top3}</td></tr>`).join("");
+ return `<div class="sx-yr"><div class="sx-bar">${chips}<span class="sp"></span><span class="sx-mut" style="font-size:12.5px">${sy}: ${fair(sy)}</span></div>
+ <div class="sx-card"><div class="sx-t" style="display:block"><table class="sx sx-ytab"><thead><tr><th>Rank</th><th class="l">Strategy</th><th>Trades</th><th>Avg profit / trade</th><th>Random entries</th><th>Better than random</th><th>Rank in ${prev||"–"}</th></tr></thead><tbody>${rk}</tbody></table></div></div>
+ <p class="sx-mut" style="font-size:12.5px;margin:8px 2px 18px">Ranked by how much each strategy beat random entries in the same stocks with the same stop, target and time limit in ${sy}. Strategies with fewer than ${MIN} trades that year are left out. Each uses its own chosen stop and target; years up to ${splitY} include the period where those were chosen, so they flatter the result.</p>
+ <h3 class="sx-h3">Every strategy, every year</h3><p class="sx-mut" style="font-size:12.5px;margin:2px 2px 8px">Better than random by, and the rank that year. Sorted by average rank. Green beat random entries, red fell short.</p>
+ <div class="sx-card"><div class="sx-t" style="display:block"><table class="sx sx-heat"><thead><tr><th class="l">Strategy</th>${yrs.map(y=>`<th>${y}</th>`).join("")}<th>Years beating random</th><th>Average rank</th><th>Times in top 3</th></tr></thead><tbody>${heat}</tbody></table></div></div></div>`}
 let STAB={};function sxTab(id,k){STAB[id]=k;render()}
 function sxTog(id){if(SOPEN.has(id))SOPEN.delete(id);else SOPEN.add(id);render()}
 
