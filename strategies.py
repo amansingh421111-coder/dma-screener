@@ -299,7 +299,7 @@ def simulate(df, entry, stop_pct, target_pct, max_hold, cost=0.004, reg=None, tr
         if xk is None:
             open_t = dict(entry=str(idx[ei].date()), entry_price=float(ep), stop=float(stop), target=float(tgt)); break
         if trail and why == "stop": why = "trail"
-        trades.append(dict(sig=str(idx[s].date()), entry=str(idx[ei].date()), exit=str(idx[xk].date()), days=int(xk - ei + 1), ret=float(xp / ep - 1 - cost), why=why,
+        trades.append(dict(sig=str(idx[s].date()), entry=str(idx[ei].date()), eo=int(idx[ei].toordinal()), exit=str(idx[xk].date()), days=int(xk - ei + 1), ret=float(xp / ep - 1 - cost), why=why,
                            up=None if reg is None else bool(reg[s])))
         i = xk
     return trades, open_t
