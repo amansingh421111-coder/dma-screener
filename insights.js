@@ -345,7 +345,7 @@ function inTape() {
   return `<section class="tape" aria-label="Market tape"><div class="tape-row">${it}</div><div class="tape-st">${st}</div></section>`;
 }
 
-function inTapeGo(k) { if (LIVE && inCountFor("i:" + k)) inLinkF("i:" + k); else inGo("markets"); }
+function inTapeGo(k) { if (typeof openIndex === "function") openIndex(k); else inGo("markets"); }
 
 /* ----- section navigation ----- */
 function inSubnav() {
@@ -361,8 +361,8 @@ function inLinkF(k) { IV.linkF = k; IV.theme = "all"; IV.shown = 30; inGo("news"
 /* ----- one story ----- */
 function inLinkChips(x, max) {
   const L = inLinks(x); if (!L.sym.length && !L.idx.length) return "";
-  const idx = L.idx.slice(0, 3).map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="inLinkF('i:${k}')" title="Stories linked to ${esc(MK_NAMES[k] || k)}">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
-  const st = L.sym.slice(0, max || 5).map((s) => { const v = inPx(s); return `<button type="button" class="lk-s" onclick="inPick('${esc(s)}','NSE')" title="Open ${esc(s)}">${esc(s)}${v != null ? ` <span class="${inCl(v)}">${inPct(v)}</span>` : ""}</button>`; }).join("");
+  const idx = L.idx.slice(0, 3).map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="openIndex('${k}')" title="${esc(MK_NAMES[k] || k)}: chart, moves and linked news">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
+  const st = L.sym.slice(0, max || 5).map((s) => { const v = inPx(s); return `<button type="button" class="lk-s" onclick="openStock('${esc(s)}','NSE')" title="${esc(s)}: price, chart and links">${esc(s)}${v != null ? ` <span class="${inCl(v)}">${inPct(v)}</span>` : ""}</button>`; }).join("");
   return `<div class="ns-l"><span class="ns-why">${L.why.length ? "Linked through " + esc(L.why.join(", ")) : "Named in the headline"}</span>${idx}${st}</div>`;
 }
 function inStory(x, o) {
@@ -384,12 +384,13 @@ function inOverview() {
     ${inSectorChart(false)}</div>
     <aside class="ix-rail">${inMarketRead()}${inHoldNews()}${inMostLinked(6)}</aside></div>`;
 }
+const MR_TK = { trend: "^NSEI", rsi: "^NSEI", macd: "^NSEI", dow: "^BSESN", vix: "^INDIAVIX", crude: "BZ=F", rupee: "INR=X", us10y: "^TNX", gold: "GC=F", copper: "HG=F", dxy: "DX-Y.NYB", global: "^GSPC" };
 function inMarketRead() {
   const R = inReadingsNow(), keys = ["trend", "rsi", "breadth", "vix", "crude", "rupee", "us10y", "global", "sectors", "geo"];
   const rows = keys.map((k) => R.find((r) => r.k === k)).filter(Boolean);
   if (!rows.length) return `<section class="ix-card o2"><h3>Market read</h3><p class="ix-empty">Loading…</p></section>`;
   return `<section class="ix-card o2"><header class="ix-ch"><h3>Market read</h3><button class="btn ghost sm" onclick="inGo('markets')">All readings</button></header>
-  <ul class="mr">${rows.map((r) => { const id = "mr-" + r.k, open = IV.open.has(id); return `<li><button type="button" class="mr-row" aria-expanded="${open}" onclick="inTog('${id}')"><span class="tn ${r.tone}" title="${TONE[r.tone]}"></span><span class="mr-a">${esc(r.area)}</span><span class="mr-v">${esc(r.short || "")}</span></button>${open ? `<div class="mr-d">${esc(r.text)}${r.ref ? `<div>${inRefBtn(r.ref, id + "-r")}</div>` : ""}</div>` : ""}</li>`; }).join("")}</ul>
+  <ul class="mr">${rows.map((r) => { const id = "mr-" + r.k, open = IV.open.has(id); return `<li><button type="button" class="mr-row" aria-expanded="${open}" onclick="inTog('${id}')"><span class="tn ${r.tone}" title="${TONE[r.tone]}"></span><span class="mr-a">${esc(r.area)}</span><span class="mr-v">${esc(r.short || "")}</span></button>${open ? `<div class="mr-d">${esc(r.text)}${r.ref ? `<div>${inRefBtn(r.ref, id + "-r")}</div>` : ""}${MR_TK[r.k] ? `<div><button type="button" class="btn ghost sm" style="margin-left:-8px" onclick="openIndex('${MR_TK[r.k]}')">Chart of ${esc(MK_NAMES[MR_TK[r.k]] || MR_TK[r.k])}</button></div>` : ""}</div>` : ""}</li>`; }).join("")}</ul>
   <p class="ix-fine"><span class="tn pos"></span> supportive <span class="tn neg"></span> caution <span class="tn neu"></span> neutral, as the cited NISM section reads such a number. Not a forecast.</p></section>`;
 }
 function inShort(s) { const v = INAMES && INAMES[s], n = Array.isArray(v) ? v[0] : v || ""; return n.replace(/\s+(Limited|Ltd\.?)$/i, ""); }
@@ -401,13 +402,13 @@ function inHoldNews() {
   const H = (typeof openPos === "function" ? openPos() : []).filter((p) => p.exchange !== "BSE");
   if (!H.length || !LIVE) return "";
   const c = inDirectCounts(), rows = H.map((p) => ({ s: p.symbol, n: (c[p.symbol] || {}).n || 0 })).sort((a, b) => b.n - a.n);
-  return `<section class="ix-card o3"><header class="ix-ch"><h3>Your holdings in the news</h3></header><ul class="ml">${rows.map((r) => { const v = inPx(r.s); return `<li><button type="button" onclick="IV.stab='news';inPick('${esc(r.s)}','NSE')"><b>${esc(r.s)}</b><span class="ml-name">${esc(inShort(r.s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${r.n ? `${r.n} ${r.n === 1 ? "story" : "stories"}` : "No news"}</span></button></li>`; }).join("")}</ul></section>`;
+  return `<section class="ix-card o3"><header class="ix-ch"><h3>Your holdings in the news</h3></header><ul class="ml">${rows.map((r) => { const v = inPx(r.s); return `<li><button type="button" onclick="openStock('${esc(r.s)}','NSE')"><b>${esc(r.s)}</b><span class="ml-name">${esc(inShort(r.s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${r.n ? `${r.n} ${r.n === 1 ? "story" : "stories"}` : "No news"}</span></button></li>`; }).join("")}</ul></section>`;
 }
 function inMostLinked(n) {
   if (!LIVE) return "";
   const c = inDirectCounts(), rows = Object.entries(c).sort((a, b) => b[1].n - a[1].n).slice(0, n || 8);
   if (!rows.length) return "";
-    return `<section class="ix-card o5"><header class="ix-ch"><h3>Stocks most in the news</h3></header><ul class="ml">${rows.map(([s, o]) => { const v = inPx(s); return `<li><button type="button" onclick="inLinkF('s:${esc(s)}')" title="Show the stories"><b>${esc(s)}</b><span class="ml-name">${esc(inShort(s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${o.n}</span></button></li>`; }).join("")}</ul></section>`;
+    return `<section class="ix-card o5"><header class="ix-ch"><h3>Stocks most in the news</h3></header><ul class="ml">${rows.map(([s, o]) => { const v = inPx(s); return `<li><button type="button" onclick="openStock('${esc(s)}','NSE')" title="Price, chart, linked news and links"><b>${esc(s)}</b><span class="ml-name">${esc(inShort(s))}</span><span class="${inCl(v)}">${v != null ? inPct(v) : ""}</span><span class="ml-n">${o.n}</span></button></li>`; }).join("")}</ul></section>`;
 }
 
 /* ----- sector strength chart (relative to the Nifty 50) ----- */
@@ -423,11 +424,11 @@ function inSectorChart(full) {
   if (!rows.length) return "";
   const mx = Math.max(...rows.map((x) => Math.abs(x[k])), 1);
   const bars = rows.map((x) => { const v = x[k], w = Math.abs(v) / mx * 40, key = x.kind === "index" ? x.k : SEC_IDX[x.name]; const nn = key && LIVE ? inCountFor("i:" + key) : 0;
-    return `<li><button type="button" class="sb" ${key ? `onclick="inLinkF('i:${key}')"` : "disabled"} title="${esc(x.name)}: ${inPct(v)} against the Nifty 50${nn ? `, ${nn} linked stories` : ""}"><span class="sb-n">${esc(x.name)}${x.n ? `<small>${x.n} stocks</small>` : ""}</span><span class="sb-t"><i class="${v >= 0 ? "up" : "dn"}" style="${v >= 0 ? "left:50%" : `right:50%`};width:${w.toFixed(2)}%"></i><em style="${v >= 0 ? `left:calc(50% + ${w.toFixed(2)}% + 6px)` : `right:calc(50% + ${w.toFixed(2)}% + 6px)`}">${inPct(v)}</em></span></button></li>`; }).join("");
+    return `<li><button type="button" class="sb" onclick="${x.kind === "index" ? `openIndex('${x.k}')` : `openGroup('sec','${esc(x.name)}')`}" title="${esc(x.name)}: ${inPct(v)} against the Nifty 50${nn ? `, ${nn} linked stories` : ""}"><span class="sb-n">${esc(x.name)}${x.n ? `<small>${x.n} stocks</small>` : ""}</span><span class="sb-t"><i class="${v >= 0 ? "up" : "dn"}" style="${v >= 0 ? "left:50%" : `right:50%`};width:${w.toFixed(2)}%"></i><em style="${v >= 0 ? `left:calc(50% + ${w.toFixed(2)}% + 6px)` : `right:calc(50% + ${w.toFixed(2)}% + 6px)`}">${inPct(v)}</em></span></button></li>`; }).join("");
   const seg = (key, val, l) => `<button type="button" aria-pressed="${IV[key] === val}" onclick="IV.${key}='${val}';render()">${l}</button>`;
   return `<section class="ix-sec o4"><header class="ix-h"><h2>Sector strength</h2><p>Each sector's return minus the Nifty 50's over the same period. Bars to the right did better than the index. ${inRefBtn("rsc", "sec-rsc")}</p></header>
   <div class="ix-ctl"><div class="seg2">${seg("secPer", "rel1", "1 month")}${seg("secPer", "rel3", "3 months")}</div>${D.few ? "" : `<div class="seg2">${seg("secSrc", "index", "NSE sector indices")}${seg("secSrc", "stocks", "Covered stocks by sector")}</div>`}</div>
-  <ol class="sbars"><li class="sb-ax" aria-hidden="true"><span></span><span><span>Did worse than the Nifty 50</span><span>Did better</span></span></li>${bars}</ol><p class="ix-fine">${D.src === "index" ? "NSE sector indices, live prices." : "Median return of the covered stocks in each sector (sector names from Yahoo Finance), as of the last close."} Select a sector to see its linked news.</p></section>`;
+  <ol class="sbars"><li class="sb-ax" aria-hidden="true"><span></span><span><span>Did worse than the Nifty 50</span><span>Did better</span></span></li>${bars}</ol><p class="ix-fine">${D.src === "index" ? "NSE sector indices, live prices." : "Median return of the covered stocks in each sector (sector names from Yahoo Finance), as of the last close."} Select a sector for its companies, chart and linked news.</p></section>`;
 }
 
 /* ----- news desk ----- */
@@ -480,7 +481,7 @@ function inIdxMentions() {
   const keys = ["^NSEI", "^NSEBANK", "NIFTY_FIN_SERVICE.NS", "^CNXIT", "^CNXPHARMA", "^CNXENERGY", "^CNXMETAL", "^CNXAUTO", "^CNXREALTY", "^CNXFMCG", "^CNXMEDIA", "BZ=F", "GC=F", "INR=X"];
   const rows = keys.map((k) => [k, inCountFor("i:" + k)]).filter((r) => r[1]).sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (!rows.length) return "";
-  return `<section class="ix-card"><header class="ix-ch"><h3>Indices and prices in the news</h3></header><ul class="ml">${rows.map(([k, n]) => { const dm = inDay(k); return `<li><button type="button" onclick="inLinkF('i:${k}')"><b>${esc(MK_NAMES[k] || k)}</b><span class="ml-name"></span><span>${dm ? inMove(dm) : ""}</span><span class="ml-n">${n}</span></button></li>`; }).join("")}</ul></section>`;
+  return `<section class="ix-card"><header class="ix-ch"><h3>Indices and prices in the news</h3></header><ul class="ml">${rows.map(([k, n]) => { const dm = inDay(k); return `<li><button type="button" onclick="openIndex('${k}')"><b>${esc(MK_NAMES[k] || k)}</b><span class="ml-name"></span><span>${dm ? inMove(dm) : ""}</span><span class="ml-n">${n}</span></button></li>`; }).join("")}</ul></section>`;
 }
 
 /* ----- markets ----- */
@@ -488,7 +489,7 @@ function inMarketsView() {
   const L = mkLive(), groups = L ? L.groups : (INS && INS.groups) || [];
   const pc = (v) => `<td class="${inCl(v)}">${inPct(v)}</td>`;
   const tbl = (g) => `<section class="ix-sec"><header class="ix-h"><h2>${esc(g.name)}</h2></header><div class="tw"><table class="mt"><thead><tr><th>Name</th><th>Last</th><th>Day</th><th>1 week</th><th>1 month</th><th>3 months</th><th>1 year</th><th>vs 200-day avg</th><th>From 52-week high</th><th class="c">Last 3 months</th><th>Linked news</th></tr></thead><tbody>${g.items.map((x) => { const dm = inDay(x.k), s = inSeries(x.k), n = LIVE ? inCountFor("i:" + x.k) : 0;
-    return `<tr><td><b>${esc(x.name)}</b></td><td>${inFmt(x.k, x.last)}</td><td>${dm ? inMove(dm) : inPct(x.d1)}</td>${pc(x.w1)}${pc(x.m1)}${pc(x.m3)}${pc(x.y1)}${pc(x.vs200)}<td>${inPct(x.hi52)}</td><td class="c">${s ? inSpark(s.c.slice(-63), "in") : inSpark(x.spark, "in")}</td><td>${n ? `<button class="btn ghost sm" onclick="inLinkF('i:${x.k}')">${n} ${n === 1 ? "story" : "stories"}</button>` : `<span class="ix-fine">None</span>`}</td></tr>`; }).join("")}</tbody></table></div></section>`;
+    return `<tr><td>${entI(x.k, "<b>" + esc(x.name) + "</b>")}</td><td>${inFmt(x.k, x.last)}</td><td>${dm ? inMove(dm) : inPct(x.d1)}</td>${pc(x.w1)}${pc(x.m1)}${pc(x.m3)}${pc(x.y1)}${pc(x.vs200)}<td>${inPct(x.hi52)}</td><td class="c">${s ? inSpark(s.c.slice(-63), "in") : inSpark(x.spark, "in")}</td><td>${n ? `<button class="btn ghost sm" onclick="inLinkF('i:${x.k}')">${n} ${n === 1 ? "story" : "stories"}</button>` : `<span class="ix-fine">None</span>`}</td></tr>`; }).join("")}</tbody></table></div></section>`;
   const R = inReadingsNow(), mp = INS && INS.market_pe, br = INS && INS.breadth;
   const stats = `<section class="ix-sec"><header class="ix-h"><h2>Breadth and valuation</h2><p>From the daily update after the close.</p></header><div class="kpis">${br ? `<div class="kpi"><span>Covered stocks above their 200-day average</span><b>${Math.round(br.above200)}%</b><small>${br.n} stocks; above the 50-day: ${Math.round(br.above50)}%</small></div>` : ""}${mp ? `<div class="kpi"><span>P/E of the ${mp.n} largest covered companies, combined</span><b>${inNum(mp.pe, 1)}</b><small>Earnings yield ${inNum(100 / mp.pe, 2)}%. Compare with the 10-year government bond yield.</small></div>` : ""}</div><div>${inRefBtn("dy", "v-dy")}</div></section>`;
   const reads = `<section class="ix-sec"><header class="ix-h"><h2>All readings</h2><p>Each line is a fixed rule applied to the live numbers. Supportive or caution is what the cited NISM section says such a reading usually indicates, not a forecast.</p></header><ul class="rl">${R.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, "rl" + i) : `<span class="ix-fine">Data only; no NISM rule is attached to this number.</span>`}</div></li>`).join("")}</ul></section>`;
@@ -522,8 +523,8 @@ function inStocksView() {
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = inStockReadings(t, f, FUND.sector_med, mpe, IV.sym), all = R.T.concat(R.F);
   const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
   const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
-  const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${esc(f.sec)}${f.ind ? ", " + esc(f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
-   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}. <a href="${tv}" target="_blank" rel="noopener noreferrer">Chart on TradingView</a></small></div></section>
+  const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
+   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
    <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
   const tabs = [["summary", "Summary"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
@@ -541,7 +542,7 @@ function inStocksView() {
     body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${rl(R.F, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
   } else if (IV.stab === "peers") {
     const P = f && f.sec && FUND.fund ? Object.entries(FUND.fund).filter(([s, o]) => o.sec === f.sec && (o.ind === f.ind || !f.ind) && o.mcap).sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 12) : [];
-    body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td><button class="btn ghost sm" onclick="inPick('${esc(s)}','NSE')">${esc(s)}</button></td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
+    body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td>${entS(s, "NSE")}</td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
   } else {
     const ln = inStockLinked(), secK = f && SEC_IDX[f.sec];
     const sector = secK ? inAllStories().filter((x) => !ln.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
