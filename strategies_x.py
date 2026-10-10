@@ -29,7 +29,7 @@ NF = len(F)
 G = {}   # worker globals: dates index, base means
 
 
-def fast_trades(o, h, l, c, en, sp, tp, mh):
+def fast_trades(o, h, l, c, en, sp, tp, mh, overlap=False):
     """Same logic as strategies.simulate (next-open entry, gap fills, stop before target on the same day, one trade at a time).
     Returns list of (signal idx, entry idx, exit idx, return before costs, why)."""
     n = len(o); out = []; i = 0
@@ -47,7 +47,8 @@ def fast_trades(o, h, l, c, en, sp, tp, mh):
             if hk >= tgt: hit = (k, tgt, 1); break
             if k == ei + mh - 1 and c[k] == c[k]: hit = (k, c[k], 2); break
         if hit is None: break
-        out.append((s, ei, hit[0], hit[1] / ep - 1, hit[2])); i = hit[0]
+        out.append((s, ei, hit[0], hit[1] / ep - 1, hit[2]))
+        if not overlap: i = hit[0]
     return out
 
 
@@ -67,7 +68,9 @@ def base_work(args):
     key, df = args
     P, o, h, l, c = stock_arrays(df); n = len(o); out = {}
     for kind, g in COMBOS:
-        tr = fast_trades(o, h, l, c, range(60, n - 1, 5), g[0], g[1], S.MAX_HOLD[kind])
+        # every 5th day, each entry independent of the others: a trade still open does not block the next entry,
+        # otherwise stocks that were just stopped out would be over-represented on any given day
+        tr = fast_trades(o, h, l, c, range(60, n - 1, 5), g[0], g[1], S.MAX_HOLD[kind], overlap=True)
         out[(kind, g)] = [(P["dates"][e], r - COST) for s, e, x, r, w in tr if P["elig"][s] and A.clean_window(P, s - 60, x)]
     return key, out
 
