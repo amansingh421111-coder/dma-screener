@@ -1,0 +1,14 @@
+name: snapshot
+# Saves the live news and market feed as a downloadable artifact (for checking the page design against real data).
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir snap
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o snap/feed.json
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=mkt" -o snap/mkt.json
+          ls -la snap
+      - uses: actions/upload-artifact@v4
+        with: { name: snap, path: snap, retention-days: 3 }
