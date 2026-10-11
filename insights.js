@@ -736,7 +736,7 @@ function fcSig(s) {
   if (s.t == null) return `<span class="fc-mute">Not tested yet</span>`;
   const d = s.mean - s.mean_all, sig = Math.abs(s.t) >= 2;
   return sig ? `<span class="${inCl(d)}">${d > 0 ? "Better than usual" : "Worse than usual"}</span><small>how sure ${s.t.toFixed(1)}, about ${s.n_indep} separate periods</small>`
-    : `<span class="fc-mute">No reliable difference</span><small>how sure ${s.t.toFixed(1)} of 2 needed</small>`;
+    : `<span class="fc-mute">No reliable difference</span><small>how sure ${s.t.toFixed(1)} (needs 2)</small>`;
 }
 function fcAnalogs(h) {
   const o = FC.nifty.h[h], id = "fc-an";
@@ -1066,17 +1066,17 @@ function fcDrivers(h) {
   const D = (FC.drivers || []).map((d) => { const s = d.h[h], diff = s.mean != null && s.mean_all != null ? s.mean - s.mean_all : null, se = s.se != null ? s.se : diff != null && s.t ? Math.abs(diff / s.t) : null; return { d, s, diff, se }; });
   const lim = Math.max(0.01, ...D.filter((x) => x.diff != null).map((x) => Math.abs(x.diff) + 1.96 * (x.se || 0))) * 1.1;
   const X = (v) => (50 + (v / lim) * 50).toFixed(2), used = new Set(FC.nifty.inputs);
-  const tk = ovTicks(-lim * 0.8, lim * 0.8, 2).filter((v) => Math.abs(v) <= lim * 0.8);
+  const a = [0.1, 0.05, 0.03, 0.025, 0.02, 0.01, 0.005, 0.0025].find((v) => v <= lim * 0.8) || lim / 2, tk = [-a, 0, a];
   const rows = D.map(({ d, s, diff, se }) => { const sig = s.t != null && Math.abs(s.t) >= 2;
     return `<tr><td><b>${esc(d.label)}</b>${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}<small>${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)} today, ${Math.round(d.pct * 100)}th percentile since ${FC.nifty.first.slice(0, 4)}</small></td>
-      <td class="ov-fp">${diff == null ? "–" : `<span class="ov-ci${sig ? " sig" : ""}" title="${ovP(diff, 2)} against all periods; 95% range ${ovP(diff - 1.96 * se, 2)} to ${ovP(diff + 1.96 * se, 2)}"><i class="z"></i><i class="w" style="left:${X(diff - 1.96 * se)}%;width:${(X(diff + 1.96 * se) - X(diff - 1.96 * se)).toFixed(2)}%"></i><i class="d ${diff >= 0 ? "up" : "dn"}" style="left:${X(diff)}%"></i></span>`}</td>
-      <td class="ov-num">${ovP(diff, 1)}</td><td class="ov-num">${fcP(s.med)}<small>rose ${Math.round(s.pup * 100)}%</small></td><td>${fcSig(s)}</td></tr>`; }).join("");
+      <td class="ov-fp">${diff == null ? "–" : `<span class="ov-ci${sig ? " sig" : ""}" title="${ovP(diff, 2)} against all periods; 95% range ${ovP(diff - 1.96 * se, 2)} to ${ovP(diff + 1.96 * se, 2)}"><i class="z"></i><i class="w" style="left:${X(diff - 1.96 * se)}%;width:${(X(diff + 1.96 * se) - X(diff - 1.96 * se)).toFixed(2)}%"></i><i class="d ${diff >= 0 ? "up" : "dn"}" style="left:${X(diff)}%"></i></span><small class="ov-fpv">${ovP(diff, 1)} (95%: ${ovP(diff - 1.96 * se, 1)} to ${ovP(diff + 1.96 * se, 1)})</small>`}</td>
+      <td class="ov-num">${fcP(s.med)}<small>rose ${Math.round(s.pup * 100)}%</small></td><td>${fcSig(s)}</td></tr>`; }).join("");
   const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
   const T = D.map((x) => x.s.t).filter((t) => t != null), k = T.filter((t) => Math.abs(t) >= 2).length;
   return `<section class="ix-sec"><header class="ix-h"><h2>What the Nifty did after readings like today's</h2><p>For each reading, the Nifty's average ${FC_HL[h]} after days in the same fifth of history as today, minus its average over all periods, with the 95% range of that difference (judged on periods that do not overlap). A range that crosses the zero line means the reading told us nothing reliable on its own.</p></header>
     <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
     ${T.length ? `<p class="fc-test ${k ? "pos" : "neu"}">${k ? `${k} of ${T.length} readings were followed by a ${FC_HL[h]} that differed from normal by more than luck.` : `All ${T.length} ranges cross zero: no reading, on its own, was followed by a ${FC_HL[h]} that differed from normal by more than luck. That is why the Nifty estimate's direction has had no edge; its range is the useful part.`}</p>` : ""}
-    <div class="ov-scroll"><table class="ov-t ov-fpt"><thead><tr><th>Reading</th><th class="ov-fp"><span class="ov-fpax">${tk.map((v) => `<span style="left:${X(v)}%">${Math.abs(v) < 1e-12 ? "0" : ovP(v, 1)}</span>`).join("")}</span>Difference from all periods</th><th>Difference</th><th>Median after</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="ov-scroll"><table class="ov-t ov-fpt"><thead><tr><th>Reading</th><th class="ov-fp"><span class="ov-fpax">${tk.map((v) => `<span style="left:${X(v)}%">${Math.abs(v) < 1e-12 ? "0" : ovP(v, 1)}</span>`).join("")}</span>Difference from all periods</th><th>Median after</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="ix-fine">Dot: the average difference; bar: its 95% range; solid when beyond luck. Median after: the Nifty's median ${FC_HL[h]} after such readings, and how often it rose (all periods: ${fcP(D[0] ? D[0].s.med_all : null)}, rose ${D[0] ? Math.round(D[0].s.pup_all * 100) : "–"}%).</p></section>`;
 }
 

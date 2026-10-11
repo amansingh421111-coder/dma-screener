@@ -758,3 +758,4 @@ td.fc-sn{position:relative;padding-left:40px}.fc-sn .fc-rk{position:absolute;lef
 .ov-ft td{white-space:normal}
 @media(max-width:640px){.ov-ft{table-layout:fixed}.ov-ft th:first-child,.ov-ft td:first-child{width:34%}.ov-ft td:nth-child(2),.ov-ft td:nth-child(3){min-width:0}}
 .ov-ft{min-width:0}.ov-t{min-width:600px}.fc-t.fc-d{min-width:640px}
+.ov-fpv{display:block;text-align:center;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums}
