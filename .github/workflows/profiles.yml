@@ -1,0 +1,26 @@
+name: company-profiles
+# Company descriptions for the stock pages (profiles.py): weekly, and whenever the script changes.
+on:
+  schedule:
+    - cron: "0 6 * * 0"         # Sunday 11:30 IST
+  push:
+    branches: [main]
+    paths: [profiles.py, .github/workflows/profiles.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: profiles, cancel-in-progress: false }
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip, cache-dependency-path: deps.txt }
+      - run: pip install -r deps.txt
+      - name: Run
+        run: python profiles.py
+      - name: Save
+        if: always()
+        run: bash save.sh

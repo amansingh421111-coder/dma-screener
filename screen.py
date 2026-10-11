@@ -286,10 +286,27 @@ def classify(sym, df, c):
     name, pos = candle_info(df)
     prev_vol = df["Volume"].iloc[-21:-1].mean()
     vol_x = float(df["Volume"].iloc[-1] / prev_vol) if prev_vol > 0 else 0.0
+    tv = (df["Close"] * df["Volume"]).tail(20) / 1e7                      # rupees crore traded each day
+    liq = dict(vol5=int(df["Volume"].tail(5).mean()), vol20=int(prev_vol) if prev_vol == prev_vol else None,
+               val20=round(float(tv.median()), 2) if len(tv) >= 10 else None, val5=round(float(tv.tail(5).mean()), 2))
     direction = 1 if kind == "buy" else -1 if kind == "sell" else (1 if pct < 0 else -1)
     return dict(symbol=sym, price=round(float(c0), 2), ma=round(float(m0), 2), pct=round(float(pct), 2),
                 volume=int(df["Volume"].iloc[-1]), type=kind, candle=name,
-                score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1), **day_fields(df), **extras(close, m, c0, c1))
+                score=conviction(direction, name, pos, vol_x), vol_x=round(vol_x, 1), **liq, **day_fields(df), **extras(close, m, c0, c1))
+
+def market_turnover(data, items):
+    """Rupees traded each day across the NSE shares scanned (price x shares, Yahoo data), today against its own history."""
+    try:
+        cols = {u["symbol"]: data[u["yahoo"]] for u in items if u["exchange"] == "NSE" and u["yahoo"] in data}
+        tv = pd.DataFrame({k: (d["Close"] * d["Volume"]) for k, d in cols.items()}).sort_index()
+        n = tv.notna().sum(axis=1); tot = (tv.sum(axis=1) / 1e7)[n >= 0.8 * n.max()]          # days with most shares reported
+        if len(tot) < 30: return None
+        today, avg20 = float(tot.iloc[-1]), float(tot.iloc[-21:-1].mean())
+        return dict(date=str(tot.index[-1].date()), today_cr=round(today), avg20_cr=round(avg20), ratio=round(today / avg20, 2) if avg20 else None,
+                    pct1y=round(float((tot.tail(250) < today).mean()) * 100), shares=int(n.iloc[-1]),
+                    last60=[[str(d.date()), round(float(v))] for d, v in tot.tail(60).items()])
+    except Exception as e:
+        log.warning("market turnover: %s", e); return None
 
 def fetch(tickers, batch=100, period="1y", workers=3, budget=780):
     """Download daily OHLCV for Yahoo tickers in parallel batches. Returns {ticker: DataFrame}."""
@@ -582,6 +599,7 @@ def main():
     latest = max(d.dropna().index[-1].date() for d in data.values() if not d.dropna().empty)
     if latest != now.date() and not (a.force or a.summary):
         log.info("No bar for today (holiday?), skipping"); return
+    market_liq = market_turnover(data, items)
     sigs, yh = [], {}
     for u in items:
         df = data.get(u["yahoo"])
@@ -619,7 +637,7 @@ def main():
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
          "cloud": CLOUD, "health": health, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
-         "signals": sigs, "quotes": quotes}, indent=1))
+         "market_liq": market_liq, "signals": sigs, "quotes": quotes}, indent=1))
     st = read_json("state.json", {})
     if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": {}}
     st.setdefault("sent", []); st.setdefault("pos_sent", {})
