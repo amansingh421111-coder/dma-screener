@@ -23,6 +23,14 @@ async function loadFeed(fresh) {
   } catch (e) { IV.feedErr = "Live news unavailable."; }
   IV.feedBusy = false; if (view_ === "ins" || view_ === "pos") render(); inSchedule();
 }
+// coming back to the page (another tab, phone unlocked): refresh at once if the copy on screen is older than the site's refresh interval
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  const stale = (o, m) => !o || !o.updated || Date.now() - Date.parse(o.updated) > (m || 5) * 60000;
+  if (LIVE && stale(LIVE, LIVE.refresh_min) && !IV.feedBusy) loadFeed();
+  if (MKT && stale(MKT, MKT.market_open ? 5 : 15) && !IV.mktBusy) { MKT = null; loadMkt(); }
+});
+setInterval(() => { if (typeof view_ !== "undefined" && view_ === "ins" && !document.hidden) { const a = document.activeElement; if (!(a && a.tagName === "INPUT")) render(); } }, 60000);   // keeps "updated N min ago" honest
 function inSchedule() {   // refresh while the tab is open: every 5 minutes in market hours, hourly otherwise
   clearTimeout(LIVET); const m = LIVE && LIVE.refresh_min ? LIVE.refresh_min : 5;
   LIVET = setTimeout(() => { if (view_ === "ins" && !document.hidden) { loadFeed(); MKT = null; loadMkt(); } else inSchedule(); }, m * 60000);

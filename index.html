@@ -4,13 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>44-DMA Watch</title>
+<script>try{var t=localStorage.getItem("dma_theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0f1b2d">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f5f9;--card:#fff;--ink:#0f1b2d;--mute:#5d6b82;--line:#e0e5ee;--buy:#0b8f5f;--sell:#d03a30;--near:#a8690c;--buy-bg:#e2f5ec;--sell-bg:#fcebe9;--near-bg:#fbf0d9;--accent:#1f4fd8}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1322;--card:#131d32;--ink:#e8edf7;--mute:#92a0ba;--line:#233150;--buy:#3ccb96;--sell:#ff7468;--near:#eab14d;--buy-bg:#12332b;--sell-bg:#3a1c22;--near-bg:#3a2e14;--accent:#7fa2ff}}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b1322;--card:#131d32;--ink:#e8edf7;--mute:#92a0ba;--line:#233150;--buy:#3ccb96;--sell:#ff7468;--near:#eab14d;--buy-bg:#12332b;--sell-bg:#3a1c22;--near-bg:#3a2e14;--accent:#7fa2ff}}:root[data-theme=dark]{--bg:#0b1322;--card:#131d32;--ink:#e8edf7;--mute:#92a0ba;--line:#233150;--buy:#3ccb96;--sell:#ff7468;--near:#eab14d;--buy-bg:#12332b;--sell-bg:#3a1c22;--near-bg:#3a2e14;--accent:#7fa2ff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 main{max-width:1080px;margin:0 auto;padding:14px 14px 32px}
@@ -161,7 +162,7 @@ details.set{margin-top:14px;font-size:13px;color:var(--mute)}
 
 /* ---- refined, professional look ---- */
 :root{--bg:#f4f6f9;--card:#fff;--ink:#101828;--mute:#667085;--line:#e4e7ec;--buy:#067647;--sell:#b42318;--near:#b54708;--buy-bg:#ecfdf3;--sell-bg:#fef3f2;--near-bg:#fffaeb;--accent:#2563eb;--sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)}
-@media(prefers-color-scheme:dark){:root{--bg:#0a0e17;--card:#111827;--ink:#eef2f7;--mute:#98a2b3;--line:#1f2a3d;--buy:#32d583;--sell:#f97066;--near:#fdb022;--buy-bg:#0c2a20;--sell-bg:#2d1517;--near-bg:#2b2110;--accent:#5b8def;--sh:0 1px 2px rgba(0,0,0,.4)}}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0a0e17;--card:#111827;--ink:#eef2f7;--mute:#98a2b3;--line:#1f2a3d;--buy:#32d583;--sell:#f97066;--near:#fdb022;--buy-bg:#0c2a20;--sell-bg:#2d1517;--near-bg:#2b2110;--accent:#5b8def;--sh:0 1px 2px rgba(0,0,0,.4)}}:root[data-theme=dark]{--bg:#0a0e17;--card:#111827;--ink:#eef2f7;--mute:#98a2b3;--line:#1f2a3d;--buy:#32d583;--sell:#f97066;--near:#fdb022;--buy-bg:#0c2a20;--sell-bg:#2d1517;--near-bg:#2b2110;--accent:#5b8def;--sh:0 1px 2px rgba(0,0,0,.4)}
 body{font-size:14.5px;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
 main{max-width:1240px;padding:18px 20px 40px}
 header{padding:2px 0 4px}header svg{width:34px;height:34px;border-radius:9px;box-shadow:var(--sh)}
@@ -311,7 +312,7 @@ table.sx th{vertical-align:bottom}
 </g>
 <path d="M70 368 C 180 344, 300 318, 444 300" fill="none" stroke="#0a1424" stroke-width="52" stroke-linecap="round"/>
 <path d="M70 368 C 180 344, 300 318, 444 300" fill="none" stroke="#f2b84b" stroke-width="26" stroke-linecap="round"/>
-</svg><h1>44-DMA Watch</h1></a><span class="grow"></span><span class="mstat" id="mstat"></span><span class="fresh" id="fresh"></span><details class="dstat"><summary>Data status</summary><div id="dstatb"></div></details></header>
+</svg><h1>44-DMA Watch</h1></a><span class="grow"></span><span class="mstat" id="mstat"></span><span class="fresh" id="fresh"></span><button type="button" class="thm" id="thm" onclick="toggleTheme()" aria-label="Switch theme"></button><details class="dstat"><summary>Data status</summary><div id="dstatb"></div></details></header>
 <div class="meta" id="meta"></div>
 <div class="meta" id="health" style="margin-top:2px"></div>
 <div id="note" class="note" hidden>Showing sample data. Your live data is not reachable yet. See Settings at the bottom.</div>
@@ -433,7 +434,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.6</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.7</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -1330,12 +1331,17 @@ normalize();
 function mktState(d=new Date()){const t=new Date(d.getTime()+330*6e4),wd=t.getUTCDay(),m=t.getUTCHours()*60+t.getUTCMinutes();
  if(wd>=1&&wd<=5&&m>=555&&m<=930)return{k:"open",t:"Market open"};if(wd>=1&&wd<=5&&m>=540&&m<555)return{k:"pre",t:"Pre-open session"};
  const nx=wd===5&&m>930||wd===6?"Monday":wd===0?"Monday":m>930?"tomorrow":"today";return{k:"closed",t:`Market closed, opens ${nx} 9:15 am`}}
+function themeNow(){const t=document.documentElement.getAttribute("data-theme");return t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}
+function paintTheme(){const d=themeNow()==="dark",b=$("thm");if(b){b.innerHTML=d?'<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 2v2.2M10 15.8V18M2 10h2.2M15.8 10H18M4.3 4.3l1.6 1.6M14.1 14.1l1.6 1.6M4.3 15.7l1.6-1.6M14.1 5.9l1.6-1.6"/></svg><span>Light</span>':'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 12.6A6.5 6.5 0 0 1 7.4 4.5a6.5 6.5 0 1 0 8.1 8.1z"/></svg><span>Dark</span>';b.setAttribute("aria-label",d?"Switch to light theme":"Switch to dark theme");b.title=b.getAttribute("aria-label")}
+ const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",d?"#0b111b":"#f3f5f8")}
+function toggleTheme(){const n=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("dma_theme",n)}catch(e){}paintTheme();if(typeof entDraw==="function")entDraw()}
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",paintTheme)}catch(e){}
 function lastClose(d=new Date()){const Z=330*6e4;let t=new Date(d.getTime()+Z);   // the latest weekday 3:30 pm IST at or before d
  for(let i=0;i<8;i++){const wd=t.getUTCDay(),m=t.getUTCHours()*60+t.getUTCMinutes();if(wd>=1&&wd<=5&&(i>0||m>=930))return Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate(),15,30)-Z;
   t=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()-1,23,59))}return 0}
 function dataStale(d=new Date()){const u=new Date(data.updated).getTime(),M=mktState(d),after=u>=lastClose(d)-20*6e4;   // scans run every 15 minutes in market hours, the last one after the close
  if(M.k!=="open")return!after;const t=new Date(d.getTime()+330*6e4),sinceOpen=t.getUTCHours()*60+t.getUTCMinutes()-555;return!(d-u<40*6e4||(sinceOpen<40&&after))}
-function renderShell(stale){const M=mktState();$("mstat").className="mstat "+M.k;$("mstat").innerHTML=`<i></i>${M.t}`;$("mstat").title="NSE and BSE regular session, 9:15 am to 3:30 pm IST, Monday to Friday. Exchange holidays are not accounted for.";
+function renderShell(stale){paintTheme();const M=mktState();$("mstat").className="mstat "+M.k;$("mstat").innerHTML=`<i></i>${M.t}`;$("mstat").title="NSE and BSE regular session, 9:15 am to 3:30 pm IST, Monday to Friday. Exchange holidays are not accounted for.";
  const pd=data.price_date?new Date(data.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short"}):"";
  $("fresh").className="fresh"+(stale?" stale":"");$("fresh").textContent=stale?(pd?`Screener prices of ${pd}, `:"")+`updated ${ago(data.updated)}`:M.k==="open"?`Screener updated ${ago(data.updated)}`:`Screener: closing prices of ${pd||"the last session"}`;
  $("fresh").title=stale?"The latest scheduled scan has not arrived yet. Scans run every 15 minutes from 9:15 am to 4:30 pm IST on trading days.":"Screener scans run every 15 minutes from 9:15 am to 4:30 pm IST on trading days.";

@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
     if (a === "mkt") {   // live market tiles: indices, world markets, currency, commodities, rates, sector indices
       if (!(await rl("rl:mkt:" + clientIp(req), 600, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
       const raw = await redis(["GET", "mkt:out"]); let out = raw ? JSON.parse(raw) : null;
-      const ttl = (FEED.marketOpen() ? 5 : 60) * 60000;
+      const ttl = (FEED.marketOpen() ? 5 : 15) * 60000;
       if (out && Date.now() - Date.parse(out.updated) < ttl) return send(res, out);
       const T = ["^NSEI", "^BSESN", "^NSEBANK", "^NSEMDCP50", "^INDIAVIX", "^GSPC", "^IXIC", "^FTSE", "^GDAXI", "^N225", "^HSI", "000001.SS", "INR=X", "DX-Y.NYB", "BZ=F", "GC=F", "HG=F", "^TNX",
         "^CNXIT", "^CNXAUTO", "^CNXFMCG", "^CNXPHARMA", "^CNXMETAL", "^CNXREALTY", "^CNXENERGY", "^CNXPSUBANK", "^CNXINFRA", "^CNXMEDIA", "NIFTY_FIN_SERVICE.NS"];
@@ -126,7 +126,7 @@ module.exports = async (req, res) => {
     if (a === "feed") {
       if (!(await rl("rl:feed:" + clientIp(req), 600, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
       const raw = await redis(["GET", "feed:out"]); let out = raw ? JSON.parse(raw) : null;
-      const ttl = (FEED.marketOpen() ? 5 : 60) * 60000, age = out ? Date.now() - Date.parse(out.updated) : Infinity;
+      const ttl = (FEED.marketOpen() ? 5 : 15) * 60000, age = out ? Date.now() - Date.parse(out.updated) : Infinity;
       if (out && age < ttl && !(req.query.fresh === "1" && age > 90000)) return send(res, out);
       const lock = await redis(["SET", "feed:lock", "1", "NX", "EX", 55]);
       if (!lock) return out ? send(res, { ...out, refreshing: true }) : send(res, { error: "Collecting headlines, try again in a minute." }, 503);

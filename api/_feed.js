@@ -102,7 +102,7 @@ function build(items) {
   const people = {};
   const pt = themes.find((t) => t.id === "people");
   if (pt) for (const s of pt.stories) for (const w of s.who || []) (people[w] = people[w] || []).push(s);
-  return { updated: new Date(now).toISOString(), live: true, market_open: marketOpen(), refresh_min: marketOpen() ? 5 : 60, days: CFG.days, pool: items.length, stories_total: every.size, full,
+  return { updated: new Date(now).toISOString(), live: true, market_open: marketOpen(), refresh_min: marketOpen() ? 5 : 15, days: CFG.days, pool: items.length, stories_total: every.size, full,
     top, latest, themes, people: Object.entries(people).map(([name, st]) => ({ name, n: st.length })).sort((a, b) => b.n - a.n), owners: CFG.owners,
     note: "Collected from Google News (searches plus its Business, World, India and Technology sections), limited to a fixed list of established outlets, grouped when several outlets carry the same story, and ranked by how many outlets carry it and how recent it is. Headlines are kept for 7 days and topped up on every refresh. Posts on X or Truth Social appear when these outlets report them. Headlines are not summarised or checked." };
 }
