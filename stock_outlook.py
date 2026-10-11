@@ -187,6 +187,16 @@ def score(rows, raw, h, test=True):
     for n in sel:
         p, y = rows[n]["p"], rows[n]["y"]; q = max(5, len(p) // 10); o = np.argsort(p)
         sp.append(y[o[-q:]].mean() - y[o[:q]].mean())
+    # each decile of the estimate (1 = lowest, 10 = highest): average realised return against the average share, and how often it was positive
+    D = np.full((len(sel), 10), np.nan)
+    for r_, n in enumerate(sel):
+        p, y = rows[n]["p"], rows[n]["y"]; rk = pd.Series(p).rank(pct=True).to_numpy(); dq = np.minimum(9, (rk * 10).astype(int))
+        for d in range(10):
+            m_ = dq == d
+            if m_.sum() >= 5: D[r_, d] = y[m_].mean() - y.mean()          # against the average share that day
+    stp = max(1, h // STEP); Dn = D[::stp]
+    deciles = [dict(d=d + 1, mean=rnd(np.nanmean(D[:, d])), pos=rnd(np.nanmean(D[:, d] > 0), 3),
+                    se=rnd(np.nanstd(Dn[:, d], ddof=1) / np.sqrt(np.isfinite(Dn[:, d]).sum()), 5)) for d in range(10)]
     sp = np.array(sp); step = max(1, h // STEP); ni = ic[::step]; ni = ni[np.isfinite(ni)]
     t = float(ni.mean() / (ni.std(ddof=1) / np.sqrt(len(ni)))) if len(ni) > 3 and ni.std() > 0 else None
     single, single_t = {}, {}
@@ -194,7 +204,7 @@ def score(rows, raw, h, test=True):
         v = np.array(raw[k])[sel]; single[k] = rnd(np.nanmean(v), 3); nv = v[::step]; nv = nv[np.isfinite(nv)]
         single_t[k] = rnd(float(nv.mean() / (nv.std(ddof=1) / np.sqrt(len(nv)))), 2) if len(nv) > 3 and nv.std() > 0 else None
     return dict(n=len(sel), start=str(rows[sel[0]]["d"].date()), end=str(rows[sel[-1]]["d"].date()), ic=rnd(np.nanmean(ic), 3), ic_pos=rnd(np.nanmean(ic > 0), 3),
-                t=rnd(t, 2), spread=rnd(sp.mean()), spread_hit=rnd((sp > 0).mean(), 3), n_indep=int(len(ni)), single=single, single_t=single_t,
+                t=rnd(t, 2), spread=rnd(sp.mean()), spread_hit=rnd((sp > 0).mean(), 3), n_indep=int(len(ni)), single=single, single_t=single_t, deciles=deciles,
                 stocks=int(np.median([len(rows[n]["p"]) for n in sel])))
 
 
@@ -233,6 +243,7 @@ def main():
         rq = np.quantile(np.concatenate(resid), [0.1, 0.9])
         coef[str(h)] = {k: rnd(w[j], 5) for j, k in enumerate(FEATS)}
         X, _, ok = xsec(f, None, elig, h, last)
+        if h == 21: X21 = X
         p = X @ w; pr = pd.Series(p[ok]).rank(pct=True).to_numpy(); pi = np.flatnonzero(ok)
         for n_, j in enumerate(pi):
             s = syms[j]; o = today.setdefault(s, {})
@@ -268,6 +279,7 @@ def main():
         if "21" in o and "63" in o:
             row["o"] = [bp(o["21"]["p"]), round(o["21"]["pct"] * 100), bp(o["21"]["lo"]), bp(o["21"]["hi"]), bp(o["63"]["p"]), round(o["63"]["pct"] * 100), bp(o["63"]["lo"]), bp(o["63"]["hi"])]
             row["c"] = [bp(o["21"]["c"][k]) for k in FEATS]; row["c3"] = [bp(o["63"]["c"][k]) for k in FEATS]
+            row["x"] = [int(round((X21[j_, q] + 0.5) * 100)) for q in range(len(FEATS))] if (j_ := syms.index(s)) is not None else None   # percentile of each input today
             row["ss"] = [bp(f["seas21"].iloc[last, j]), bp(f["seas63"].iloc[last, j]), int(f["seasn21"].iloc[last, j])]
             r21 = (c / c.shift(21) - 1).tail(756).dropna(); r63 = (c / c.shift(63) - 1).tail(756).dropna()
             if len(r21) > 100: row["typ"] = [bp(r21.quantile(0.1)), bp(r21.quantile(0.9)), bp(r63.quantile(0.1)), bp(r63.quantile(0.9))]
@@ -292,7 +304,7 @@ def main():
                c="contributions of each input to the 21-day estimate (basis points, order of feats)", c3="the same for 63 days",
                sm="average return by calendar month (tenths of a percent)", su="share of years it rose (percent)", sx="average return against the Nifty 50 (tenths of a percent)",
                sb="share of years it beat the Nifty 50 (percent)", st="t of the average against the Nifty across years (x10); months with under 5 years are null", n="years of history", ss="seasonality input now: same 21 / 63 days in past years vs the average share (basis points), years used",
-               typ="its own 21-day and 63-day moves over the last 3 years: 10th and 90th percentile (basis points)")
+               x="percentile of each input today among eligible shares (0-100, order of feats; 50 = missing)", typ="its own 21-day and 63-day moves over the last 3 years: 10th and 90th percentile (basis points)")
     out = dict(fmt=fmt, updated=dt.datetime.now(dt.timezone.utc).isoformat(), asof=str(dates[last].date()), synthetic=bool(a.synthetic), split=SPLIT,
                shares=len(syms), eligible_today=int(elig.iloc[last].sum()), first=str(dates[0].date()), feats=FEATS, label=LABEL,
                track=track, coef=coef, nifty_seas=nifty_seas, sector_seas=sec_seas, sector_seas_t=sec_t, months=MONTHS, s=out_s)
