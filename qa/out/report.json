@@ -1,5 +1,5 @@
 {
- "when": "2026-10-11T12:37:54.478Z",
+ "when": "2026-10-11T12:47:43.929Z",
  "runs": [
   {
    "name": "desk1280",
@@ -73,7 +73,7 @@
       "n": 19,
       "sec": "Technology"
      },
-     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr9 Oct8 Nov8 Jan",
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918 and ₹1,124; middle half ₹967 to ₹1,075₹1,216₹1,031₹845Next 3 months: middle ₹1,031; 8 in 10 between ₹845 and ₹1,216; middle half ₹933 to ₹1,1289 Apr9 Oct8 Nov8 Jan",
      "fanW": "676",
      "boxW": 676
     },
@@ -96,7 +96,7 @@
       "n": 2,
       "sec": "Utilities"
      },
-     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr9 Oct8 Nov8 Jan",
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.3; 8 in 10 between ₹85 and ₹99.7; middle half ₹88.4 to ₹96.2₹107₹93.3₹79.9Next 3 months: middle ₹93.3; 8 in 10 between ₹79.9 and ₹107; middle half ₹86.2 to ₹1009 Apr9 Oct8 Nov8 Jan",
      "fanW": "676",
      "boxW": 676
     },
@@ -142,15 +142,16 @@
       "n": 19,
       "sec": "Financial Services"
      },
-     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr9 Oct8 Nov8 Jan",
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707Next month: middle ₹710; 8 in 10 between ₹644 and ₹777; middle half ₹675 to ₹745₹845₹730₹616Next 3 months: middle ₹730; 8 in 10 between ₹616 and ₹845; middle half ₹670 to ₹7919 Apr9 Oct8 Nov8 Jan",
      "fanW": "676",
      "boxW": 676
     },
     "quote-INFY": {
-     "svgW": null,
-     "box": 517
+     "svgW": "519",
+     "box": 519
     }
    },
+   "build": "Build 2026-10-11.15",
    "overflow": 0,
    "errors": [
     "console: Failed to load resource: the server responded with a status of 401 ()",
@@ -229,7 +230,7 @@
       "n": 19,
       "sec": "Technology"
      },
-     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr9 Oct8 Jan",
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918 and ₹1,124; middle half ₹967 to ₹1,075₹1,216₹1,031₹845Next 3 months: middle ₹1,031; 8 in 10 between ₹845 and ₹1,216; middle half ₹933 to ₹1,1289 Apr9 Oct8 Jan",
      "fanW": "508",
      "boxW": 508
     },
@@ -252,7 +253,7 @@
       "n": 2,
       "sec": "Utilities"
      },
-     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr9 Oct8 Jan",
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.3; 8 in 10 between ₹85 and ₹99.7; middle half ₹88.4 to ₹96.2₹107₹93.3₹79.9Next 3 months: middle ₹93.3; 8 in 10 between ₹79.9 and ₹107; middle half ₹86.2 to ₹1009 Apr9 Oct8 Jan",
      "fanW": "508",
      "boxW": 508
     },
@@ -298,15 +299,16 @@
       "n": 19,
       "sec": "Financial Services"
      },
-     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr9 Oct8 Jan",
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707Next month: middle ₹710; 8 in 10 between ₹644 and ₹777; middle half ₹675 to ₹745₹845₹730₹616Next 3 months: middle ₹730; 8 in 10 between ₹616 and ₹845; middle half ₹670 to ₹7919 Apr9 Oct8 Jan",
      "fanW": "508",
      "boxW": 508
     },
     "quote-INFY": {
-     "svgW": null,
-     "box": 517
+     "svgW": "519",
+     "box": 519
     }
    },
+   "build": "Build 2026-10-11.15",
    "overflow": 0,
    "errors": [
     "console: Failed to load resource: the server responded with a status of 401 ()",
@@ -386,7 +388,7 @@
       "n": 19,
       "sec": "Technology"
      },
-     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr8 Jan",
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918 and ₹1,124; middle half ₹967 to ₹1,075₹1,216₹1,031₹845Next 3 months: middle ₹1,031; 8 in 10 between ₹845 and ₹1,216; middle half ₹933 to ₹1,1289 Apr8 Jan",
      "fanW": "302",
      "boxW": 302
     },
@@ -409,7 +411,7 @@
       "n": 2,
       "sec": "Utilities"
      },
-     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr8 Jan",
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.3; 8 in 10 between ₹85 and ₹99.7; middle half ₹88.4 to ₹96.2₹107₹93.3₹79.9Next 3 months: middle ₹93.3; 8 in 10 between ₹79.9 and ₹107; middle half ₹86.2 to ₹1009 Apr8 Jan",
      "fanW": "302",
      "boxW": 302
     },
@@ -455,7 +457,7 @@
       "n": 19,
       "sec": "Financial Services"
      },
-     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr8 Jan",
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707Next month: middle ₹710; 8 in 10 between ₹644 and ₹777; middle half ₹675 to ₹745₹845₹730₹616Next 3 months: middle ₹730; 8 in 10 between ₹616 and ₹845; middle half ₹670 to ₹7919 Apr8 Jan",
      "fanW": "302",
      "boxW": 302
     },
@@ -464,6 +466,7 @@
      "box": 362
     }
    },
+   "build": "Build 2026-10-11.15",
    "overflow": 0,
    "errors": [
     "console: Failed to load resource: the server responded with a status of 401 ()",
