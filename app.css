@@ -765,8 +765,32 @@ td.fc-sn{position:relative;padding-left:40px}.fc-sn .fc-rk{position:absolute;lef
  .fc-t:not(.fc-d){min-width:0}.fc-t:not(.fc-d) th:nth-child(n+4),.fc-t:not(.fc-d) td:nth-child(n+4){display:none}.fc-t .ov-rb{min-width:80px}
 }
 .fc-phone{display:none}@media(max-width:640px){.fc-phone{display:block}}
-@media(max-width:640px){.ov-t:not(.ov-fpt) .ov-rk,.ov-t:not(.ov-fpt) th:first-child{display:none}.ov-rng small{display:none}.ov-rng{min-width:72px}.ov-sym small{max-width:104px}}
+@media(max-width:640px){.ov-t:not(.ov-fpt) .ov-rk,.ov-t:not(.ov-fpt):not(.co-dt):not(.co-pt) th:first-child{display:none}.ov-rng small{display:none}.ov-rng{min-width:72px}.ov-sym small{max-width:104px}}
 @media(max-width:640px){.ov-fpt{min-width:0}.ov-fpt td:first-child{min-width:0}.ov-fpt th:nth-child(3),.ov-fpt td:nth-child(3){display:none}.ov-fp{min-width:120px}.ov-fpv{display:none}.ov-fpt td:last-child small{display:none}.fc-t .ov-rb{min-width:70px}}
 .ov-t td{white-space:normal}
 @media(max-width:640px){.ov-fpt th:nth-child(3),.ov-fpt td:nth-child(3){display:none}.ov-fpt td:first-child b{font-size:12.5px}.ov-fpt .fc-tag{display:none}.ov-fpt td:last-child{min-width:84px}}
 @media(max-width:640px){.ov-fpt th:last-child,.ov-fpt td:last-child{display:none}}
+
+/* ---------- volume and liquidity ---------- */
+.vq small,.lqv{display:block;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}.vq small.hot{color:var(--accent);font-weight:600}
+.lq{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.lq.vhigh{background:color-mix(in srgb,var(--up) 26%,transparent)}.lq.high{background:color-mix(in srgb,var(--up) 14%,transparent)}
+.lq.mod{background:var(--sunken);color:var(--ink-2)}.lq.low{background:color-mix(in srgb,var(--watch) 18%,transparent)}.lq.vlow{background:color-mix(in srgb,var(--down) 18%,transparent)}
+.lq.st.norm{background:var(--sunken);color:var(--ink-2)}.lq.st.busy{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}.lq.st.thin{background:color-mix(in srgb,var(--watch) 20%,transparent)}
+.mliq{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:13px}
+.mliq[hidden]{display:none}.ml-l{display:flex;align-items:center;gap:8px}.ml-k{font-weight:600}.ml-t{flex:1;min-width:240px;color:var(--ink-2);line-height:1.45}
+.ml-s{position:relative;display:flex;align-items:flex-end;gap:1px;height:30px;width:150px;border-bottom:1px solid var(--line-2)}.ml-s i{flex:1;background:var(--line-2);border-radius:1px 1px 0 0}.ml-s i.now{background:var(--accent)}
+.ml-s b{position:absolute;left:0;right:0;border-top:1px dashed var(--mute)}
+.volw button{padding:5px 10px;font-size:12.5px}
+.lqn{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink-2)}
+/* ---------- company ---------- */
+.co-d{margin:0;font-size:14px;line-height:1.65;color:var(--ink);max-width:90ch}
+.co-f{display:flex;flex-wrap:wrap;gap:4px 10px;margin:10px 0 0;font-size:13px;color:var(--ink-2)}.co-f span{color:var(--mute)}
+.co-tiles{margin-bottom:12px}.co-q svg{display:block;max-width:100%;height:auto}
+.co-rev{fill:color-mix(in srgb,var(--accent) 55%,transparent)}.co-ni{fill:var(--up)}.co-loss{fill:var(--down)}
+.ov-leg .l-rev{background:color-mix(in srgb,var(--accent) 55%,transparent)}.ov-leg .l-ni{background:var(--up)}
+.co-pt tr.on td{background:var(--accent-soft)}.co-pt tr.co-med td{background:var(--sunken);font-weight:500;cursor:default}.co-pt td small{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-dt td:first-child{font-weight:500}
+.ov-t.co-dt{min-width:0;width:100%}.ov-t.co-dt th{white-space:normal;vertical-align:bottom}.co-pt td,.co-pt th{white-space:nowrap}.co-tiles .ov-tile b{white-space:nowrap}
+.co-pt td:first-child,.co-pt th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
+@media(max-width:640px){.co-tiles .ov-tile b{font-size:19px}.co-dt{font-size:12.5px}.co-dt th,.co-dt td{padding-left:6px;padding-right:6px}.co-pt td small{max-width:120px}}

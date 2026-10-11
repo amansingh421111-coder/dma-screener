@@ -608,7 +608,7 @@ function inStocksView() {
   const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
    <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
    <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
-  const tabs = [["summary", "Summary"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
+  const tabs = [["summary", "Summary"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
   const rl = (L, pre) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, pre + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings.</p>`);
   let body = "";
@@ -618,7 +618,8 @@ function inStocksView() {
     const top = all.filter((r) => r.tone !== "neu").slice(0, 6);
     const ln = inStockLinked().slice(0, 4);
     body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
-  } else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : `<p class="ix-empty">The outlook covers NSE shares.</p>`;
+  } else if (IV.stab === "company") body = coPanel(IV.sym, IV.ex);
+  else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : `<p class="ix-empty">The outlook covers NSE shares.</p>`;
   else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
   else if (IV.stab === "fin") {
     const q = f && f.q && f.q.length ? `<h3>Quarterly results</h3><div class="tw"><table class="mt"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div>` : "";
@@ -1090,6 +1091,92 @@ function fcNiftyFan() {
   return ovFan("fan-nifty", N.dates, N.close, cone, (v) => Math.round(v).toLocaleString("en-IN"));
 }
 
+/* ----- company: what it does, how it earns, its market now, how it is doing, peers (profiles.json + fund.json + insights.json) ----- */
+let PROF = null;
+async function loadProf() {
+  if (PROF !== null) return; PROF = {};
+  try { const r = await fetch("/profiles.json", { cache: "no-cache" }); if (r.ok) PROF = await r.json(); } catch (e) {}
+  render();
+}
+const coCr = (v) => (v == null || !isFinite(v) ? "–" : "₹" + (Math.abs(v) / 1e7 >= 1e5 ? (v / 1e12).toFixed(2) + " L Cr" : Math.round(v / 1e7).toLocaleString("en-IN") + " Cr"));
+const coPc = (v, d = 1) => (v == null || !isFinite(v) ? "–" : (v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(d) + "%");
+IV.coMore = false;
+/* gap against the Nifty in percentage points; shown neutral when it rounds to zero */
+const coPts = (v) => (v == null || !isFinite(v) ? "–" : (Math.abs(v) < 0.05 ? "0.0" : (v > 0 ? "+" : "−") + Math.abs(v).toFixed(1)) + " pts");
+const coCl = (v) => (v == null || Math.abs(v) < 0.05 ? "" : inCl(v));
+/* revenue and profit by quarter, with the change against the same quarter a year earlier where both exist */
+function coQuarters(key, q) {
+  q = (q || []).filter((x) => x.rev != null || x.ni != null); if (q.length < 2) return "";
+  const W = fitW(key, 560), n = q.length, tks = typeof niceTicks === "function" ? niceTicks(Math.min(0, ...q.flatMap((x) => [x.rev || 0, x.ni || 0])), Math.max(...q.flatMap((x) => [x.rev || 0, x.ni || 0])) * 1.08, 3) : [0], pl = 12 + 6.5 * Math.max(...tks.map((v) => (v === 0 ? "0" : coCr(v).replace("₹", "")).length)), narrow = (W - pl - 8) / n < 84, H = narrow ? 212 : 200, pr = 8, pt = 22, pb = narrow ? 42 : 30, gw = Math.min(120, (W - pl - pr) / n), bw = Math.min(22, gw / 3);
+  const vals = q.flatMap((x) => [x.rev || 0, x.ni || 0]), lo = Math.min(0, ...vals), hi = Math.max(...vals) * 1.08;
+  const Y = (v) => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const yoy = (i, k) => { const d0 = new Date(q[i].d), p = q.find((x) => Math.abs((d0 - new Date(x.d)) / 864e5 - 365) < 40); return p && p[k] && q[i][k] != null && p[k] > 0 ? q[i][k] / p[k] - 1 : null; };
+  const grid = tks.map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${Math.abs(v) < 1 ? "ov-g0" : "ov-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="ov-ax">${v === 0 ? "0" : coCr(v).replace("₹", "")}</text>`).join("");
+  const bars = q.map((x, i) => { const cx = pl + gw * i + gw / 2, gy = yoy(i, "rev"), ny = yoy(i, "ni"), lab = new Date(x.d + "T00:00:00").toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+    const rect = (v, dx, cls, nm) => v == null ? "" : `<rect x="${(cx + dx).toFixed(1)}" y="${Y(Math.max(0, v)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, Math.abs(Y(v) - Y(0))).toFixed(1)}" rx="2" class="${cls}"><title>${lab}: ${nm} ${coCr(v)}</title></rect>`;
+    return `${rect(x.rev, -bw - 1, "co-rev", "revenue")}${rect(x.ni, 1, x.ni >= 0 ? "co-ni" : "co-loss", "net profit")}
+      <text x="${cx.toFixed(1)}" y="${H - pb + 14}" text-anchor="middle" class="ov-ax">${lab}</text>${gy == null && ny == null ? "" : narrow ? `<text x="${cx.toFixed(1)}" y="${H - pb + 26}" text-anchor="middle" class="ov-ax sm">${gy != null ? coPc(gy, 0) : "–"}</text><text x="${cx.toFixed(1)}" y="${H - pb + 37}" text-anchor="middle" class="ov-ax sm">${ny != null ? coPc(ny, 0) : "–"}</text>` : `<text x="${cx.toFixed(1)}" y="${H - pb + 26}" text-anchor="middle" class="ov-ax sm">${gy != null ? coPc(gy, 0) : "–"} / ${ny != null ? coPc(ny, 0) : "–"}</text>`}`; }).join("");
+  return `<div class="co-q" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Revenue and net profit by quarter">${grid}${bars}</svg></div>
+    <div class="ov-leg"><span><i class="l-rev"></i>Revenue</span><span><i class="l-ni"></i>Net profit</span><span>Below each quarter: change against the same quarter a year earlier (revenue, then profit), where both are reported</span></div>${(Date.now() - new Date(q[q.length - 1].d)) / 864e5 > 200 ? `<p class="ix-fine">The source has no quarter after ${new Date(q[q.length - 1].d + "T00:00:00").toLocaleDateString("en-IN", { month: "long", year: "numeric" })} for this company; Screener.in (Links) carries the latest results.</p>` : ""}`;
+}
+function coPeers(sym, f) {
+  const F = FUND.fund, S = FUND.stocks || {}, byInd = f.ind ? Object.entries(F).filter(([s, o]) => o.ind === f.ind && o.mcap) : [];
+  const pool = byInd.length >= 4 ? byInd : Object.entries(F).filter(([s, o]) => o.sec === f.sec && o.mcap), basis = byInd.length >= 4 ? f.ind : f.sec;
+  let L = pool.sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 8); if (!L.some(([s]) => s === sym) && F[sym]) L = L.slice(0, 7).concat([[sym, F[sym]]]);
+  if (L.length < 2) return "";
+  const dec = (s) => { const r = SO && SO.s && typeof soRow === "function" ? soRow(s) : null; return r && r.o ? Math.min(10, Math.floor(r.o[1] / 10) + 1) : null; };
+  const med = (k, g) => { const v = pool.map(([s, o]) => (g ? g(s, o) : o[k])).filter((x) => x != null && isFinite(x)).sort((a, b) => a - b); return v.length ? v[v.length >> 1] : null; };
+  const m3 = (s) => (S[s] && S[s].t && S[s].t.m3 != null ? S[s].t.m3 / 100 : null);
+  const row = (s, o) => `<tr class="${s === sym ? "on" : ""}" onclick="event.stopPropagation();openStock('${esc(s)}','NSE')"><td><b>${esc(s)}</b><small>${esc((o.name || "").replace(/\s+(Limited|Ltd\.?)$/i, ""))}</small></td><td>${coCr(o.mcap)}</td><td>${o.pe > 0 ? o.pe.toFixed(1) : "–"}</td><td>${coPc(o.roe)}</td><td>${coPc(o.revg)}</td><td>${coPc(o.opm)}</td><td class="${inCl(m3(s))}">${coPc(m3(s))}</td><td>${dec(s) ? `<span class="ov-dp d${dec(s)}">D${dec(s)}</span>` : "–"}</td></tr>`;
+  return `<div class="ov-scroll"><table class="ov-t co-pt"><thead><tr><th>Company</th><th>Market cap</th><th>P/E</th><th>ROE</th><th>Revenue growth</th><th>Operating margin</th><th>3 months</th><th>Outlook</th></tr></thead><tbody>${L.map(([s, o]) => row(s, o)).join("")}
+    <tr class="co-med"><td><b>Median</b><small>${pool.length} companies in ${esc(basis)}</small></td><td>${coCr(med("mcap"))}</td><td>${med(null, (s, o) => (o.pe > 0 ? o.pe : null))?.toFixed(1) ?? "–"}</td><td>${coPc(med("roe"))}</td><td>${coPc(med("revg"))}</td><td>${coPc(med("opm"))}</td><td>${coPc(med(null, (s) => m3(s)))}</td><td></td></tr></tbody></table></div>
+    <p class="ix-fine">${byInd.length >= 4 ? "Same industry" : "Same sector (too few in its industry)"} among covered companies, largest first; Yahoo Finance figures, latest reported. Revenue growth is the latest quarter against a year earlier. Outlook: decile of the share's 1-month estimate (Outlook tab).</p>`;
+}
+function coPanel(sym, ex) {
+  if (PROF === null) loadProf(); if (FUND === null) loadFund(); if (INS === null) loadIns(); if (SO === null) loadSO(); if (FC === null) loadFc();
+  const P = PROF && PROF.s ? PROF.s[sym] : null, f = ex === "NSE" && FUND && FUND.fund ? FUND.fund[sym] : null, t = ex === "NSE" && FUND && FUND.stocks && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
+  if (PROF === null || FUND === null) return `<p class="ix-empty">Loading the company profile…</p>`;
+  if (!P && !f) return `<p class="ix-empty">No company profile for this share yet: profiles cover the ${ixN(Object.keys((PROF && PROF.s) || {}).length)} NSE shares the app tracks closely. Screener.in and NSE (Links tab) have its full profile.</p>`;
+  const sec = (f && f.sec) || (P && P.sec), ind = (f && f.ind) || (P && P.ind), SM = FUND.sector_med && sec ? FUND.sector_med[sec] : null;
+  // 1. what it does
+  const d = P && P.d ? P.d : "", long = d.length > 420, txt = long && !IV.coMore ? d.slice(0, d.lastIndexOf(" ", 400)) + "…" : d;
+  const facts = [sec ? `${entG("sec", sec)}${ind ? ` › ${entG("ind", ind)}` : ""}` : "", P && P.emp ? `${Number(P.emp).toLocaleString("en-IN")} employees` : "", P && P.city ? esc(P.city) : "", P && P.web ? `<a href="${esc(P.web)}" target="_blank" rel="noopener noreferrer">${esc(P.web.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>` : ""].filter(Boolean);
+  const about = `<section class="ov-card"><h4 class="ov-h">What the company does</h4>${d ? `<p class="co-d">${esc(txt)}${long ? ` <button type="button" class="ent" onclick="event.stopPropagation();IV.coMore=!IV.coMore;render()">${IV.coMore ? "Show less" : "Read more"}</button>` : ""}</p>` : `<p class="ix-empty">No business description available.</p>`}
+    ${facts.length ? `<p class="co-f">${facts.join('<span aria-hidden="true">·</span>')}</p>` : ""}<p class="ix-fine">Description: ${esc((PROF && PROF.source) || "Yahoo Finance company profile")}.</p></section>`;
+  // 2. how it makes money
+  const tile = (k, v, s, c) => `<div class="ov-tile"><span class="k">${k}</span><b class="${c || ""}">${v}</b><small>${s}</small></div>`;
+  const money = f ? `<section class="ov-card"><h4 class="ov-h">How it makes money</h4>
+    <div class="ov-tiles co-tiles">${tile("Revenue, last 12 months", coCr(f.rev), f.revg != null ? `${coPc(f.revg)} latest quarter vs a year earlier` : "")}${tile("Net profit, last 12 months", coCr(f.ni), f.npm != null ? `${coPc(f.npm)} of revenue kept as profit` : "", f.ni < 0 ? "sx-neg" : "")}
+      ${tile("Operating margin", coPc(f.opm), SM && SM.opm != null ? `sector median ${coPc(SM.opm)}` : "")}${tile("Return on equity", coPc(f.roe), SM && SM.roe != null ? `sector median ${coPc(SM.roe)}` : "")}</div>
+    ${coQuarters("coq-" + sym, f.q)}</section>` : "";
+  // 3. its market now
+  const S = INS && INS.sectors ? INS.sectors.find((x) => x.kind === "stocks" && x.name === sec) : null;
+  const FS = FC && FC.sectors && FC.sectors.list ? (typeof fcSecRows === "function" ? fcSecRows() : []) : [], fr = FS.findIndex((o) => o.name === sec);
+  const indPeers = f && f.ind && FUND.stocks ? Object.entries(FUND.fund).filter(([s, o]) => o.ind === f.ind && FUND.stocks[s] && FUND.stocks[s].t && FUND.stocks[s].t.m3 != null).map(([s]) => FUND.stocks[s].t.m3) : [];
+  const im3 = indPeers.length >= 3 ? indPeers.sort((a, b) => a - b)[indPeers.length >> 1] / 100 : null, nm3 = INS && INS.groups ? ((INS.groups[0].items || []).find((x) => x.k === "^NSEI") || {}).m3 : null;
+  const market = sec ? `<section class="ov-card"><h4 class="ov-h">How its market is doing now</h4><div class="ov-tiles co-tiles">
+      ${S ? tile(`${esc(sec)} vs Nifty 50, 3 months`, coPts(S.rel3), `1 month: ${coPts(S.rel1)}; ${S.above200}% of its shares above the 200-day average`, coCl(S.rel3)) : ""}
+      ${im3 != null && nm3 != null ? tile(`${esc(f.ind)} vs Nifty 50, 3 months`, coPts((im3 - nm3 / 100) * 100), `median share of ${indPeers.length} covered companies, against the Nifty 50`, coCl((im3 - nm3 / 100) * 100)) : ""}
+      ${fr >= 0 ? tile("Sector outlook rank", `${fr + 1}<span class="ov-of">/${FS.length}</span>`, `next-month estimate against other sectors: ${FS[fr].e21.p > 0 ? "+" : ""}${coPc(FS[fr].e21.p, 2)} (Outlook tab)`) : ""}
+      ${SM && SM.revg != null ? tile("Sector revenue growth", coPc(SM.revg), `median of ${SM.n} covered companies, latest quarter vs a year earlier`) : ""}</div></section>` : "";
+  // 4. how the company is doing
+  const rows = f ? [["Revenue growth", f.revg, SM && SM.revg, true, coPc], ["Operating margin", f.opm, SM && SM.opm, true, coPc], ["Return on equity", f.roe, SM && SM.roe, true, coPc], ["Debt to equity", f.de, SM && SM.de, false, (v) => (v == null ? "–" : v.toFixed(2))], ["P/E", f.pe > 0 ? f.pe : null, SM && SM.pe, null, (v) => (v == null ? "–" : v.toFixed(1))]] : [];
+  const doing = f ? `<section class="ov-card"><h4 class="ov-h">How the company is doing</h4>
+    <div class="ov-scroll"><table class="ov-t co-dt"><thead><tr><th>Measure</th><th>${esc(sym)}</th><th>Sector median</th><th>Against the sector</th></tr></thead><tbody>${rows.map(([l, v, m, hb, fm]) => {
+      const rel = v == null || m == null ? "–" : hb === null ? (v > m * 1.15 ? "Priced higher than peers" : v < m * 0.85 ? "Priced lower than peers" : "In line") : (hb ? v > m : v < m) ? (Math.abs(v - m) / Math.max(Math.abs(m), 1e-9) < 0.1 ? "In line" : "Better than the median") : Math.abs(v - m) / Math.max(Math.abs(m), 1e-9) < 0.1 ? "In line" : "Weaker than the median";
+      return `<tr><td>${l}</td><td class="ov-num">${fm(v)}</td><td class="ov-num fc-mute">${fm(m)}</td><td class="${/Better/.test(rel) ? "sx-pos" : /Weaker/.test(rel) ? "sx-neg" : "fc-mute"}">${rel}</td></tr>`; }).join("")}
+      ${t ? `<tr><td>Share price, 1 year</td><td class="ov-num ${inCl(t.y1)}">${inPct(t.y1)}</td><td class="ov-num fc-mute">${nm3 != null && INS.groups ? inPct(((INS.groups[0].items || []).find((x) => x.k === "^NSEI") || {}).y1) + " Nifty" : "–"}</td><td class="fc-mute">${t.hi52 != null ? inPct(t.hi52) + " from its 52-week high" : ""}</td></tr>` : ""}</tbody></table></div>
+    <p class="ix-fine">Factual comparison with the median of covered companies in ${esc(sec || "its sector")} (Yahoo Finance, latest reported). “In line” means within 10% of the median. P/E above or below peers is shown as priced higher or lower, not better or worse.</p></section>` : "";
+  const peers = f ? `<section class="ov-card"><h4 class="ov-h">Peers and competitors</h4>${coPeers(sym, f)}</section>` : "";
+  return `<div class="ov co">${about}${money}${market}${doing}${peers}${!f ? `<p class="ix-fine">Financial figures are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}; for this share see Screener.in in the Links tab.</p>` : ""}</div>`;
+}
+function coLine(sym) {   // first sentence of the description, for the quote panel
+  if (PROF === null) { loadProf(); return ""; }
+  const P = PROF.s && PROF.s[sym]; if (!P || !P.d) return "";
+  const first = P.d.split(/(?<=\.)\s/)[0].slice(0, 260);
+  return `<li><b>Company:</b> ${esc(first)} <button type="button" class="ent" onclick="go('ins');inPick('${esc(sym)}','NSE');IV.stab='company';render()">Company details</button></li>`;
+}
+
 /* ----- entry point ----- */
 function renderIns() {
   const el = $("vIns"); if (!el) return;
@@ -1126,7 +1213,7 @@ function scrIns(sym, ex) {
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
   const news = ex === "NSE" ? inStockNews(sym).named : [];
   const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
-  const tabs = [["read", "Key readings"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
+  const tabs = [["read", "Key readings"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
   const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");
   const wait = !FUND || (!pre && (live === 0 || live === undefined)) ? `<p class="ix-empty">Loading the readings…</p>` : "";
   let body = "";
@@ -1135,7 +1222,8 @@ function scrIns(sym, ex) {
     const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inLvl(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
     const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
     body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
-  } else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : `<p class="ix-empty">The outlook covers NSE shares. Look this company up by its NSE symbol.</p>`;
+  } else if (tab === "company") body = coPanel(sym, ex);
+  else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : `<p class="ix-empty">The outlook covers NSE shares. Look this company up by its NSE symbol.</p>`;
   else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
   else if (tab === "fin") body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${rl(R.F, "sf")}` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
   else if (tab === "news") body = news.length ? `<ol class="nsl sm">${news.slice(0, 8).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">${LIVE ? "No story in the live feed (last 7 days) names this stock." : "Loading the news feed…"}</p>`;
