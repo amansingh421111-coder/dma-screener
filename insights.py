@@ -216,6 +216,20 @@ FKEYS = dict(mcap="marketCap", pe="trailingPE", fpe="forwardPE", pb="priceToBook
              inst="heldPercentInstitutions", fcf="freeCashflow", ocf="operatingCashflow", cash="totalCash", debt="totalDebt", rev="totalRevenue", ni="netIncomeToCommon")
 
 
+_FX = {}
+
+
+def fx_inr(cur):
+    """Rupees per unit of `cur`, for companies whose accounts Yahoo reports in another currency (Infosys, Wipro, Dr Reddy's report in US dollars)."""
+    import yfinance as yf
+    if cur not in _FX:
+        try:
+            h = yf.Ticker(f"{cur}INR=X").history(period="10d")["Close"].dropna()
+            _FX[cur] = float(h.iloc[-1]) if len(h) and 0 < float(h.iloc[-1]) < 1e4 else None
+        except Exception: _FX[cur] = None
+    return _FX[cur]
+
+
 def one_fund(sym):
     import yfinance as yf
     for attempt in range(3):
@@ -257,6 +271,18 @@ def one_fund(sym):
                     if ebit is not None and it is not None and np.isfinite(ebit) and np.isfinite(it) and abs(it) > 0: o["icr"] = round(float(ebit / abs(it)), 2)
                     o["fy"] = str(col.date())
             except Exception: pass
+            cur = info.get("financialCurrency")
+            if cur and cur != "INR":      # accounts in another currency: convert amounts to rupees, and fix ratios that mixed a rupee value with a foreign-currency one
+                fx = fx_inr(cur)
+                if not fx: return sym, {k: o.get(k) for k in ("mcap", "pe", "fpe", "pb", "roe", "roa", "de", "cr", "qr", "npm", "opm", "ebm", "revg", "epsg", "dy", "payout", "beta", "ins", "inst", "sec", "ind", "name")} | dict(cur=cur)
+                for k in ("fcf", "ocf", "cash", "debt", "rev", "ni"):
+                    if o.get(k) is not None: o[k] = round(o[k] * fx, 0)
+                for k in ("evebitda", "evs"):
+                    if o.get(k) is not None: o[k] = round(o[k] / fx, 3)
+                for r in o.get("q") or []:
+                    for k in ("rev", "ni"):
+                        if r.get(k) is not None: r[k] = round(r[k] * fx, 0)
+                o["cur"], o["fx"] = cur, round(fx, 4)
             return sym, o
         except Exception as e:
             if "Too Many" in str(e) or "429" in str(e): time.sleep(20 * (attempt + 1))

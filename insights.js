@@ -1148,7 +1148,7 @@ function coPanel(sym, ex) {
   const money = f ? `<section class="ov-card"><h4 class="ov-h">How it makes money</h4>
     <div class="ov-tiles co-tiles">${tile("Revenue, last 12 months", coCr(f.rev), f.revg != null ? `${coPc(f.revg)} latest quarter vs a year earlier` : "")}${tile("Net profit, last 12 months", coCr(f.ni), f.npm != null ? `${coPc(f.npm)} of revenue kept as profit` : "", f.ni < 0 ? "sx-neg" : "")}
       ${tile("Operating margin", coPc(f.opm), SM && SM.opm != null ? `sector median ${coPc(SM.opm)}` : "")}${tile("Return on equity", coPc(f.roe), SM && SM.roe != null ? `sector median ${coPc(SM.roe)}` : "")}</div>
-    ${coQuarters("coq-" + sym, f.q)}</section>` : "";
+    ${coQuarters("coq-" + sym, f.q)}${f.cur && f.cur !== "INR" ? `<p class="ix-fine">${esc(f.sym || sym)} reports its accounts in ${esc(f.cur)}; amounts here are converted to rupees${f.fx ? ` at ₹${f.fx.toFixed(2)} per ${esc(f.cur)}` : ""}.</p>` : ""}</section>` : "";
   // 3. its market now
   const S = INS && INS.sectors ? INS.sectors.find((x) => x.kind === "stocks" && x.name === sec) : null;
   const FS = FC && FC.sectors && FC.sectors.list ? (typeof fcSecRows === "function" ? fcSecRows() : []) : [], fr = FS.findIndex((o) => o.name === sec);
