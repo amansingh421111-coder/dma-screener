@@ -17,6 +17,7 @@ async function run(name, w, scheme, steps) {
     else await p.screenshot({ path: file, fullPage: true });
     r.shots.push(file);
   }
+  r.build = await p.evaluate(() => (document.getElementById("ver") || {}).textContent);
   r.overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   r.errors = errs; report.runs.push(r); await b.close();
 }
