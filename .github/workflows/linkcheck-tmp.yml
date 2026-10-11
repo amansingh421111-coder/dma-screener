@@ -1,0 +1,12 @@
+name: linkcheck-tmp
+on:
+  push:
+    branches: [tmp-linkcheck]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -s --max-time 90 "https://screenedstocks.vercel.app/api/dma?a=feed" -o feed.json
+          node tools/linkcheck.js feed.json
