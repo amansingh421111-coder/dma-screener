@@ -17,8 +17,8 @@ jobs:
           python3 - <<'P'
           import json, sys
           f = json.load(open("feed.json")); m = json.load(open("mkt.json"))
-          print("feed:", f.get("error") or f"{f.get('pool')} headlines, updated {f.get('updated')}, last fetch {f.get('last_fetch')}")
-          print("themes:", {t["short"]: t["total"] for t in f.get("themes", [])})
-          print("mkt:", m.get("error") or f"{len(m.get('series', []))} series, updated {m.get('updated')}")
+          print("::notice::feed:", f.get("error") or f"{f.get('pool')} headlines, updated {f.get('updated')}, last fetch {f.get('last_fetch')}")
+          print("::notice::themes:", {t["short"]: t["total"] for t in f.get("themes", [])})
+          print("::notice::mkt:", m.get("error") or f"{len(m.get('series', []))} series, updated {m.get('updated')}")
           sys.exit(0 if f.get("themes") and m.get("series") else 1)
           P
