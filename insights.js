@@ -1,7 +1,7 @@
 /* Insights tab: a market desk. Live market tape, top stories linked to indices and stocks, a news desk by theme,
    market tables and readings, and a page per stock. Readings apply fixed rules to public numbers and cite the NISM
    workbook section each rule paraphrases. No buy/sell verdicts, no price targets.
-   Data: /api/dma?a=feed (live news), /api/dma?a=mkt (live prices), /insights.json, /fund.json, /names.json,
+   Data: /api/dma?a=feed (live news), /api/dma?a=mkt (live prices), /insights.json, /fund.json, /names.json, /forecast.json (outlook),
    /api/dma?a=chart (price history for any stock), /api/dma?a=news (headlines for one company).
    Styles live in app.css. */
 const IV = { view: "overview", theme: "all", who: "", list: "top", linkF: "", stab: "summary", secPer: "rel3", secSrc: "index", shown: 30,
@@ -415,7 +415,7 @@ function inTapeGo(k) { if (typeof openIndex === "function") openIndex(k); else i
 
 /* ----- section navigation ----- */
 function inSubnav() {
-  const V = [["overview", "Overview"], ["news", "News"], ["markets", "Markets"], ["stocks", "Stocks"], ["method", "Method"]];
+  const V = [["overview", "Overview"], ["outlook", "Outlook"], ["news", "News"], ["markets", "Markets"], ["stocks", "Stocks"], ["method", "Method"]];
   const names = INAMES ? Object.keys(INAMES) : [];
   return `<div class="ix-nav"><div class="ix-tabs" role="tablist" aria-label="Insights sections">${V.map(([k, l]) => `<button role="tab" aria-selected="${IV.view === k}" onclick="inGo('${k}')">${l}</button>`).join("")}</div>
   <form class="ix-find" onsubmit="inPick(this.elements.q.value,'NSE');this.elements.q.value='';return false"><input id="ix-q" name="q" list="ix-syms" placeholder="Find a stock, e.g. TCS" aria-label="Find a stock" autocapitalize="characters" autocomplete="off"><datalist id="ix-syms">${names.slice(0, 900).map((s) => `<option value="${esc(s)}">`).join("")}</datalist></form></div>`;
@@ -457,7 +457,7 @@ function inOverview() {
   return `<div class="ix-grid"><div class="ix-main">
     <section class="ix-sec o1"><header class="ix-h"><h2>Top stories</h2><p>Carried by the most outlets, weighted towards the last few hours, with the indices and stocks each is linked to.</p></header>${news}</section>
     ${just}${inSectorChart(false)}</div>
-    <aside class="ix-rail">${inMarketRead()}${inHoldNews()}${inMostLinked(6)}</aside></div>`;
+    <aside class="ix-rail">${inOutlookCard()}${inMarketRead()}${inHoldNews()}${inMostLinked(6)}</aside></div>`;
 }
 const MR_TK = { trend: "^NSEI", rsi: "^NSEI", macd: "^NSEI", dow: "^BSESN", vix: "^INDIAVIX", crude: "BZ=F", rupee: "INR=X", us10y: "^TNX", gold: "GC=F", copper: "HG=F", dxy: "DX-Y.NYB", global: "^GSPC" };
 function inMarketRead() {
@@ -630,6 +630,172 @@ function inStocksView() {
 function inDate(d) { if (!d) return ""; const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? String(d) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
 function inStockLinked() { return IV.sym ? inAllStories().filter((x) => inLinks(x).sym.includes(IV.sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : []; }
 
+/* ----- outlook: 1- and 3-month estimates from forecast.json (computed after each close by forecast.py) ----- */
+let FC = null;
+async function loadFc() {
+  if (FC !== null) return; FC = {};
+  try { const r = await fetch("/forecast.json", { cache: "no-cache" }); if (r.ok) FC = await r.json(); } catch (e) {}
+  render();
+}
+IV.fcH = "21";
+const FC_HL = { "21": "next month", "63": "next 3 months" };
+const fcP = (v, d = 1) => (v == null ? "–" : inPct(v * 100, d));
+const fcLvl = (v) => (v == null ? "–" : Math.round(v).toLocaleString("en-IN"));
+function fcFwd(asof, h) { const d = new Date(asof + "T00:00:00"); d.setDate(d.getDate() + Math.round(h * 1.45)); return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }); }
+function fcVal(v, unit) { if (v == null) return "–"; return unit === "pct" ? fcP(v) : unit === "share" ? Math.round(v * 100) + "%" : unit === "bp" ? (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(0) + " bp" : unit === "chg" ? (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1) : unit === "lvl" ? v.toFixed(1) : String(v); }
+// how the test went, in words the page can stand behind
+function fcVerdict(t) {
+  if (!t) return { range: "", dir: "", tone: "neu" };
+  const c = Math.round(t.cover80 * 100), hit = Math.round(t.hit * 100), up = Math.round(t.hit_always_up * 100);
+  const range = `The 8-in-10 range held ${c}% of the time (aim: 80%)${c < 74 ? ", so treat it as a little too narrow" : c > 86 ? ", so it has been wider than needed" : ""}.`;
+  const dir = t.skill > 0.03 && hit > up ? `The up-or-down tilt was right ${hit}% of the time, better than always assuming “up” (${up}%).`
+    : `The up-or-down tilt was right ${hit}% of the time, against ${up}% for always assuming “up”: no edge, so read the range, not the direction.`;
+  return { range, dir, tone: t.skill > 0.03 && hit > up ? "pos" : "neu" };
+}
+function fcBar(o) {
+  const q = o.q, b = o.base.q, lo = Math.min(q[0], b[0], 0), hi = Math.max(q[4], b[4], 0), pad = (hi - lo) * 0.06, L = lo - pad, R = hi + pad;
+  const x = (v) => ((v - L) / (R - L) * 100).toFixed(2) + "%", w = (a, c) => ((c - a) / (R - L) * 100).toFixed(2) + "%";
+  return `<div class="fc-bar" role="img" aria-label="Range ${fcP(q[0])} to ${fcP(q[4])}, middle ${fcP(q[2])}; all periods since 2008 ${fcP(b[0])} to ${fcP(b[4])}">
+    <span class="fc-base" style="left:${x(b[0])};width:${w(b[0], b[4])}"></span>
+    <span class="fc-r80" style="left:${x(q[0])};width:${w(q[0], q[4])}"></span><span class="fc-r50" style="left:${x(q[1])};width:${w(q[1], q[3])}"></span>
+    <span class="fc-zero" style="left:${x(0)}"></span><span class="fc-mid" style="left:${x(q[2])}"></span></div>
+  <div class="fc-ax"><span style="left:${x(q[0])}">${fcLvl(o.level[0])}</span><span style="left:${x(q[2])}"><b>${fcLvl(o.level[2])}</b></span><span style="left:${x(q[4])}">${fcLvl(o.level[4])}</span></div>`;
+}
+function fcNiftyCard(h, compact) {
+  const N = FC.nifty, o = N.h[h], t = N.track[h].test, v = fcVerdict(t), up = Math.round(o.pup * o.n);
+  return `<div class="fc-card">
+    <div class="fc-k">Nifty 50, ${FC_HL[h]} <span>to about ${fcFwd(N.asof, +h)}</span></div>
+    <div class="fc-big"><span class="${inCl(o.q[2])}">${fcP(o.q[2])}</span><small>middle estimate, Nifty about ${fcLvl(o.level[2])}</small></div>
+    ${fcBar(o)}
+    <dl class="fc-dl"><div><dt>Likely range (8 in 10 past cases)</dt><dd>${fcP(o.q[0])} to ${fcP(o.q[4])}</dd></div>
+      <div><dt>Rose afterwards</dt><dd>${up} of ${o.n} similar moments (${Math.round(o.pup * 100)}%) <span class="fc-vs">all periods: ${Math.round(o.base.pup * 100)}%</span></dd></div>
+      <div><dt>Fell more than 5%</dt><dd>${Math.round(o.pdn5 * 100)}% <span class="fc-vs">all periods: ${Math.round(o.base.pdn5 * 100)}%</span></dd></div></dl>
+    ${compact ? "" : `<p class="fc-test ${v.tone}"><b>Tested on ${t.start.slice(0, 4)}–${t.end.slice(0, 4)}.</b> ${v.range} ${v.dir}</p>`}</div>`;
+}
+const fcAbs = (v) => (v == null ? "–" : Math.abs(v * 100).toFixed(1) + "%");
+const FC_REASON = {   // what the input is, in plain words, with the other sectors' average for comparison
+  r1: (o, a) => `${o.now.r1 >= 0 ? "Beat" : "Lagged"} the Nifty by ${fcAbs(o.now.r1)} last month; sectors averaged ${fcP(a.r1)}`,
+  r3: (o, a) => `${o.now.r3 >= 0 ? "Beat" : "Lagged"} the Nifty by ${fcAbs(o.now.r3)} over 3 months; sectors averaged ${fcP(a.r3)}`,
+  r6: (o, a) => `${o.now.r6 >= 0 ? "Beat" : "Lagged"} the Nifty by ${fcAbs(o.now.r6)} over 6 months; sectors averaged ${fcP(a.r6)}`,
+  b200: (o, a) => `${Math.round(o.now.b200 * 100)}% of its stocks above their 200-day average; sectors averaged ${Math.round(a.b200 * 100)}%`,
+  crude: (o, a, c) => `Has tended to ${o.beta.crude > 0 ? "gain" : "lose"} against the market when crude rises, and Brent is ${fcDrv("brent3")} in 3 months${fcFade(o.beta.crude * fcDrvV("brent3"), c)}`,
+  inr: (o, a, c) => `Has tended to ${o.beta.inr > 0 ? "gain" : "lose"} against the market when the rupee weakens; the dollar is ${fcDrv("inr3")} in rupees in 3 months${fcFade(o.beta.inr * fcDrvV("inr3"), c)}`,
+  rate: (o, a, c) => `Has tended to ${o.beta.rate > 0 ? "gain" : "lose"} against the market when US yields rise; they are ${fcDrv("tnx3")} in 3 months${fcFade(o.beta.rate * fcDrvV("tnx3"), c)}`,
+};
+// the fitted weight on these inputs is negative: a sector that has just benefited from a macro move has tended to give some of it back
+function fcFade(x, c) { return x * c < 0 ? (x > 0 ? ". Gains like this have tended to fade" : ". Losses like this have tended to recover") : ""; }
+function fcDrvV(k) { const d = (FC.drivers || []).find((x) => x.k === k); return d ? d.v : 0; }
+function fcDrv(k) { const d = (FC.drivers || []).find((x) => x.k === k); return d ? fcVal(d.v, d.unit) : "–"; }
+function FC_AVG(L) { const a = {}; ["r1", "r3", "r6", "b200"].forEach((k) => { const v = L.map((o) => o.now[k]).filter((x) => x != null); a[k] = v.reduce((x, y) => x + y, 0) / (v.length || 1); }); return a; }
+function fcSecRows() {   // estimates shown against the average sector (the level against the Nifty carries survivor bias)
+  const L = FC.sectors.list, mean = (h) => L.reduce((s, o) => s + (o[h] ? o[h].p : 0), 0) / L.length, m = { "21": mean("21"), "63": mean("63") };
+  const cm = {}; Object.keys(FC.sectors.feat).forEach((k) => { cm[k] = L.reduce((s, o) => s + (o["21"].c[k] || 0) + (o["63"].c[k] || 0), 0) / L.length; });
+  return L.map((o) => { const rel = (h) => o[h] ? { p: o[h].p - m[h], lo: o[h].lo - m[h], hi: o[h].hi - m[h] } : null;
+    const why = Object.keys(FC.sectors.feat).map((k) => [k, (o["21"].c[k] || 0) + (o["63"].c[k] || 0) - cm[k]]).filter((x) => FC_REASON[x[0]] && Math.abs(x[1]) > 0.00015).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 2);
+    o = Object.assign({}, o, { avg: FC_AVG(L) });
+    return Object.assign({}, o, { e21: rel("21"), e63: rel("63"), why }); }).sort((a, b) => b.e21.p - a.e21.p);
+}
+const FC_POS = /\b(rise|rises|rising|rose|jumps?|jumped|surges?|surged|soars?|soared|gains?|gained|rall(y|ies|ied)|beats?|record high|upgrades?d?|wins?|bags?|secures?|profit (up|rises|jumps|soars)|strong|higher)\b/i;
+const FC_NEG = /\b(falls?|fell|drops?|dropped|slumps?|slumped|plunges?|plunged|tanks?|tanked|declines?|declined|miss(es|ed)?|downgrades?d?|loss|losses|weak|cuts?|probe|penalty|fraud|raids?|resigns?|lower|crash(es|ed)?)\b/i;
+function fcSecNews() {   // headlines of the last 7 days linked to a covered stock, by that stock's sector, with a plain word count of up and down words
+  const out = {}; if (!LIVE || !INAMES) return out; const now = Date.now();
+  for (const x of (inFullFor("all") || inAllStories())) {
+    if (!x.d || now - Date.parse(x.d) > 7 * 864e5) continue;
+    const secs = new Set(inLinks(x).sym.map((s) => INAMES[s] && INAMES[s][3]).filter(Boolean));
+    for (const s of secs) { const o = out[s] || (out[s] = { n: 0, up: 0, dn: 0 }); o.n++; const p = FC_POS.test(x.t), q = FC_NEG.test(x.t); if (p && !q) o.up++; else if (q && !p) o.dn++; }
+  }
+  return out;
+}
+function fcSectors() {
+  const S = FC.sectors, rows = fcSecRows(), tr = S.track, news = fcSecNews(), n = rows.length;
+  const t1 = tr["21"].test, t3 = tr["63"].test;
+  const cell = (e) => e ? `<span class="${Math.abs(e.p) < 0.0005 ? "" : inCl(e.p)} fc-num">${fcP(e.p)}</span><small class="fc-rng">${fcP(e.lo, 0)} to ${fcP(e.hi, 0)}</small>` : "–";
+  const body = rows.map((o, i) => { const nw = news[o.name], r = o.results || {};
+    return `<tr class="${i < 3 ? "fc-top" : i >= n - 3 ? "fc-bot" : ""}"><td class="fc-sn">${entG("sec", o.name)}<small>${o.n} stocks</small></td><td>${cell(o.e21)}</td><td>${cell(o.e63)}</td>
+      <td class="fc-why">${o.why.length ? o.why.map(([k, c]) => `<span class="${c > 0 ? "up" : "dn"}"><i aria-hidden="true">${c > 0 ? "+" : "−"}</i>${esc(FC_REASON[k](o, o.avg, c))}</span>`).join("") : `<span class="fc-mute">Close to the average on every input</span>`}</td>
+      <td class="fc-res">${r.profit_up != null ? `Profit up at <b>${Math.round(r.profit_up * 100)}%</b> of ${r.n}<small>Median change ${fcP(r.profit_g, 0)}${r.pe ? `, P/E ${r.pe.toFixed(0)}` : ""}</small>` : "–"}</td>
+      <td class="fc-nw">${nw ? `<button type="button" class="ent" onclick="openGroup('sec','${esc(o.name)}')">${nw.n} headline${nw.n === 1 ? "" : "s"}</button><small>${nw.up} rising, ${nw.dn} falling words</small>` : `<span class="fc-mute">None linked</span>`}</td></tr>`; }).join("");
+  return `<section class="ix-sec"><header class="ix-h"><h2>Sectors: which may do better or worse than the rest</h2>
+    <p>Estimated return against the average sector, with the range 8 in 10 past estimates fell within. The estimate uses each sector's recent strength against the Nifty, how many of its stocks are in uptrends, and how it has reacted to crude, the rupee and US yields. Ordered by the next-month estimate.</p></header>
+    <div class="fc-scroll"><table class="fc-t"><thead><tr><th>Sector</th><th>Next month</th><th>Next 3 months</th><th>Main reasons <span class="fc-key"><i class="up">+</i> raises the estimate <i class="dn">−</i> lowers it</span></th><th>Latest results<span class="fc-tag">not in the estimate</span></th><th>News, 7 days<span class="fc-tag">not in the estimate</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <p class="fc-test ${t1 && t1.t >= 2 ? "pos" : "neu"}"><b>Tested on ${t1.start.slice(0, 4)}–${t1.end.slice(0, 4)}.</b> The 3 sectors ranked highest beat the 3 ranked lowest by ${fcP(t1.spread)} a month on average, in ${Math.round(t1.spread_hit * 100)}% of months; over 3 months by ${fcP(t3.spread)}, in ${Math.round(t3.spread_hit * 100)}% of periods. Rank agreement with what happened: ${t1.ic.toFixed(2)} (how sure: ${t1.t}); last 3 months' leaders alone scored ${t1.ic_mom.toFixed(2)}. A modest edge: about 4 times in 10 the ranking was wrong.</p>
+    <p class="ix-fine">Results: the latest quarter's net profit against the same quarter a year earlier, companies covered here (Yahoo Finance). News: headlines naming a company in the sector; “rising” and “falling” count words such as jumps, beats, falls or misses, not a judgement of the story.</p></section>`;
+}
+function fcDrivers(h) {
+  const D = FC.drivers || [], used = new Set(FC.nifty.inputs);
+  const rows = D.map((d) => { const s = d.h[h], diff = s.med - s.med_all;
+    return `<tr><td>${esc(d.label)}${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}</td><td class="fc-num">${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)}</td>
+      <td><span class="fc-pr" title="Higher than ${Math.round(d.pct * 100)}% of trading days since ${FC.nifty.first.slice(0, 4)}"><i style="left:${(d.pct * 100).toFixed(1)}%"></i></span><small>${d.pct < 0.2 ? "Low" : d.pct > 0.8 ? "High" : "Middle"} for history</small></td>
+      <td><span class="${inCl(s.med)}">${fcP(s.med)}</span> <small>rose ${Math.round(s.pup * 100)}%</small></td><td class="fc-mute">${fcP(s.med_all)} <small>rose ${Math.round(s.pup_all * 100)}%</small></td>
+      <td class="${Math.abs(diff) < 0.004 ? "fc-mute" : inCl(diff)}">${Math.abs(diff) < 0.004 ? "About the same" : diff > 0 ? "Better than usual" : "Worse than usual"}</td></tr>`; }).join("");
+  const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
+  return `<section class="ix-sec"><header class="ix-h"><h2>What the estimate is built from</h2><p>Each reading today, where it sits in history, and what the Nifty did over the ${FC_HL[h]} after readings in the same fifth of history. One reading at a time; the estimate above uses them together. “Context only” readings are shown but were left out by the 2011–2018 test.</p></header>
+    <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
+    <div class="fc-scroll"><table class="fc-t fc-d"><thead><tr><th>Reading</th><th>Today</th><th>Against history</th><th>After similar readings</th><th>All periods</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+function fcAnalogs(h) {
+  const o = FC.nifty.h[h], id = "fc-an";
+  const open = IV.open.has(id);
+  return `<section class="ix-sec"><header class="ix-h"><h2>The ${o.n} past moments most like today</h2><p>Days since ${FC.nifty.first.slice(0, 4)} with the closest readings, at least two weeks apart, and what the Nifty did over the ${FC_HL[h]} after each. These outcomes are the range above.</p></header>
+    <button type="button" class="btn ghost sm" aria-expanded="${open}" onclick="inTog('${id}')">${open ? "Hide the list" : "Show the list"}</button>
+    ${open ? `<ul class="fc-an">${o.analogs.map((a) => `<li><span>${inDate(a.d)}</span><b class="${inCl(a.r)}">${fcP(a.r)}</b></li>`).join("")}</ul>` : ""}</section>`;
+}
+function fcTrack(h) {
+  const T = FC.nifty.track[h], S = T.series || [], t = T.test; if (S.length < 10) return "";
+  const W = 760, Hh = 230, pl = 40, pr = 10, pt = 10, pb = 22, ys = S.flatMap((r) => [r.q[0], r.q[4], r.a]).filter((v) => v != null).sort((a, b) => a - b);
+  const lo = ys[Math.floor(ys.length * 0.01)], hi = ys[Math.ceil(ys.length * 0.99) - 1], cl = (v) => Math.max(lo, Math.min(hi, v));
+  const X = (i) => pl + i / (S.length - 1) * (W - pl - pr), Y = (v) => pt + (hi - cl(v)) / (hi - lo) * (Hh - pt - pb);
+  const band = S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[4]).toFixed(1)}`).join(" ") + " " + S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[0]).toFixed(1)}`).reverse().join(" ");
+  const mid = S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[2]).toFixed(1)}`).join(" ");
+  const dots = S.map((r, i) => { const out = r.a < r.q[0] || r.a > r.q[4]; return `<circle cx="${X(i).toFixed(1)}" cy="${Y(r.a).toFixed(1)}" r="${out ? 2.4 : 1.6}" class="${out ? "fc-out" : "fc-in"}"><title>${inDate(r.d)}: estimate ${fcP(r.q[0])} to ${fcP(r.q[4])}, actual ${fcP(r.a)}</title></circle>`; }).join("");
+  const yrs = []; let py = ""; S.forEach((r, i) => { const y = r.d.slice(0, 4); if (y !== py) { yrs.push([i, y]); py = y; } });
+  const grid = [lo, 0, hi].map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${v === 0 ? "fc-g0" : "fc-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${fcP(v, 0)}</text>`).join("");
+  const cal = (t.cal || []).map((c) => `<tr><td>${Math.round(c.lo * 100)}–${Math.round(c.hi * 100)}%</td><td>${Math.round(c.pred * 100)}%</td><td>${Math.round(c.act * 100)}%</td><td class="fc-mute">${c.n}</td></tr>`).join("");
+  return `<section class="ix-sec"><header class="ix-h"><h2>Track record: every weekly estimate since ${t.start.slice(0, 4)}</h2><p>The shaded band is the 8-in-10 range the method gave each week, using only what was known that day; the line is its middle estimate; each dot is what the Nifty then did over the ${FC_HL[h]}. Red dots fell outside the range; the few beyond the scale (such as March 2020) sit on its edge.</p></header>
+    <svg class="fc-svg" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Weekly estimates against outcomes">${grid}<polygon points="${band}" class="fc-band"/><polyline points="${mid}" class="fc-midl"/>${dots}${yrs.map(([i, y]) => `<text x="${X(i).toFixed(1)}" y="${Hh - 6}" class="fc-yr">${y}</text>`).join("")}</svg>
+    <div class="fc-stats"><div><b>${Math.round(t.cover80 * 100)}%</b><span>of outcomes inside the range (aim 80%)</span></div><div><b>${Math.round(t.cover50 * 100)}%</b><span>inside the middle half (aim 50%)</span></div>
+      <div><b>${Math.round(t.hit * 100)}%</b><span>right on up or down (always “up”: ${Math.round(t.hit_always_up * 100)}%)</span></div><div><b>${t.skill > 0 ? "+" : ""}${(t.skill * 100).toFixed(1)}%</b><span>better than the all-history range (above 0 = better)</span></div></div>
+    ${cal ? `<details class="fc-cal"><summary>When it said a rise was this likely, how often did one follow?</summary><table class="fc-t"><thead><tr><th>Said</th><th>Average said</th><th>Happened</th><th>Weeks</th></tr></thead><tbody>${cal}</tbody></table></details>` : ""}
+    <p class="ix-fine">Weekly estimates overlap (a 3-month window spans 13 weeks), so the ${t.n} weeks are worth roughly ${Math.round(t.n * 5 / +h)} independent tries. Settings were chosen on ${T.train.start.slice(0, 4)}–2018 only.</p></section>`;
+}
+function fcLive() {
+  const N = LIVE; const rows = [];
+  if (N) for (const t of N.themes || []) { const per = (t.total || 0) / (N.days || 7); if (per >= 3) rows.push({ t, r: (t.day || 0) / per }); }
+  rows.sort((a, b) => b.r - a.r);
+  const heat = rows.slice(0, 5).map(({ t, r }) => { const lead = (t.stories || []).slice().sort((a, b) => String(b.d || "").localeCompare(String(a.d || "")))[0];
+    return `<li><div class="fc-lh"><button type="button" class="ns-th" onclick="inTheme('${t.id}')">${esc(t.short || t.name)}</button><span class="${r >= 1.3 ? "fc-hot" : "fc-mute"}">${t.day || 0} stories today, ${r >= 1.3 ? (r).toFixed(1) + "× the usual pace" : r < 0.7 ? "quieter than usual" : "about the usual pace"}</span></div>
+      ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a>` : ""}</li>`; }).join("");
+  const mk = ["BZ=F", "INR=X", "^INDIAVIX", "^GSPC", "^TNX", "GC=F"].map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="openIndex('${k}')">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
+  return `<section class="ix-sec"><header class="ix-h"><h2>What could move these numbers: live, and not in the estimates</h2><p>News, politics and policy cannot be tested on 18 years of history the way prices can, so they are shown here beside the estimates instead of being mixed into them. Updated with the news feed.</p></header>
+    <h3 class="fc-h3">Busiest news themes today</h3>${N ? `<ul class="fc-heat">${heat}</ul>` : `<p class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</p>`}
+    <h3 class="fc-h3">Global markets today</h3><div class="fc-mk">${mk}</div></section>`;
+}
+function fcMethod() {
+  const N = FC.nifty, inp = N.inputs.map((k) => (FC.feat[k] || {}).label || k).join("; ");
+  return `<section class="ix-sec"><header class="ix-h"><h2>How this is worked out</h2></header><div class="fc-m">
+    <p><b>Nifty range.</b> Today is described by ${N.inputs.length} readings (${esc(inp)}). The ${N.k} past days with the closest readings since ${N.first.slice(0, 4)}, each at least two weeks apart, are found, and what the Nifty did afterwards gives the middle estimate, the range and the share that rose. Only days whose outcome was already known count, so the track record is a fair one. The inputs and the number of past days were picked on ${N.track["21"].train.start.slice(0, 4)}–2018 from 9 variants; ${FC.split.slice(0, 4)} onwards is the test.</p>
+    <p><b>Sectors.</b> An equal-weighted index of the covered stocks in each sector (Yahoo Finance sector names). A shrunk linear fit of the sector's next return against the Nifty on its last 1, 3 and 6 months against the Nifty, the share of its stocks above the 200-day average, and its 3-year sensitivity to crude, the rupee and US yields multiplied by their last 3-month moves. Refitted every month on past data only.</p>
+    <p><b>Limits.</b> Only companies listed today are in the sector and breadth numbers, which flatters older history. Index levels exclude dividends. A range is not a promise: 2 in 10 outcomes fall outside it by design, and events with no precedent (a war, a policy shock) can break any pattern. Nothing here is a recommendation to buy or sell.</p>
+    <p class="ix-fine">Estimated from prices up to ${inDate(N.asof)}; updated after each close. Source: forecast.py in the app's code.</p></div></section>`;
+}
+function inOutlookView() {
+  if (FC === null) { loadFc(); return `<p class="ix-empty">Loading the outlook…</p>`; }
+  if (!FC.nifty) return `<p class="ix-empty">The outlook has not been computed yet. It is updated after each market close.</p>`;
+  const h = IV.fcH;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Outlook: the next month and the next 3 months</h2><p>Estimated from what happened after the past moments most like today, not from opinion. Each number comes with how it held up when tested on years it had not seen. Prices up to ${inDate(FC.nifty.asof)}.</p></header>
+    <div class="fc-two">${fcNiftyCard("21")}${fcNiftyCard("63")}</div></section>
+    ${fcSectors()}${fcLive()}${fcDrivers(h)}${fcTrack(h)}${fcAnalogs(h)}${fcMethod()}`;
+}
+function inOutlookCard() {
+  if (FC === null) { loadFc(); return ""; }
+  if (!FC.nifty) return "";
+  const rows = fcSecRows(), top = rows.slice(0, 2), bot = rows.slice(-2).reverse();
+  return `<section class="ix-card o2"><header class="ix-ch"><h3>Outlook</h3><button class="btn ghost sm" onclick="inGo('outlook')">Full outlook</button></header>
+    ${fcNiftyCard("21", true)}
+    <p class="fc-mini"><span>Ranked highest for next month:</span> ${top.map((o) => entG("sec", o.name)).join(", ")}</p><p class="fc-mini"><span>Ranked lowest:</span> ${bot.map((o) => entG("sec", o.name)).join(", ")}</p>
+    <p class="ix-fine">${esc(fcVerdict(FC.nifty.track["21"].test).dir)}</p></section>`;
+}
+
 /* ----- entry point ----- */
 function renderIns() {
   const el = $("vIns"); if (!el) return;
@@ -638,7 +804,7 @@ function renderIns() {
   if (LIVE === null && !IV.feedBusy) loadFeed();
   if (IV.view === "stocks" && FUND === null) loadFund();
   const a = document.activeElement, keep = a && el.contains(a) && a.id && (a.tagName === "INPUT") ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
-  const body = IV.view === "news" ? inNewsView() : IV.view === "markets" ? inMarketsView() : IV.view === "stocks" ? inStocksView() : IV.view === "method" ? inMethodView() : inOverview();
+  const body = IV.view === "news" ? inNewsView() : IV.view === "markets" ? inMarketsView() : IV.view === "stocks" ? inStocksView() : IV.view === "method" ? inMethodView() : IV.view === "outlook" ? inOutlookView() : inOverview();
   el.innerHTML = `<div class="ix">${inTape()}${inSubnav()}<div class="ix-body">${body}</div></div>`;
   if (keep) { const n = document.getElementById(keep.id); if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.e); } catch (e) {} } }
 }
