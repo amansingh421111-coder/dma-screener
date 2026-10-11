@@ -1,0 +1,22 @@
+name: live-check
+# Opens the deployed site in a real browser on real data and keeps screenshots on the qa-shots branch (public pages only).
+on:
+  push:
+    branches: [main]
+    paths: [qa/live.js, .github/workflows/qa.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: node qa/live.js
+      - name: Keep the screenshots
+        if: always()
+        run: |
+          cd shots && git init -q && git checkout -q -b qa-shots && git add -A && git -c user.name=dma-bot -c user.email=dma-bot@users.noreply.github.com commit -qm "live check $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" qa-shots
