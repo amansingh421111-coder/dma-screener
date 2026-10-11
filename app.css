@@ -550,3 +550,4 @@ html.eq-on{overflow:hidden}
 .sx-heat td.sx-hc.cur{outline:2px solid var(--accent);outline-offset:-2px}
 .sx-note{font-size:12.5px;margin:8px 2px 18px}
 @media(max-width:900px){.sx-ydw{grid-template-columns:1fr}}
+.sx-grid td.sel{outline:2px solid var(--accent);outline-offset:-2px;font-weight:600}.sx-grid td{text-align:center}

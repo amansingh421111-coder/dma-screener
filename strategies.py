@@ -558,6 +558,10 @@ def run(mode, top, years, cost):
         longest = max(data.values(), key=len).index; split = str(longest[int(len(longest) * 0.6)].date())
     else: split = old.get("split")
     chosen = {s["id"]: tuple(s2["params"][k] for k in ("stop", "target")) for s in STRATS for s2 in old.get("strategies", []) if s2["id"] == s["id"] and "params" in s2} if mode == "states" else {}
+    xparams = {}   # the expanded test (strategies_x.json) is the one the page shows, so its stop and target drive today's levels and holding states
+    try: xparams = {s2["id"]: (s2["params"]["stop"], s2["params"]["target"]) for s2 in json.loads((ROOT / "strategies_x.json").read_text()).get("strategies", [])}
+    except Exception: pass
+    if mode == "states": chosen.update(xparams)
     closes = pd.DataFrame({k: d["Close"] for k, d in data.items()}).sort_index().ffill(limit=5)
     rank = closes.pct_change(126, fill_method=None).rank(axis=1, pct=True)
     firstday = pd.Series(closes.index.to_period("M"), index=closes.index).ne(pd.Series(closes.index.to_period("M"), index=closes.index).shift(1)).to_numpy()
@@ -624,7 +628,8 @@ def run(mode, top, years, cost):
                                           exit=f"Sell at the target (+{g[1]}%), the stop loss (-{g[0]}%), or after {MAX_HOLD[s['kind']]} trading days, whichever comes first.",
                                           train=a, test=b, test_up=stats(ups, [t for t in inper(bk, split, "9999") if t["up"]]), test_down=stats(dns, [t for t in inper(bk, split, "9999") if t["up"] is False]), trail=trail_result(alltT[s["id"]], allbT[s["kind"]], split, inper), grid=table, robust=compute_robust(allt[s["id"]], allb[s["kind"]], g, split, order_idx, len(syms), cost), stars=stars, verdict=verdict, score_parts=parts, family=FAMILY.get(s["id"], "Other"), source=SOURCES.get(s["id"])))
     for s in out.get("strategies", []):
-        t = todays.get(s["id"], {}); p = s["params"]; s["ind"] = ind_header(s["id"])
+        t = todays.get(s["id"], {}); p = dict(s["params"]); s["ind"] = ind_header(s["id"])
+        if s["id"] in xparams: p["stop"], p["target"] = xparams[s["id"]]
         buys = sorted(t.get("buy", []), key=lambda x: x["s"])
         s["today"] = dict(buy=[dict(x, stop=round(x["c"] * (1 - p["stop"] / 100), 2), target=round(x["c"] * (1 + p["target"] / 100), 2)) for x in buys[:60]], buy_n=len(buys),
                           exit=sorted(t.get("exit", []))[:40] if mode == "states" else s.get("today", {}).get("exit", []), hold_n=t.get("hold", 0) if mode == "states" else s.get("today", {}).get("hold_n", 0))

@@ -123,6 +123,26 @@ def monthly_t(M):
     return dict(months=int(len(d)), positive=int((d > 0).sum()), t=round(float(d.mean() / (d.std(ddof=1) / math.sqrt(len(d)))), 2), mean=round(float(d.mean()), 5))
 
 
+def rate_x(train, test, mt, yrs):
+    """Score out of 5, same arithmetic as the original library, judged against the same-day control on the later period.
+    Confidence uses the monthly t (stocks signalling on the same day are not independent)."""
+    if not test or test["n"] < 100: return 0.0, [["Fewer than 100 trades from %d on: no score" % SPLIT_YEAR, 0]]
+    e, a, pf, n = test.get("edge") or 0, test["avg"], test.get("pf") or 0, test["n"]
+    ty = [v for y, v in yrs.items() if int(y) >= SPLIT_YEAR and v["n"] >= 30 and v.get("edge") is not None]
+    yp = sum(1 for v in ty if v["edge"] > 0); t = mt["t"] if mt else None; P = []
+    P.append(["Better than the same-day control from %d on: 2.5 points at +1.5%% or more, 2 at +0.8%%, 1.5 at +0.4%%, 1 at +0.1%%, 0.5 above 0" % SPLIT_YEAR, 2.5 if e >= 0.015 else 2.0 if e >= 0.008 else 1.5 if e >= 0.004 else 1.0 if e >= 0.001 else 0.5 if e > 0 else 0])
+    P.append(["Average profit per trade after costs is above zero: 0.5 point", 0.5 if a > 0 else 0])
+    P.append(["Profit factor (money won / money lost): 0.5 point at 1.3 or more, 0.25 at 1.15", 0.5 if pf >= 1.3 else 0.25 if pf >= 1.15 else 0])
+    P.append(["Number of trades: 0.5 point at 3,000 or more, 0.25 at 1,000", 0.5 if n >= 3000 else 0.25 if n >= 1000 else 0])
+    P.append(["Also better than the control in the years where the exit was chosen: 0.5 point", 0.5 if train and (train.get("edge") or 0) > 0 else 0])
+    P.append(["Better than the control in at least 75%% of the years from %d on: 0.5 point" % SPLIT_YEAR, 0.5 if len(ty) >= 3 and yp / len(ty) >= 0.75 else 0])
+    pts = sum(x[1] for x in P)
+    if e <= 0 and pts > 1.0: P.append(["Cap: not better than the control, so the score cannot exceed 1", 1.0 - pts]); pts = 1.0
+    elif (t is None or t < 1) and pts > 1.5: P.append(["Cap: judged month by month the edge is within normal luck (monthly t below 1): score cannot exceed 1.5", 1.5 - pts]); pts = 1.5
+    elif (t is None or t < 2) and pts > 2.5: P.append(["Cap: judged month by month the edge is not yet solid (monthly t below 2): score cannot exceed 2.5", 2.5 - pts]); pts = 2.5
+    return round(min(5.0, pts) * 2) / 2, P
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     ap = argparse.ArgumentParser(); ap.add_argument("--nse", type=int, default=2600); ap.add_argument("--years", type=int, default=15); a = ap.parse_args()
@@ -181,7 +201,9 @@ def main():
             s_ = summ(Y[i], by.get(y))
             if s_: yrs[y] = s_
         o = old.get(st["id"], {})
-        out["strategies"].append(dict(id=st["id"], name=st["name"], kind=kind, params=dict(stop=g[0], target=g[1], max_hold=S.MAX_HOLD[kind]), stocks=nst,
+        trn, tst, mtt = summ(Y[yi_train].sum(0)), summ(Y[yi_test].sum(0)), monthly_t(M[mi_test])
+        stars, parts = rate_x(trn, tst, mtt, yrs)
+        out["strategies"].append(dict(id=st["id"], name=st["name"], kind=kind, params=dict(stop=g[0], target=g[1], max_hold=S.MAX_HOLD[kind]), stocks=nst, stars=stars, score_parts=parts,
             train=summ(Y[yi_train].sum(0)), test=summ(Y[yi_test].sum(0)), all=summ(Y.sum(0)),
             monthly_test=monthly_t(M[mi_test]), monthly_all=monthly_t(M), years=yrs, grid=grid,
             grid_positive=sum(1 for x in grid if (x["test_edge"] or 0) > 0), grid_n=len(grid),
