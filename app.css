@@ -759,3 +759,9 @@ td.fc-sn{position:relative;padding-left:40px}.fc-sn .fc-rk{position:absolute;lef
 @media(max-width:640px){.ov-ft{table-layout:fixed}.ov-ft th:first-child,.ov-ft td:first-child{width:34%}.ov-ft td:nth-child(2),.ov-ft td:nth-child(3){min-width:0}}
 .ov-ft{min-width:0}.ov-t{min-width:600px}.fc-t.fc-d{min-width:640px}
 .ov-fpv{display:block;text-align:center;font-size:11px;color:var(--mute);font-variant-numeric:tabular-nums}
+/* phones: the share table keeps its four key columns on screen, the sector table its three */
+@media(max-width:640px){
+ .ov-t{min-width:0}.ov-t th,.ov-t td{padding:8px 6px}.ov-rng{min-width:96px}.ov-sym small{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .fc-t:not(.fc-d){min-width:0}.fc-t:not(.fc-d) th:nth-child(n+4),.fc-t:not(.fc-d) td:nth-child(n+4){display:none}.fc-t .ov-rb{min-width:80px}
+}
+.fc-phone{display:none}@media(max-width:640px){.fc-phone{display:block}}

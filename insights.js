@@ -728,6 +728,7 @@ function fcSectors() {
   return `<section class="ix-sec"><header class="ix-h"><h2>Sectors: which may do better or worse than the rest</h2>
     <p>Estimated return against the average sector, with the range 8 in 10 past estimates fell within. The estimate uses each sector's recent strength against the Nifty, how many of its stocks are in uptrends, and how it has reacted to crude, the rupee and US yields. Ordered by the next-month estimate.</p></header>
     <div class="fc-scroll"><table class="fc-t"><thead><tr><th>Sector</th><th>Next month</th><th>Next 3 months</th><th>Main reasons <span class="fc-key"><i class="up">+</i> raises the estimate <i class="dn">−</i> lowers it</span></th><th>Latest results<span class="fc-tag">not in the estimate</span></th><th>${news._full ? "News, last 7 days" : "News, latest headlines"}<span class="fc-tag">not in the estimate</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <p class="ix-fine fc-phone">On a phone the reasons, results and news columns are hidden; turn the phone sideways to see them, or select a sector for its companies and news.</p>
     <p class="fc-test ${t1 && t1.t >= 2 ? "pos" : "neu"}"><b>Tested on ${t1.start.slice(0, 4)}–${t1.end.slice(0, 4)}.</b> The 3 sectors ranked highest beat the 3 ranked lowest by ${fcP(t1.spread)} a month on average, in ${Math.round(t1.spread_hit * 100)}% of months; over 3 months by ${fcP(t3.spread)}, in ${Math.round(t3.spread_hit * 100)}% of periods. Rank agreement with what happened: ${t1.ic.toFixed(2)} (how sure: ${t1.t}); last 3 months' leaders alone scored ${t1.ic_mom.toFixed(2)}. A modest edge: about 4 times in 10 the ranking was wrong.</p>
     <p class="ix-fine">Rank 1 is the highest next-month estimate. The estimates differ by fractions of a percent because the method shrinks them towards the average; the ranking is what was tested. Results: the latest quarter's net profit against the same quarter a year earlier, companies covered here (Yahoo Finance). News: headlines that name one of the sector's companies (not stories linked only through a topic such as crude), with the newest shown.</p></section>`;
 }
@@ -890,7 +891,7 @@ function soSeasonality() {
 /* ===== outlook charts: one SVG unit = one screen pixel (fitW), thin marks, solid hairline grid, tooltips on every mark ===== */
 const OV = { pxBusy: {} };
 const ovP = (v, d = 1) => (v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(d) + "%");   // fraction -> signed percent
-const ovR = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: v >= 1000 ? 0 : 2 });
+const ovR = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: v >= 100 ? 0 : v >= 10 ? 1 : 2 });   // one precision per price level, so a chart's labels match
 function ovTicks(lo, hi, n) { return typeof niceTicks === "function" ? niceTicks(lo, hi, n) : [lo, 0, hi]; }
 function ovAddTD(dateStr, td) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + Math.round(td * 7 / 5) + Math.floor(td / 21)); return d; }   // trading days -> calendar date, with a margin for holidays
 const ovDm = (d) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
@@ -975,7 +976,7 @@ function ovSeason(key, r) {
 function ovPx(sym) {   // price history for the fan chart (shared cache with the quote panel)
   const t = sym + ".NS"; if (typeof EQ === "undefined") return null;
   if (EQ.charts[t]) return EQ.charts[t];
-  if (!OV.pxBusy[t]) { OV.pxBusy[t] = true; fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)).then((r) => r.json().then((j) => { EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; })).catch(() => { EQ.charts[t] = { error: "Could not reach the price source." }; }).finally(() => render()); }
+  if (!OV.pxBusy[t]) { OV.pxBusy[t] = true; fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)).then((r) => r.json().then((j) => { EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; })).catch(() => { EQ.charts[t] = { error: "Could not reach the price source." }; }).finally(() => { render(); if (typeof entDraw === "function") entDraw(); }); }
   return null;
 }
 function ovBeta(C) {   // the share's sensitivity to the Nifty over the last year of daily returns (1 if it cannot be measured)

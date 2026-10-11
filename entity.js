@@ -49,7 +49,8 @@ async function entLoad(e) {
   if (typeof STRAT !== "undefined" && STRAT === null && typeof loadStrat === "function") loadStrat();
   if (e.t === "group") return;
   const t = await entTicker(e); e.tk = t;
-  if (EQ.charts[t] || EQ.busy[t]) return;
+  if (EQ.charts[t]) { entDraw(); return; }   // already fetched (for example by a share's Outlook tab): draw it now instead of leaving "Loading"
+  if (EQ.busy[t]) return;
   EQ.busy[t] = true; entDraw();
   try { const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json(); EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; }
   catch (err) { EQ.charts[t] = { error: "Could not reach the price source." }; }
