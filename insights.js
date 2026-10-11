@@ -943,7 +943,7 @@ function ovFactors(r, h) {
   const mx = Math.max(10, ...c.map((v) => Math.abs(v || 0)));
   const DIR = { r1: "a rise last month", r3: "a rise over 3 months", r6x: "a strong 6 months", r12x: "a strong 12 months", vs200: "being far above the 200-day average", hi52: "being near the 52-week high", vol: "high volatility", seas: "beating others in these weeks before", sec: "a strong sector" };
   const rows = SO.feats.map((k, i) => ({ k, i, c: c[i] || 0, p: x ? x[i] : null })).sort((a, b) => Math.abs(b.c) - Math.abs(a.c));
-  return `<div class="ov-ftw"><table class="ov-ft"><thead><tr><th>Input</th><th>Percentile among shares</th><th>Effect on ${h === "21" ? "1-month" : "3-month"} estimate</th></tr></thead><tbody>${rows.map((o) => {
+  return `<div class="ov-ftw"><table class="ov-ft"><thead><tr><th>Input</th><th>Percentile</th><th>Effect on ${h === "21" ? "1-month" : "3-month"} estimate</th></tr></thead><tbody>${rows.map((o) => {
     const p = o.p, wt = w[o.k], bw = Math.abs(o.c) / mx * 50;
     return `<tr><td><b title="${esc(SO.label[o.k])}">${esc(OV_SHORT[o.k] || SO.label[o.k])}</b><small>Historically, ${esc(DIR[o.k])} was followed by ${wt >= 0 ? "higher" : "lower"} returns</small></td>
       <td>${p == null ? "–" : `<span class="ov-pct" title="${p}th percentile"><i style="left:${p}%"></i></span><small>${p === 50 && o.k === "seas" && r.ss && r.ss[2] < 5 ? "Not enough years" : p + "th percentile" + (p >= 80 ? ", high" : p <= 20 ? ", low" : "")}</small>`}</td>
@@ -960,15 +960,16 @@ function ovSeason(key, r) {
   const sig = M.map((_, i) => r.n >= SO_TMINY && r.st && r.st[i] != null && Math.abs(r.st[i] / 10) >= SO_TSIG);
   const vals = m.flatMap((v, i) => [v - 1.96 * se[i], v + 1.96 * se[i]]), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), pad = (hi - lo) * 0.06;
   const L = lo - pad, R = hi + pad, Y = (v) => pt + (R - Math.max(L, Math.min(R, v))) / (R - L) * (H - pt - pb), bw = (W - pl - pr) / 12;
+  const narrow = bw < 34;   // a phone: one-letter months, and the beat-the-Nifty share moves to the tooltips
   const grid = ovTicks(L, R, 4).map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${Math.abs(v) < 1e-12 ? "ov-g0" : "ov-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="ov-ax">${Math.abs(v) < 1e-12 ? "0%" : ovP(v, 0)}</text>`).join("");
   const bars = M.map((mn, i) => { const x = pl + i * bw + 4, w = bw - 8, cx = x + w / 2, y1 = Y(Math.max(0, m[i])), y2 = Y(Math.min(0, m[i])), t = r.st && r.st[i] != null ? (r.st[i] / 10).toFixed(1) : "–";
     return `<g class="ov-sb ${m[i] >= 0 ? "up" : "dn"}${sig[i] ? " sig" : ""}"><title>${mn}: ${ovP(m[i])} against the Nifty on average over ${r.n} years (95% range ${ovP(m[i] - 1.96 * se[i])} to ${ovP(m[i] + 1.96 * se[i])}); beat it in ${r.sb[i]}% of years; average return ${ovP(r.sm[i] / 1000)}; how sure ${t}</title>
       <rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, y2 - y1).toFixed(1)}" rx="3"/><line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${Y(m[i] - 1.96 * se[i]).toFixed(1)}" y2="${Y(m[i] + 1.96 * se[i]).toFixed(1)}" class="ov-wh"/>
       <rect x="${(x - 4).toFixed(1)}" y="${pt}" width="${(w + 8).toFixed(1)}" height="${H - pt - pb}" class="ov-hit"/></g>
-      <text x="${cx.toFixed(1)}" y="${H - pb + 15}" text-anchor="middle" class="ov-ax${nx.includes(i) ? " b" : ""}">${mn}</text><text x="${cx.toFixed(1)}" y="${H - pb + 30}" text-anchor="middle" class="ov-ax sm">${r.sb[i]}%</text>
+      <text x="${cx.toFixed(1)}" y="${H - pb + 15}" text-anchor="middle" class="ov-ax${nx.includes(i) ? " b" : ""}">${narrow ? mn[0] : mn}</text>${narrow ? "" : `<text x="${cx.toFixed(1)}" y="${H - pb + 30}" text-anchor="middle" class="ov-ax sm">${r.sb[i]}%</text>`}
       ${nx.includes(i) ? `<line x1="${x.toFixed(1)}" x2="${(x + w).toFixed(1)}" y1="${H - pb + 19}" y2="${H - pb + 19}" class="ov-nx"/>` : ""}`; }).join("");
   const ns = sig.filter(Boolean).length;
-  return `<div class="ov-sea" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average return against the Nifty by calendar month">${grid}${bars}<text x="${pl - 6}" y="${H - pb + 30}" text-anchor="end" class="ov-ax sm">Beat</text></svg></div>
+  return `<div class="ov-sea" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average return against the Nifty by calendar month">${grid}${bars}${narrow ? "" : `<text x="${pl - 6}" y="${H - pb + 30}" text-anchor="end" class="ov-ax sm">Beat</text>`}</svg></div>
     <p class="ix-fine">Bars: average return against the Nifty 50 in each month over ${r.n} years; whiskers: the 95% range of that average; below: share of years it beat the Nifty. Underlined: the next three months. ${ns ? `Solid bars (${ns}) are consistent across years beyond luck (how sure ${SO_TSIG}+, ${SO_TMINY}+ years); even so about 1 in 5 such bars across all shares may be luck.` : "No bar is consistent enough across years to call a pattern (how sure " + SO_TSIG + "+): whiskers that cross zero mean the average could be luck."}</p>`;
 }
 

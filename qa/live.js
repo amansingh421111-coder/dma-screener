@@ -5,6 +5,7 @@ const fs = require("fs");
 const URL = "https://screenedstocks.vercel.app/";
 (async () => {
   fs.mkdirSync("shots", { recursive: true });
+  await new Promise((r) => setTimeout(r, 120000));   // let the deploy of the same push finish first
   const b = await chromium.launch();
   const report = [], errs = [];
   for (const [w, scheme] of [[1000, "light"], [390, "dark"]]) {

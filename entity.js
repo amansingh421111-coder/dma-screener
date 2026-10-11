@@ -57,6 +57,8 @@ async function entLoad(e) {
   EQ.busy[t] = false; entDraw();
 }
 const entSma = (a, n) => { const o = new Array(a.length).fill(null); let s = 0; for (let i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; if (i >= n - 1) o[i] = s / n; } return o; };
+// axis labels: rounded to the price level so they fit the margin (the tooltip keeps the full price)
+function entAxis(v, fmt) { const a = Math.abs(v), d = a >= 100 ? 0 : a >= 10 ? 1 : 2, x = fmt(1).startsWith("₹") ? "₹" : ""; return x + Number(v).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }); }
 function entRet(c, k) { const n = c.length; return n > k && c[n - 1 - k] ? (c[n - 1] / c[n - 1 - k] - 1) * 100 : null; }
 
 /* ---------- interactive chart ---------- */
@@ -67,9 +69,9 @@ function entChart(C, fmt, maA, maB) {
   const N = (ENT_RANGES.find((r) => r[0] === EQ.range) || ENT_RANGES[2])[2], c = C.c, n = c.length, s0 = Math.max(0, n - N);
   const A = entSma(c, maA), B = entSma(c, maB), xs = c.slice(s0), a = A.slice(s0), b = B.slice(s0), d = C.dates.slice(s0), m = xs.length;
   const vals = xs.concat(a.filter((x) => x != null), b.filter((x) => x != null)), lo = Math.min(...vals), hi = Math.max(...vals);
-  const W = typeof fitW === "function" ? fitW("eqch", 600) : 600, H = 230, L = 6, R = 58, T = 10, Bm = 22, iw = W - L - R, ih = H - T - Bm, px = (i) => L + (m < 2 ? 0 : (i / (m - 1)) * iw), py = (v) => T + ih - ((v - lo) / (hi - lo || 1)) * ih;
+  const W = typeof fitW === "function" ? fitW("eqch", 600) : 600, H = 230, L = 6, R = 66, T = 10, Bm = 22, iw = W - L - R, ih = H - T - Bm, px = (i) => L + (m < 2 ? 0 : (i / (m - 1)) * iw), py = (v) => T + ih - ((v - lo) / (hi - lo || 1)) * ih;
   const line = (arr) => arr.map((v, i) => (v == null ? null : `${px(i).toFixed(1)},${py(v).toFixed(1)}`)).filter(Boolean).join(" ");
-  const up = xs[m - 1] >= xs[0], grid = [hi, (hi + lo) / 2, lo].map((v) => `<line x1="${L}" x2="${W - R}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}" class="eq-gr"/><text x="${W - R + 6}" y="${(py(v) + 4).toFixed(1)}" class="eq-ax">${fmt(v)}</text>`).join("");
+  const up = xs[m - 1] >= xs[0], grid = [hi, (hi + lo) / 2, lo].map((v) => `<line x1="${L}" x2="${W - R}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}" class="eq-gr"/><text x="${W - R + 6}" y="${(py(v) + 4).toFixed(1)}" class="eq-ax">${entAxis(v, fmt)}</text>`).join("");
   const ticks = [0, Math.floor(m / 2), m - 1].map((i, j) => `<text x="${px(i).toFixed(1)}" y="${H - 6}" class="eq-ax" text-anchor="${j === 0 ? "start" : j === 2 ? "end" : "middle"}">${esc(entD(d[i]))}</text>`).join("");
   EQ.hover = { xs, a, b, d, px, py, m, L, iw, W, fmt, maA, maB };
   const chg = (xs[m - 1] / xs[0] - 1) * 100;
