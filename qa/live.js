@@ -13,22 +13,21 @@ const URL = "https://screenedstocks.vercel.app/";
     const p = await ctx.newPage();
     p.on("pageerror", (e) => errs.push(`${w}: ${e.message}`));
     p.on("console", (m) => { if (m.type() === "error") errs.push(`${w} console: ${m.text().slice(0, 160)}`); });
+    await p.goto(URL, { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
+    await p.screenshot({ path: `shots/screener_${w}.png` });
+    report.push(`${w} screener liq=${JSON.stringify(await p.evaluate(() => { const c = {}; document.querySelectorAll(".lq").forEach((e) => { const k = e.textContent.trim().split(/\s/)[0]; c[k] = (c[k] || 0) + 1; }); return { pills: c, banner: (document.getElementById("mliq") || {}).textContent?.trim().slice(0, 200) || "hidden", build: (document.body.textContent.match(/Build [\d.-]+/) || [""])[0] }; }))}`);
     await p.goto(URL + "#insights", { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
     await p.evaluate("IV.view='outlook';render()"); await p.waitForTimeout(6000);
     await p.screenshot({ path: `shots/outlook_${w}.png`, fullPage: true });
     report.push(`${w} outlook overflow=${await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)} fan=${!!(await p.$(".ov-fan svg"))} decileBars=${(await p.$$(".ov-bar")).length} shareRows=${(await p.$$(".ov-t tbody tr")).length} forestRows=${(await p.$$(".ov-fpt tbody tr")).length}`);
-    for (const sym of ["RELIANCE", "INFY", "TCS", "NTPCGREEN", "HDFCBANK"]) {
-      await p.evaluate(`inPick('${sym}','NSE');IV.stab='outlook';render()`); await p.waitForTimeout(5000);
+    for (const sym of ["RELIANCE", "INFY", "HDFCBANK", "NTPCGREEN", "KARURVYSYA"]) {
+      await p.evaluate(`inPick('${sym}','NSE');IV.stab='company';render()`); await p.waitForTimeout(5000);
       await p.evaluate("render()"); await p.waitForTimeout(800);
-      const el = await p.$(".sk"); if (el) await el.screenshot({ path: `shots/${sym}_${w}.png` });
-      const info = await p.evaluate((s) => {
-        const C = EQ.charts[s + ".NS"], r = typeof soRow === "function" ? soRow(s) : null;
-        const fan = document.querySelector(".ov-fan svg"), labs = fan ? [...fan.querySelectorAll(".ov-lab")].map((t) => t.textContent) : [];
-        return { px: C && C.c ? C.c[C.c.length - 1] : (C && C.error) || null, n: C && C.c ? C.c.length : 0, beta: C && C.c ? +ovBeta(C).toFixed(2) : null,
-          est: r && r.o ? r.o.slice(0, 2) : null, labs, fanW: fan ? fan.getAttribute("width") : null, boxW: fan ? fan.parentElement.clientWidth : null,
-          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-      }, sym);
-      report.push(`${w} ${sym} ${JSON.stringify(info)}`);
+      const el = await p.$(".sk"); if (el) await el.screenshot({ path: `shots/co_${sym}_${w}.png` });
+      const info = await p.evaluate(() => ({ desc: (document.querySelector(".co-d") || {}).textContent?.length || 0, empty: (document.querySelector(".sk .ix-empty") || {}).textContent || "",
+        bars: document.querySelectorAll(".co-q rect").length, peers: document.querySelectorAll(".co-pt tbody tr").length, doing: document.querySelectorAll(".co-dt tbody tr").length,
+        tiles: document.querySelectorAll(".co-tiles .ov-tile").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
+      report.push(`${w} company ${sym} ${JSON.stringify(info)}`);
     }
     await p.evaluate("openStock('INFY','NSE')"); await p.waitForTimeout(5000);
     const q = await p.$(".eq-p"); if (q) await q.screenshot({ path: `shots/quote_${w}.png` });
