@@ -1,0 +1,475 @@
+{
+ "when": "2026-10-11T12:37:54.478Z",
+ "runs": [
+  {
+   "name": "desk1280",
+   "w": 1280,
+   "scheme": "light",
+   "shots": [
+    "qa/out/desk1280-outlook.png",
+    "qa/out/desk1280-stock-RELIANCE.png",
+    "qa/out/desk1280-stock-INFY.png",
+    "qa/out/desk1280-stock-NTPCGREEN.png",
+    "qa/out/desk1280-stock-TCS.png",
+    "qa/out/desk1280-stock-HDFCBANK.png",
+    "qa/out/desk1280-quote-INFY.png"
+   ],
+   "checks": {
+    "outlook": {
+     "fc": true,
+     "so": true,
+     "fanW": "1198",
+     "box": 1198,
+     "rows": 39,
+     "dec": 10,
+     "nifty": 22520.45,
+     "cone": [
+      20996,
+      22153,
+      23500,
+      24505,
+      24975
+     ]
+    },
+    "stock-RELIANCE": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1170.3,
+     "beta": 0.945,
+     "row": {
+      "o": [
+       32,
+       66,
+       -543,
+       694,
+       12,
+       52,
+       -1032,
+       1235
+      ],
+      "n": 19,
+      "sec": "Energy"
+     },
+     "fanText": "\n    ₹1,200₹1,400\n    \n    Last close ₹1,170Next month: middle ₹1,188; 8 in 10 between ₹1,094 and ₹1,283; middle half ₹1,139 to ₹1,238₹1,385₹1,220₹1,055Next 3 months: middle ₹1,220; 8 in 10 between ₹1,055 and ₹1,385; middle half ₹1,133 to ₹1,3079 Apr9 Oct8 Nov8 Jan",
+     "fanW": "676",
+     "boxW": 676
+    },
+    "stock-INFY": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1023.4,
+     "beta": 0.674,
+     "row": {
+      "o": [
+       -109,
+       6,
+       -977,
+       890,
+       -221,
+       11,
+       -1796,
+       1625
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr9 Oct8 Nov8 Jan",
+     "fanW": "676",
+     "boxW": 676
+    },
+    "stock-NTPCGREEN": {
+     "hasChart": true,
+     "points": 464,
+     "last": 92.6,
+     "beta": 0.433,
+     "row": {
+      "o": [
+       -87,
+       14,
+       -791,
+       724,
+       -118,
+       29,
+       -1396,
+       1379
+      ],
+      "n": 2,
+      "sec": "Utilities"
+     },
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr9 Oct8 Nov8 Jan",
+     "fanW": "676",
+     "boxW": 676
+    },
+    "stock-TCS": {
+     "hasChart": true,
+     "points": 497,
+     "last": 2156,
+     "beta": 0.773,
+     "row": {
+      "o": [
+       -97,
+       10,
+       -1000,
+       941,
+       -189,
+       16,
+       -1826,
+       1729
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,750₹2,000₹2,250₹2,500\n    \n    Last close ₹2,156Next month: middle ₹2,157; 8 in 10 between ₹1,928 and ₹2,385; middle half ₹2,036 to ₹2,277₹2,598₹2,188₹1,777Next 3 months: middle ₹2,188; 8 in 10 between ₹1,777 and ₹2,598; middle half ₹1,972 to ₹2,4049 Apr9 Oct8 Nov8 Jan",
+     "fanW": "676",
+     "boxW": 676
+    },
+    "stock-HDFCBANK": {
+     "hasChart": true,
+     "points": 497,
+     "last": 707.25,
+     "beta": 1.231,
+     "row": {
+      "o": [
+       -115,
+       4,
+       -725,
+       587,
+       -210,
+       13,
+       -1317,
+       1087
+      ],
+      "n": 19,
+      "sec": "Financial Services"
+     },
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr9 Oct8 Nov8 Jan",
+     "fanW": "676",
+     "boxW": 676
+    },
+    "quote-INFY": {
+     "svgW": null,
+     "box": 517
+    }
+   },
+   "overflow": 0,
+   "errors": [
+    "console: Failed to load resource: the server responded with a status of 401 ()",
+    "console: Failed to load resource: net::ERR_FAILED"
+   ]
+  },
+  {
+   "name": "tab1000",
+   "w": 1000,
+   "scheme": "light",
+   "shots": [
+    "qa/out/tab1000-outlook.png",
+    "qa/out/tab1000-stock-RELIANCE.png",
+    "qa/out/tab1000-stock-INFY.png",
+    "qa/out/tab1000-stock-NTPCGREEN.png",
+    "qa/out/tab1000-stock-TCS.png",
+    "qa/out/tab1000-stock-HDFCBANK.png",
+    "qa/out/tab1000-quote-INFY.png"
+   ],
+   "checks": {
+    "outlook": {
+     "fc": true,
+     "so": true,
+     "fanW": "918",
+     "box": 918,
+     "rows": 39,
+     "dec": 10,
+     "nifty": 22520.45,
+     "cone": [
+      20996,
+      22153,
+      23500,
+      24505,
+      24975
+     ]
+    },
+    "stock-RELIANCE": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1170.3,
+     "beta": 0.945,
+     "row": {
+      "o": [
+       32,
+       66,
+       -543,
+       694,
+       12,
+       52,
+       -1032,
+       1235
+      ],
+      "n": 19,
+      "sec": "Energy"
+     },
+     "fanText": "\n    ₹1,200₹1,400\n    \n    Last close ₹1,170Next month: middle ₹1,188; 8 in 10 between ₹1,094 and ₹1,283; middle half ₹1,139 to ₹1,238₹1,385₹1,220₹1,055Next 3 months: middle ₹1,220; 8 in 10 between ₹1,055 and ₹1,385; middle half ₹1,133 to ₹1,3079 Apr9 Oct8 Jan",
+     "fanW": "508",
+     "boxW": 508
+    },
+    "stock-INFY": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1023.4,
+     "beta": 0.674,
+     "row": {
+      "o": [
+       -109,
+       6,
+       -977,
+       890,
+       -221,
+       11,
+       -1796,
+       1625
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr9 Oct8 Jan",
+     "fanW": "508",
+     "boxW": 508
+    },
+    "stock-NTPCGREEN": {
+     "hasChart": true,
+     "points": 464,
+     "last": 92.6,
+     "beta": 0.433,
+     "row": {
+      "o": [
+       -87,
+       14,
+       -791,
+       724,
+       -118,
+       29,
+       -1396,
+       1379
+      ],
+      "n": 2,
+      "sec": "Utilities"
+     },
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr9 Oct8 Jan",
+     "fanW": "508",
+     "boxW": 508
+    },
+    "stock-TCS": {
+     "hasChart": true,
+     "points": 497,
+     "last": 2156,
+     "beta": 0.773,
+     "row": {
+      "o": [
+       -97,
+       10,
+       -1000,
+       941,
+       -189,
+       16,
+       -1826,
+       1729
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,750₹2,000₹2,250₹2,500\n    \n    Last close ₹2,156Next month: middle ₹2,157; 8 in 10 between ₹1,928 and ₹2,385; middle half ₹2,036 to ₹2,277₹2,598₹2,188₹1,777Next 3 months: middle ₹2,188; 8 in 10 between ₹1,777 and ₹2,598; middle half ₹1,972 to ₹2,4049 Apr9 Oct8 Jan",
+     "fanW": "508",
+     "boxW": 508
+    },
+    "stock-HDFCBANK": {
+     "hasChart": true,
+     "points": 497,
+     "last": 707.25,
+     "beta": 1.231,
+     "row": {
+      "o": [
+       -115,
+       4,
+       -725,
+       587,
+       -210,
+       13,
+       -1317,
+       1087
+      ],
+      "n": 19,
+      "sec": "Financial Services"
+     },
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr9 Oct8 Jan",
+     "fanW": "508",
+     "boxW": 508
+    },
+    "quote-INFY": {
+     "svgW": null,
+     "box": 517
+    }
+   },
+   "overflow": 0,
+   "errors": [
+    "console: Failed to load resource: the server responded with a status of 401 ()",
+    "console: Failed to load resource: net::ERR_FAILED",
+    "console: Failed to load resource: net::ERR_FAILED"
+   ]
+  },
+  {
+   "name": "phone390",
+   "w": 390,
+   "scheme": "dark",
+   "shots": [
+    "qa/out/phone390-outlook.png",
+    "qa/out/phone390-stock-RELIANCE.png",
+    "qa/out/phone390-stock-INFY.png",
+    "qa/out/phone390-stock-NTPCGREEN.png",
+    "qa/out/phone390-stock-TCS.png",
+    "qa/out/phone390-stock-HDFCBANK.png",
+    "qa/out/phone390-quote-INFY.png"
+   ],
+   "checks": {
+    "outlook": {
+     "fc": true,
+     "so": true,
+     "fanW": "336",
+     "box": 336,
+     "rows": 39,
+     "dec": 10,
+     "nifty": 22520.45,
+     "cone": [
+      20996,
+      22153,
+      23500,
+      24505,
+      24975
+     ]
+    },
+    "stock-RELIANCE": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1170.3,
+     "beta": 0.945,
+     "row": {
+      "o": [
+       32,
+       66,
+       -543,
+       694,
+       12,
+       52,
+       -1032,
+       1235
+      ],
+      "n": 19,
+      "sec": "Energy"
+     },
+     "fanText": "\n    ₹1,200₹1,400\n    \n    Last close ₹1,170Next month: middle ₹1,188; 8 in 10 between ₹1,094 and ₹1,283; middle half ₹1,139 to ₹1,238₹1,385₹1,220₹1,055Next 3 months: middle ₹1,220; 8 in 10 between ₹1,055 and ₹1,385; middle half ₹1,133 to ₹1,3079 Apr8 Jan",
+     "fanW": "302",
+     "boxW": 302
+    },
+    "stock-INFY": {
+     "hasChart": true,
+     "points": 497,
+     "last": 1023.4,
+     "beta": 0.674,
+     "row": {
+      "o": [
+       -109,
+       6,
+       -977,
+       890,
+       -221,
+       11,
+       -1796,
+       1625
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,000₹1,200\n    \n    Last close ₹1,023Next month: middle ₹1,021; 8 in 10 between ₹918.35 and ₹1,124; middle half ₹967.04 to ₹1,075₹1,216₹1,031₹845.43Next 3 months: middle ₹1,031; 8 in 10 between ₹845.43 and ₹1,216; middle half ₹933.24 to ₹1,1289 Apr8 Jan",
+     "fanW": "302",
+     "boxW": 302
+    },
+    "stock-NTPCGREEN": {
+     "hasChart": true,
+     "points": 464,
+     "last": 92.6,
+     "beta": 0.433,
+     "row": {
+      "o": [
+       -87,
+       14,
+       -791,
+       724,
+       -118,
+       29,
+       -1396,
+       1379
+      ],
+      "n": 2,
+      "sec": "Utilities"
+     },
+     "fanText": "\n    ₹80₹100₹120\n    \n    Last close ₹92.6Next month: middle ₹92.31; 8 in 10 between ₹84.96 and ₹99.67; middle half ₹88.44 to ₹96.18₹106.58₹93.25₹79.92Next 3 months: middle ₹93.25; 8 in 10 between ₹79.92 and ₹106.58; middle half ₹86.24 to ₹100.279 Apr8 Jan",
+     "fanW": "302",
+     "boxW": 302
+    },
+    "stock-TCS": {
+     "hasChart": true,
+     "points": 497,
+     "last": 2156,
+     "beta": 0.773,
+     "row": {
+      "o": [
+       -97,
+       10,
+       -1000,
+       941,
+       -189,
+       16,
+       -1826,
+       1729
+      ],
+      "n": 19,
+      "sec": "Technology"
+     },
+     "fanText": "\n    ₹1,750₹2,000₹2,250₹2,500\n    \n    Last close ₹2,156Next month: middle ₹2,157; 8 in 10 between ₹1,928 and ₹2,385; middle half ₹2,036 to ₹2,277₹2,598₹2,188₹1,777Next 3 months: middle ₹2,188; 8 in 10 between ₹1,777 and ₹2,598; middle half ₹1,972 to ₹2,4049 Apr8 Jan",
+     "fanW": "302",
+     "boxW": 302
+    },
+    "stock-HDFCBANK": {
+     "hasChart": true,
+     "points": 497,
+     "last": 707.25,
+     "beta": 1.231,
+     "row": {
+      "o": [
+       -115,
+       4,
+       -725,
+       587,
+       -210,
+       13,
+       -1317,
+       1087
+      ],
+      "n": 19,
+      "sec": "Financial Services"
+     },
+     "fanText": "\n    ₹700₹800\n    \n    Last close ₹707.25Next month: middle ₹710.34; 8 in 10 between ₹643.68 and ₹777.01; middle half ₹675.26 to ₹745.43₹844.88₹730.26₹615.63Next 3 months: middle ₹730.26; 8 in 10 between ₹615.63 and ₹844.88; middle half ₹669.93 to ₹790.589 Apr8 Jan",
+     "fanW": "302",
+     "boxW": 302
+    },
+    "quote-INFY": {
+     "svgW": "362",
+     "box": 362
+    }
+   },
+   "overflow": 0,
+   "errors": [
+    "console: Failed to load resource: the server responded with a status of 401 ()",
+    "console: Failed to load resource: net::ERR_FAILED",
+    "console: Failed to load resource: net::ERR_FAILED"
+   ]
+  }
+ ]
+}
