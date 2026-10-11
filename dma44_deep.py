@@ -187,7 +187,10 @@ def universes(n_nse, n_bse):
     from screen import load_bhav, BHAV
     load_bhav(); nb, bb = BHAV.get("NSE"), BHAV.get("BSE")
     if not nb: raise SystemExit("official NSE file unavailable")
-    nse = [k for k, v in sorted(((k, v) for k, v in nb[1].items() if (v[3] or 0) >= 20 and (v[6] or 0) > 0), key=lambda kv: -kv[1][6])][:n_nse]
+    # shares only: the official day file also lists ETFs (liquid, gilt, gold, index funds), which are not stocks; keep symbols in the NSE equity list
+    try: eq = set(pd.read_csv(ROOT / "universe_nse.csv", dtype=str)["symbol"].str.strip())
+    except Exception: eq = set()
+    nse = [k for k, v in sorted(((k, v) for k, v in nb[1].items() if (v[3] or 0) >= 20 and (v[6] or 0) > 0 and (len(eq) < 1000 or k in eq)), key=lambda kv: -kv[1][6])][:n_nse]
     bse = []
     if bb:
         uni = pd.read_csv(ROOT / "universe_bse.csv", dtype=str).fillna("")

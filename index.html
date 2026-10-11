@@ -440,11 +440,12 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.9</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.10</span></footer>
 
 </main>
 <script src="insights.js"></script>
 <script src="entity.js"></script>
+<script src="cdl.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const NAMES={bullish:"Bullish candle",bearish:"Bearish candle",doji:"Doji, undecided",hammer:"Hammer",shooting_star:"Shooting star"};
@@ -1280,8 +1281,8 @@ function renderStrat(){sxMerge();const S=STRAT;if(!S)return $("vStrat").innerHTM
  $("vStrat").innerHTML=`<div class="sx-head"><div><h2>Strategy library</h2><p>${all.length} written strategies, each with its own stop loss, profit target and time limit, tested on about ${S.years||6} years of adjusted prices (${esc(S.universe||"")}${S._merged?`, ${Number(SX.strategies.reduce((a,x)=>a+x.all.n,0)).toLocaleString("en-IN")} trades`:""}). Each is compared with stocks bought on the same day with the same exits. The numbers describe what the rules did in the past; they are not recommendations.</p></div><span class="sx-asof">Prices as of ${S.price_date?new Date(S.price_date+"T00:00:00+05:30").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"–"}${S.stale?" (stale)":""}</span></div>
  <div class="sx-kpis">${kpi("Nifty 50",M.nifty!=null?M.nifty.toLocaleString("en-IN"):"–",up===true?"Above its 200-day average":up===false?"Below its 200-day average":"–",up===true?"sx-pos":up===false?"sx-neg":"","mood")}${kpi("Market breadth",M.breadth50!=null?pu(M.breadth50):"–","of stocks are above their 50-day average",null,"breadth")}${kpi("Beat the control, likely not luck",solid+" of "+all.length,`strategies better than the same-day control with a monthly “How sure” of 2 or more${S._merged?", from "+SX.split_year+" on":""}`,solid?"sx-pos":"","t")}${kpi("Signals today",nSig,"stocks meeting a strategy scoring "+SMIN()+" or more",null,"signals")}</div>
  ${sxGuide(S)}
- <div class="sx-views" role="tablist" aria-label="View"><button role="tab" aria-selected="${SVIEW!=="years"}" onclick="SVIEW='list';render()">All strategies</button><button role="tab" aria-selected="${SVIEW==="years"}" onclick="SVIEW='years';render()">Year by year ranking</button></div>
- ${SVIEW==="years"?(SX&&SX.strategies&&SX.strategies.length?sxYearsX(S):sxYears(S)):`<div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
+ <div class="sx-views" role="tablist" aria-label="View"><button role="tab" aria-selected="${SVIEW==="list"}" onclick="SVIEW='list';render()">All strategies</button><button role="tab" aria-selected="${SVIEW==="years"}" onclick="SVIEW='years';render()">Year by year ranking</button><button role="tab" aria-selected="${SVIEW==="candles"}" onclick="SVIEW='candles';render()">Candle patterns</button></div>
+ ${SVIEW==="candles"?cdView():SVIEW==="years"?(SX&&SX.strategies&&SX.strategies.length?sxYearsX(S):sxYears(S)):`<div class="sx-bar"><div class="sx-seg">${fams.map(f=>`<button aria-pressed="${SFAM===f}" onclick="SFAM='${f}';render()">${f}</button>`).join("")}</div><span class="sp"></span>
  <label>Sort by <select onchange="sxSort(this.value)">${SCOLS.map(c=>`<option value="${c[0]}" ${SSORT===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></label>
  <label>Show “Buy” on My Positions only for scores of at least ${ii("buy")} <select onchange="setSmin(this.value)">${[0,1,1.5,2,2.5,3,3.5,4].map(v=>`<option value="${v}" ${v===SMINV?"selected":""}>${v}</option>`).join("")}</select></label></div>
  <div class="sx-card"><div class="sx-t"><table class="sx"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div><div class="sx-m">${cards}</div></div>

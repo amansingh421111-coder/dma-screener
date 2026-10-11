@@ -215,22 +215,31 @@ def sig_work(args):
     return key, res, today
 
 
+MIN_EDGE = 0.002   # a difference smaller than 0.2% a trade is too small to matter next to 0.4% costs and normal noise
+
+
 def verdict(side, tr, te, mt, yrs):
-    """plain verdict from the later (2020+) period, the earlier period and the monthly t"""
+    """plain verdict from the later (2020+) period, the earlier period and the monthly t.
+    Works (buy): better than the same-day control by 0.2%+ a trade, month after month (t >= 2), also before 2020, and profitable after costs.
+    Works (warning): worse than the control by 0.2%+ over 10 days, month after month, and also before 2020."""
     if not te or te["n"] < 100 or te.get("edge") is None: return "few", "Too few trades from 2020 on to judge"
-    e, t, e0 = te["edge"], (mt or {}).get("t"), (tr or {}).get("edge")
+    e, t, e0, a = te["edge"], (mt or {}).get("t"), (tr or {}).get("edge"), te["avg"]
+    if t is None: return "few", "Too few months with trades from 2020 on to judge month by month"
     ty = [v for y, v in yrs.items() if int(y) >= SPLIT_YEAR and v["n"] >= 30 and v.get("edge") is not None]
+    sz = f"{abs(e) * 100:.2f}% a trade"
     if side == "bull":
         good = sum(1 for v in ty if v["edge"] > 0)
-        if e > 0 and t is not None and t >= 2 and (e0 or 0) > 0: return "works", f"Better than the same-day control from 2020 on, month after month (how sure {t}), and also before 2020; better in {good} of {len(ty)} years"
-        if e > 0 and t is not None and t >= 1: return "weak", f"A little better than the control from 2020 on, but not reliably (how sure {t})"
-        if e < 0 and t is not None and t <= -2: return "worse", f"Did worse than the control from 2020 on (how sure {t}): the opposite of what the pattern promises"
-        return "none", f"No real difference from the control from 2020 on (how sure {t})"
+        if e >= MIN_EDGE and t >= 2 and (e0 or 0) > 0 and a > 0: return "works", f"Beat stocks bought on the same day by {sz} from 2020 on, consistently month to month (how sure {t}), also before 2020, and made money after costs; better in {good} of {len(ty)} years"
+        if e > 0 and t >= 2 and a <= 0: return "weak", f"Beat stocks bought on the same day by {sz} (how sure {t}), but still lost money on average after costs ({a * 100:+.2f}%)"
+        if e > 0 and t >= 2: return "weak", f"Beat stocks bought on the same day consistently (how sure {t}), but only by {sz}" + ("" if (e0 or 0) > 0 else ", and not before 2020")
+        if e > 0 and t >= 1: return "weak", f"A little better than stocks bought on the same day ({sz}), but not reliably (how sure {t})"
+        if e < 0 and t <= -2: return "worse", f"Did worse than stocks bought on the same day by {sz} (how sure {t}): the opposite of what the pattern promises"
+        return "none", f"No real difference from stocks bought on the same day (how sure {t})"
     bad = sum(1 for v in ty if v["edge"] < 0)
-    if e < 0 and t is not None and t <= -2 and (e0 or 0) < 0: return "works", f"Stocks did worse than the control over the next 10 days, month after month (how sure {t}), and also before 2020; worse in {bad} of {len(ty)} years"
-    if e < 0 and t is not None and t <= -1: return "weak", f"Stocks did a little worse than the control, but not reliably (how sure {t})"
-    if e > 0 and t is not None and t >= 2: return "worse", f"Stocks did better than the control afterwards (how sure {t}): the opposite of the warning"
-    return "none", f"No real difference from the control (how sure {t})"
+    if e <= -MIN_EDGE and t <= -2 and (e0 or 0) < 0: return "works", f"Over the next 10 days these stocks did worse than stocks bought on the same day by {sz}, consistently month to month (how sure {t}), and also before 2020; worse in {bad} of {len(ty)} years"
+    if e < 0 and t <= -1: return "weak", f"These stocks did a little worse than the control ({sz})" + (f", consistently (how sure {t}), but the gap is small" if t <= -2 else f", but not reliably (how sure {t})")
+    if e > 0 and t >= 2: return "worse", f"These stocks did better than the control afterwards by {sz} (how sure {t}): the opposite of the warning"
+    return "none", f"No real difference from stocks bought on the same day (how sure {t})"
 
 
 def synthetic():
