@@ -253,17 +253,17 @@ def drivers(F, Y, asof):
             m = (s >= lo) & (s <= hi) & known & y.notna(); allm = known & y.notna() & s.notna()
             # is the difference beyond noise? h-day returns overlap, so compare non-overlapping samples (one every h days),
             # averaging Welch's t over several starting offsets so the answer does not hang on one choice of days
-            ts = []
+            ts, ses = [], []
             pos_all = np.flatnonzero(allm.to_numpy())
             for off in range(0, h, max(1, h // 5)):
                 take = pos_all[off::h]; inb = m.to_numpy()[take]; yy = y.to_numpy()[take]
                 a_, b_ = yy[inb], yy[~inb]
                 if len(a_) >= 8 and len(b_) >= 8:
                     se = np.sqrt(a_.var(ddof=1) / len(a_) + b_.var(ddof=1) / len(b_))
-                    if se > 0: ts.append((a_.mean() - b_.mean()) / se)
-            t = float(np.mean(ts)) if ts else None
+                    if se > 0: ts.append((a_.mean() - b_.mean()) / se); ses.append(se)
+            t = float(np.mean(ts)) if ts else None; se_ = float(np.mean(ses)) if ses else None
             o["h"][str(h)] = dict(med=rnd(y[m].median()), mean=rnd(y[m].mean()), pup=rnd((y[m] > 0).mean(), 3), n=int(m.sum()), n_indep=int(m.sum() // h),
-                                  med_all=rnd(y[allm].median()), mean_all=rnd(y[allm].mean()), pup_all=rnd((y[allm] > 0).mean(), 3), t=rnd(t, 2))
+                                  med_all=rnd(y[allm].median()), mean_all=rnd(y[allm].mean()), pup_all=rnd((y[allm] > 0).mean(), 3), t=rnd(t, 2), se=rnd(se_, 5))
         out.append(o)
     return out
 

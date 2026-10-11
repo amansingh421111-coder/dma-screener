@@ -440,7 +440,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.13</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.14</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -1356,7 +1356,7 @@ function mktState(d=new Date()){const t=new Date(d.getTime()+330*6e4),wd=t.getUT
 function themeNow(){const t=document.documentElement.getAttribute("data-theme");return t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}
 function paintTheme(){const d=themeNow()==="dark",b=$("thm");if(b){b.innerHTML=d?'<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 2v2.2M10 15.8V18M2 10h2.2M15.8 10H18M4.3 4.3l1.6 1.6M14.1 14.1l1.6 1.6M4.3 15.7l1.6-1.6M14.1 5.9l1.6-1.6"/></svg><span>Light</span>':'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 12.6A6.5 6.5 0 0 1 7.4 4.5a6.5 6.5 0 1 0 8.1 8.1z"/></svg><span>Dark</span>';b.setAttribute("aria-label",d?"Switch to light theme":"Switch to dark theme");b.title=b.getAttribute("aria-label")}
  const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",d?"#0b111b":"#f3f5f8")}
-function toggleTheme(){const n=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("dma_theme",n)}catch(e){}paintTheme();if(typeof entDraw==="function")entDraw();fitCheck()}
+function toggleTheme(){const n=themeNow()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("dma_theme",n)}catch(e){}paintTheme();if(typeof entDraw==="function")entDraw()}
 /* Charts are drawn with one SVG unit = one screen pixel, so axis text keeps its size on any screen (a fixed viewBox stretched to a wide
    tablet made the labels huge). Each chart's box carries data-fit="key"; after a render its real width is measured and, if it changed,
    the page is drawn once more at that width. */
@@ -1388,7 +1388,7 @@ function render(){
  $("health").innerHTML=data.health?healthLine(data.health):"";renderShell(stale);
  $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button><button class="seg" aria-pressed="${view_==="ins"}" onclick="go('ins')">Insights</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";$("vIns").hidden=view_!=="ins";
- if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else if(view_==="ins")renderIns();else renderStrat();if(typeof entDraw==="function")entDraw()}
+ if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else if(view_==="ins")renderIns();else renderStrat();if(typeof entDraw==="function")entDraw();fitCheck()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 $("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
 addEventListener("hashchange",route);matchMedia("(max-width:760px)").addEventListener("change",render);

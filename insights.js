@@ -674,7 +674,7 @@ function fcNiftyCard(h, compact) {
   return `<div class="fc-card">
     <div class="fc-k">Nifty 50, ${FC_HL[h]} <span>to about ${fcFwd(N.asof, +h)}</span></div>
     <div class="fc-big"><span class="${inCl(o.q[2])}">${fcP(o.q[2])}</span><small>middle estimate, Nifty about ${fcLvl(o.level[2])}</small></div>
-    ${fcBar(o)}
+    ${compact ? fcBar(o) : ""}
     <dl class="fc-dl"><div><dt>Likely range (8 in 10 past cases)</dt><dd>${fcP(o.q[0])} to ${fcP(o.q[4])}</dd></div>
       <div><dt>Rose afterwards</dt><dd>${up} of ${o.n} similar moments (${Math.round(o.pup * 100)}%) <span class="fc-vs">all periods: ${Math.round(o.base.pup * 100)}%</span></dd></div>
       <div><dt>Fell more than 5%</dt><dd>${Math.round(o.pdn5 * 100)}% <span class="fc-vs">all periods: ${Math.round(o.base.pdn5 * 100)}%</span></dd></div></dl>
@@ -716,7 +716,10 @@ function fcSecNews() {   // headlines naming a covered company, grouped by that 
 function fcSectors() {
   const S = FC.sectors, rows = fcSecRows(), tr = S.track, news = fcSecNews(), n = rows.length;
   const t1 = tr["21"].test, t3 = tr["63"].test;
-  const cell = (e) => e ? `<span class="${Math.abs(e.p) < 0.0005 ? "" : inCl(e.p)} fc-num">${fcP(e.p)}</span><small class="fc-rng">${fcP(e.lo, 0)} to ${fcP(e.hi, 0)}</small>` : "–";
+  // one scale for every range bar in the table, so sectors can be compared by eye
+  const lim = Math.max(0.01, ...rows.flatMap((o) => [o.e21, o.e63].filter(Boolean).flatMap((e) => [Math.abs(e.lo), Math.abs(e.hi)])));
+  const X = (v) => (50 + (v / lim) * 50).toFixed(1);
+  const cell = (e) => e ? `<span class="${Math.abs(e.p) < 0.0005 ? "" : inCl(e.p)} fc-num">${fcP(e.p, 2)}</span><span class="ov-rb" title="8 in 10 past estimates: ${fcP(e.lo, 0)} to ${fcP(e.hi, 0)}"><i class="z"></i><i class="r" style="left:${X(e.lo)}%;width:${(X(e.hi) - X(e.lo)).toFixed(1)}%"></i><i class="m" style="left:${X(e.p)}%"></i></span><small class="fc-rng">${fcP(e.lo, 0)} to ${fcP(e.hi, 0)}</small>` : "–";
   const body = rows.map((o, i) => { const nw = news[o.name], r = o.results || {};
     return `<tr class="${i < 3 ? "fc-top" : i >= n - 3 ? "fc-bot" : ""}"><td class="fc-sn"><span class="fc-rk">${i + 1}</span>${entG("sec", o.name)}<small>${o.n} stocks</small></td><td>${cell(o.e21)}</td><td>${cell(o.e63)}</td>
       <td class="fc-why">${o.why.length ? o.why.map(([k, c]) => `<span class="${c > 0 ? "up" : "dn"}"><i aria-hidden="true">${c > 0 ? "+" : "−"}</i>${esc(FC_REASON[k](o, o.avg, c))}</span>`).join("") : `<span class="fc-mute">Close to the average on every input</span>`}</td>
@@ -733,20 +736,7 @@ function fcSig(s) {
   if (s.t == null) return `<span class="fc-mute">Not tested yet</span>`;
   const d = s.mean - s.mean_all, sig = Math.abs(s.t) >= 2;
   return sig ? `<span class="${inCl(d)}">${d > 0 ? "Better than usual" : "Worse than usual"}</span><small>how sure ${s.t.toFixed(1)}, about ${s.n_indep} separate periods</small>`
-    : `<span class="fc-mute">Within normal variation</span><small>how sure ${s.t.toFixed(1)} (2 needed)</small>`;
-}
-function fcDrivers(h) {
-  const D = FC.drivers || [], used = new Set(FC.nifty.inputs);
-  const rows = D.map((d) => { const s = d.h[h], diff = s.med - s.med_all;
-    return `<tr><td>${esc(d.label)}${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}</td><td class="fc-num">${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)}</td>
-      <td><span class="fc-pr" title="Higher than ${Math.round(d.pct * 100)}% of trading days since ${FC.nifty.first.slice(0, 4)}"><i style="left:${(d.pct * 100).toFixed(1)}%"></i></span><small>${d.pct < 0.2 ? "Low" : d.pct > 0.8 ? "High" : "Middle"} for history</small></td>
-      <td><span class="fc-num">${fcP(s.med)}</span> <small>rose ${Math.round(s.pup * 100)}%</small></td><td class="fc-mute">${fcP(s.med_all)} <small>rose ${Math.round(s.pup_all * 100)}%</small></td>
-      <td>${fcSig(s)}</td></tr>`; }).join("");
-  const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
-  return `<section class="ix-sec"><header class="ix-h"><h2>What the estimate is built from</h2><p>Each reading today, where it sits in history, and what the Nifty did over the ${FC_HL[h]} after readings in the same fifth of history (median, and how often it rose). A difference is called better or worse only when it is larger than normal variation, judged on periods that do not overlap. One reading at a time; the estimate above uses them together. “Context only” readings are shown but were left out by the 2011–2018 test.</p></header>
-    <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
-    ${(() => { const T = D.map((d) => d.h[h].t).filter((t) => t != null), k = T.filter((t) => Math.abs(t) >= 2).length; return T.length ? `<p class="fc-test ${k ? "pos" : "neu"}">${k ? `${k} of ${T.length} readings, on their own, were followed by a ${FC_HL[h]} that differed from normal by more than luck.` : `None of the ${T.length} readings, on its own, was followed by a ${FC_HL[h]} that differed from normal by more than luck. This is why the estimate's direction has had no edge: read the range.`}</p>` : ""; })()}
-    <div class="fc-scroll"><table class="fc-t fc-d"><thead><tr><th>Reading</th><th>Today</th><th>Against history</th><th>After similar readings</th><th>All periods</th><th>Difference</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    : `<span class="fc-mute">No reliable difference</span><small>how sure ${s.t.toFixed(1)} of 2 needed</small>`;
 }
 function fcAnalogs(h) {
   const o = FC.nifty.h[h], id = "fc-an";
@@ -815,7 +805,7 @@ function inOutlookView() {
   if (!FC.nifty) return `<p class="ix-empty">The outlook has not been computed yet. It is updated after each market close.</p>`;
   const h = IV.fcH;
   return `<section class="ix-sec"><header class="ix-h"><h2>Outlook: the next month and the next 3 months</h2><p>Estimated from what happened after the past moments most like today, not from opinion. Each number comes with how it held up when tested on years it had not seen. Prices up to ${inDate(FC.nifty.asof)}.</p></header>
-    <div class="fc-two">${fcNiftyCard("21")}${fcNiftyCard("63")}</div></section>
+    ${fcNiftyFan()}<div class="fc-two">${fcNiftyCard("21")}${fcNiftyCard("63")}</div></section>
     ${fcSectors()}${soLists()}${soSeasonality()}${fcLive()}${fcDrivers(h)}${fcTrack(h)}${fcAnalogs(h)}${fcMethod()}`;
 }
 function inOutlookCard() {
@@ -867,37 +857,6 @@ function soVerdictLine(h) {
 // with 10+ years show such a month, against about 4% expected from luck alone (12 months tested, about 15 years each), so
 // roughly 1 mark in 5 may still be luck. Below the bar, a month's average is shown as history, not as a pattern.
 const SO_TSIG = 3.5, SO_TMINY = 10;
-function soSeasStrip(r) {
-  const M = SO.months, now = new Date().getMonth(), next = [now, (now + 1) % 12, (now + 2) % 12];
-  const have = r.sx.filter((v) => v != null).length;
-  if (have < 12) return `<p class="ix-empty">A seasonal pattern needs at least 5 years of each calendar month; this share has ${r.n || 0} ${r.n === 1 ? "year" : "years"} of prices${have ? ` (enough for ${have} of 12 months)` : ""}.</p>`;
-  const mx = Math.max(30, ...r.sx.map(Math.abs)), st = r.st || [];
-  const sig = M.map((_, i) => r.n >= SO_TMINY && st[i] != null && Math.abs(st[i] / 10) >= SO_TSIG);
-  const cells = M.map((m, i) => { const x = r.sx[i], a = r.sm[i], tone = x > 0 ? "up" : "dn", al = Math.min(1, Math.abs(x) / mx), t = st[i] != null ? st[i] / 10 : null;
-    return `<div class="so-m${next.includes(i) ? " nx" : ""}${sig[i] ? " sig" : ""}" role="row" title="${m}: average ${inPct(a / 10)} (rose in ${r.su[i]}% of years); against the Nifty ${inPct(x / 10)}, beat it in ${r.sb[i]}% of years${t != null ? `; how sure ${t.toFixed(1)}` : ""}">
-      <span class="so-ml">${m}</span><span class="so-mb ${tone}" style="--a:${(0.12 + al * 0.78).toFixed(2)}">${inPct(x / 10, 1)}</span><span class="so-mu">${r.sb[i]}%${sig[i] ? " ●" : ""}</span></div>`; }).join("");
-  const ns = sig.filter(Boolean).length, nxt = next.filter((i) => sig[i]).map((i) => `${M[i]} (${inPct(r.sx[i] / 10)} against the Nifty, beat it in ${r.sb[i]}% of ${r.n} years)`);
-  return `<div class="so-ss" role="table" aria-label="Average return against the Nifty by calendar month">${cells}</div>
-    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years; below it, the share of years it beat the Nifty. The next three months are outlined. ${ns ? `● marks a month consistent across years (how sure ${SO_TSIG} or more, ${SO_TMINY}+ years): ${ns} of 12. Even at this bar about 1 mark in 5 across all shares may be luck.` : r.n < SO_TMINY ? `With under ${SO_TMINY} years no month is called a pattern; read the colours as history.` : `No month is consistent enough to call a pattern (how sure ${SO_TSIG} or more across years); read the colours as history.`}${nxt.length ? ` Coming up: ${esc(nxt.join("; "))}.` : ""}</p>`;
-}
-function soPanel(sym, compact) {
-  if (SO === null) { loadSO(); return `<p class="ix-empty">Loading the outlook…</p>`; }
-  if (!SO.s) return `<p class="ix-empty">The share outlook has not been computed yet. It updates after each close.</p>`;
-  const r = soRow(sym);
-  if (!r) return `<p class="ix-empty">No outlook for this share: it is not in the NSE equity list with enough price history.</p>`;
-  const est = (h, j) => { if (!r.o) return ""; const p = r.o[j], pct = r.o[j + 1], lo = r.o[j + 2], hi = r.o[j + 3], why = soReasons(r, h);
-    return `<div class="so-e"><div class="so-k">${h === "21" ? "Next month" : "Next 3 months"}</div>
-      <div class="so-big"><span class="${inCl(p)}">${soBp(p)}</span><small>against the typical share</small></div>
-      <div class="so-rank" title="Ranked against ${ixN(SO.eligible_today)} shares"><i style="left:${pct}%"></i></div><div class="so-rl"><span>Lowest</span><b>${pct >= 50 ? "Top " + Math.max(1, 100 - pct) + "%" : "Bottom " + Math.max(1, pct) + "%"} of ${ixN(SO.eligible_today)} shares</b><span>Highest</span></div>
-      <p class="so-rg">In testing, 8 in 10 outcomes for estimates like this ended between <b>${soBp(lo, 0)}</b> and <b>${soBp(hi, 0)}</b> against the typical share.</p>
-      ${why.length ? `<ul class="so-why">${why.map((x) => `<li class="${x.c > 0 ? "up" : "dn"}"><i aria-hidden="true">${x.c > 0 ? "+" : "−"}</i>${esc(SO_TXT[x.k][x.hi ? 0 : 1])}${x.k === "seas" && r.ss ? ` (${r.ss[2]} years)` : ""}</li>`).join("")}</ul>` : ""}</div>`; };
-  const yrs = Math.min(3, r.n || 3), typ = r.typ ? `<p class="ix-fine">Its own moves over the last ${yrs === 3 ? "3 years" : yrs <= 1 ? "year" : yrs + " years"}: 8 in 10 one-month moves between ${soBp(r.typ[0], 0)} and ${soBp(r.typ[1], 0)}; three-month moves between ${soBp(r.typ[2], 0)} and ${soBp(r.typ[3], 0)}. Add the market's own move (see the Outlook tab) to these.</p>` : "";
-  const t = SO.track["21"].test;
-  return `<div class="so">${r.o ? `<div class="so-two">${est("21", 0)}${est("63", 4)}</div>${typ}
-    <p class="fc-test ${t && t.t >= 2 ? "pos" : "neu"}"><b>How reliable.</b> ${soVerdictLine("21")} Estimates for single shares are a small tilt inside a wide range: the range matters more than the middle. <span class="fc-mute">Key: <i class="so-k-up">+</i> raises the estimate, <i class="so-k-dn">−</i> lowers it.</span></p>`
-    : `<p class="ix-empty">No estimate today: the share did not meet the ₹${20} price and ₹50 lakh daily trading test at the last close, or has under a year of prices.</p>`}
-    ${compact ? "" : `<h4 class="so-h">Seasonal pattern</h4>${soSeasStrip(r)}`}</div>`;
-}
 function soLine(sym) {   // one line for the quote panel
   if (SO === null) { loadSO(); return ""; }
   const r = soRow(sym); if (!r || !r.o) return "";
@@ -905,23 +864,6 @@ function soLine(sym) {   // one line for the quote panel
 }
 /* lists for the Outlook tab: shares ranked highest and lowest, holdings, and seasonality tables */
 IV.soSec = ""; IV.soH = "21";
-function soLists() {
-  if (SO === null) { loadSO(); return `<section class="ix-sec"><p class="ix-empty">Loading the share outlook…</p></section>`; }
-  if (!SO.s) return "";
-  const h = IV.soH, j = h === "21" ? 0 : 4, all = Object.keys(SO.s).map((s) => [s, soRow(s)]).filter(([s, r]) => r.o && (!IV.soSec || r.sec === IV.soSec));
-  all.sort((a, b) => b[1].o[j] - a[1].o[j]);
-  const secs = [...new Set(Object.values(SO.s).map((r) => r.sec).filter(Boolean))].sort();
-  const li = (s, r) => `<li><button type="button" onclick="openStock('${esc(s)}','NSE')"><b>${esc(s)}</b><span class="ml-name">${esc(typeof inShort === "function" ? inShort(s) : "")}</span><span class="${inCl(r.o[j])} so-v">${soBp(r.o[j])}</span><small>${soBp(r.o[j + 2], 0)} to ${soBp(r.o[j + 3], 0)}</small></button></li>`;
-  const H = (typeof openPos === "function" ? openPos() : []).concat(typeof WL !== "undefined" ? WL : []).filter((p) => p.exchange !== "BSE");
-  const seen = new Set(), hold = H.filter((p) => !seen.has(p.symbol) && seen.add(p.symbol)).map((p) => [p.symbol, soRow(p.symbol)]).filter(([, r]) => r && r.o);
-  const seg = (v, l) => `<button type="button" aria-pressed="${IV.soH === v}" onclick="IV.soH='${v}';render()">${l}</button>`;
-  return `<section class="ix-sec"><header class="ix-h"><h2>Shares: ranked for the ${FC_HL[h]}</h2><p>Each share's estimated return against the typical share, from its own momentum, distance from its averages, volatility, sector strength and how it has done in the same weeks of past years. ${esc(soVerdictLine(h))}</p></header>
-    <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div><label class="cd-sort">Sector <select onchange="IV.soSec=this.value;render()"><option value="">All sectors</option>${secs.map((s) => `<option${IV.soSec === s ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label></div>
-    ${hold.length ? `<h3 class="fc-h3">Your holdings and watchlist</h3><ul class="ml so-l">${hold.sort((a, b) => b[1].o[j] - a[1].o[j]).map(([s, r]) => li(s, r)).join("")}</ul>` : ""}
-    <div class="so-cols"><div><h3 class="fc-h3">Ranked highest</h3><ul class="ml so-l">${all.slice(0, 15).map(([s, r]) => li(s, r)).join("")}</ul></div>
-      <div><h3 class="fc-h3">Ranked lowest</h3><ul class="ml so-l">${all.slice(-15).reverse().map(([s, r]) => li(s, r)).join("")}</ul></div></div>
-    <p class="ix-fine">${ixN(all.length)} shares with an estimate (₹20 or more, at least ₹50 lakh traded a day). Each figure is against the typical share (half of all shares are estimated above it, half below); the small numbers are the range 8 in 10 outcomes for such estimates fell within in testing. Select a share for its chart and full outlook.</p></section>`;
-}
 function soSeasonality() {
   if (!SO || !SO.nifty_seas || !SO.nifty_seas.length) return "";
   const N = SO.nifty_seas, now = new Date().getMonth(), nx = [now, (now + 1) % 12, (now + 2) % 12];
@@ -943,6 +885,206 @@ function soSeasonality() {
     <p class="ix-fine">Average monthly return; below it, the share of years the month was positive. The next three months are outlined. ${N.every((x) => x.t == null) ? "Whether any month stands out from luck is being recomputed." : nS.length ? `● marks a month that differs from the other months by more than luck (how sure 2 or more): ${nS.map((x) => x.m).join(", ")}. With 12 months tested, about 1 could do so by chance.` : "No month differs from the others by more than luck (how sure 2 or more); with " + N[0].n + " years per month the averages are history, not a rule."}</p>
     ${S.length ? `<h3 class="fc-h3">Sectors against the average sector, by month</h3><div class="fc-scroll"><table class="so-hmt"><thead><tr><th>Sector</th>${SO.months.map((m, i) => `<th class="${nx.includes(i) ? "nx" : ""}">${m}</th>`).join("")}</tr></thead><tbody>${S.map(([g, v]) => `<tr><td>${entG("sec", g)}</td>${v.map((x, i) => cell(g, x, i)).join("")}</tr>`).join("")}</tbody></table></div>
     <p class="ix-fine">Equal-weighted shares in each sector: the month's return minus the average sector's return that month, averaged over the years, so green means the sector has tended to lead in that month. ${T ? `● marks the ${nCell} of ${cells} cells consistent across years beyond luck (how sure 3 or more; at that bar ${cells * 0.0027 < 1 ? "fewer than 1" : "about " + Math.round(cells * 0.0027)} would pass by chance).` : ""} Only shares listed today are included, and a month needs 5 years of data.</p>` : ""}</section>`;
+}
+
+/* ===== outlook charts: one SVG unit = one screen pixel (fitW), thin marks, solid hairline grid, tooltips on every mark ===== */
+const OV = { pxBusy: {} };
+const ovP = (v, d = 1) => (v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(d) + "%");   // fraction -> signed percent
+const ovR = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: v >= 1000 ? 0 : 2 });
+function ovTicks(lo, hi, n) { return typeof niceTicks === "function" ? niceTicks(lo, hi, n) : [lo, 0, hi]; }
+function ovAddTD(dateStr, td) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + Math.round(td * 7 / 5) + Math.floor(td / 21)); return d; }   // trading days -> calendar date, with a margin for holidays
+const ovDm = (d) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+/* price history plus the cone of the next 1 and 3 months: 8-in-10 band, middle half, middle line */
+function ovFan(key, dates, close, cone, fmt) {
+  const W = fitW(key, 720), H = 260, pl = 58, pr = 78, pt = 14, pb = 26;
+  const n = Math.min(close.length, 126), xs = close.slice(-n), ds = dates.slice(-n), last = xs[n - 1];
+  const all = xs.concat(...cone.map((c) => [c.q[0], c.q[4]])), lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * 0.06;
+  const L = lo - pad, R = hi + pad, total = n - 1 + 63;
+  const X = (i) => pl + (i / total) * (W - pl - pr), Y = (v) => pt + (R - v) / (R - L) * (H - pt - pb);
+  const hist = xs.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const x0 = X(n - 1), y0 = Y(last);
+  const band = (a, b) => `${x0.toFixed(1)},${y0.toFixed(1)} ${cone.map((c) => `${X(n - 1 + c.h).toFixed(1)},${Y(c.q[b]).toFixed(1)}`).join(" ")} ${cone.slice().reverse().map((c) => `${X(n - 1 + c.h).toFixed(1)},${Y(c.q[a]).toFixed(1)}`).join(" ")}`;
+  const mid = `${x0.toFixed(1)},${y0.toFixed(1)} ${cone.map((c) => `${X(n - 1 + c.h).toFixed(1)},${Y(c.q[2]).toFixed(1)}`).join(" ")}`;
+  const ticks = ovTicks(L, R, 4).map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ov-g"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="ov-ax">${fmt(v)}</text>`).join("");
+  const asof = ds[n - 1], xl0 = [[0, ovDm(new Date(ds[0] + "T00:00:00")), "start"], [n - 1, ovDm(new Date(asof + "T00:00:00")), "middle"]].concat(cone.map((c, k) => [n - 1 + c.h, ovDm(ovAddTD(asof, c.h)), k === cone.length - 1 ? "end" : "middle"]));
+  const xl = xl0.filter((t, k) => k === 0 || k === xl0.length - 1 || (X(t[0]) - X(xl0[k - 1][0]) > 56 && X(xl0[xl0.length - 1][0]) - X(t[0]) > 56));   // drop a date label that would collide
+  const xt = xl.map(([i, t, a]) => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${H - pb}" y2="${H - pb + 4}" class="ov-g0"/><text x="${X(i).toFixed(1)}" y="${H - 8}" text-anchor="${a}" class="ov-ax">${t}</text>`).join("");
+  // direct labels only at the cone ends: the 3 numbers a reader needs (top, middle, bottom of the 8-in-10 range)
+  const endLab = cone.map((c, k) => { const x = X(n - 1 + c.h); return (k === cone.length - 1 ? [4, 2, 0].map((qi) => `<text x="${(x + 6).toFixed(1)}" y="${(Y(c.q[qi]) + 4).toFixed(1)}" class="ov-lab${qi === 2 ? " b" : ""}">${fmt(c.q[qi])}</text>`).join("") : "") + `<circle cx="${x.toFixed(1)}" cy="${Y(c.q[2]).toFixed(1)}" r="3" class="ov-dot"><title>${c.label}: middle ${fmt(c.q[2])}; 8 in 10 between ${fmt(c.q[0])} and ${fmt(c.q[4])}; middle half ${fmt(c.q[1])} to ${fmt(c.q[3])}</title></circle>`; }).join("");
+  return `<div class="ov-fan" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price over the last six months and the estimated range for the next one and three months">
+    ${ticks}<line x1="${x0.toFixed(1)}" x2="${x0.toFixed(1)}" y1="${pt}" y2="${H - pb}" class="ov-now"/>
+    <polygon points="${band(0, 4)}" class="ov-b80"/><polygon points="${band(1, 3)}" class="ov-b50"/><polyline points="${mid}" class="ov-mid"/>
+    <polyline points="${hist}" class="ov-hist"/><circle cx="${x0.toFixed(1)}" cy="${y0.toFixed(1)}" r="3.5" class="ov-last"><title>Last close ${fmt(last)}</title></circle>${endLab}${xt}</svg></div>
+    <div class="ov-leg"><span><i class="l-hist"></i>Price, last 6 months</span><span><i class="l-b80"></i>8 in 10 outcomes</span><span><i class="l-b50"></i>Middle half</span><span><i class="l-mid"></i>Middle estimate</span></div>`;
+}
+
+/* average next-period return of each estimate decile, 2019 onwards, with 95% whiskers; the share's decile highlighted */
+function ovDeciles(key, D, hi, hLabel) {
+  if (!D || !D.length) return "";
+  const W = fitW(key, 520), H = 210, pl = 44, pr = 10, pt = 14, pb = 34;
+  const vals = D.flatMap((d) => [d.mean - 1.96 * (d.se || 0), d.mean + 1.96 * (d.se || 0)]), lo = Math.min(0, ...vals), hiV = Math.max(0, ...vals), pad = (hiV - lo) * 0.14;
+  const L = lo - pad, R = hiV + pad, Y = (v) => pt + (R - v) / (R - L) * (H - pt - pb), bw = (W - pl - pr) / 10;
+  const grid = ovTicks(L, R, 4).map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${Math.abs(v) < 1e-12 ? "ov-g0" : "ov-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="ov-ax">${Math.abs(v) < 1e-12 ? "0%" : ovP(v)}</text>`).join("");
+  const bars = D.map((d, i) => { const x = pl + i * bw + 3, w = bw - 6, y1 = Y(Math.max(0, d.mean)), y2 = Y(Math.min(0, d.mean)), cx = x + w / 2, on = d.d === hi;
+    const ly = d.mean >= 0 ? Math.max(pt + 9, Y(d.mean + 1.96 * (d.se || 0)) - 5) : Math.min(H - pb - 3, Y(d.mean - 1.96 * (d.se || 0)) + 13);
+    const lab = on || i === 0 || i === 9 ? `<text x="${cx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" class="ov-lab${on ? " b" : ""}">${ovP(d.mean)}</text>` : "";
+    return `<g class="ov-bar${on ? " on" : ""}"><title>Decile ${d.d}: ${ovP(d.mean, 2)} a ${hLabel} against the average share, positive in ${Math.round(d.pos * 100)}% of periods</title><rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, y2 - y1).toFixed(1)}" rx="3"/>
+      <line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${Y(d.mean - 1.96 * (d.se || 0)).toFixed(1)}" y2="${Y(d.mean + 1.96 * (d.se || 0)).toFixed(1)}" class="ov-wh"/><rect x="${(x - 3).toFixed(1)}" y="${pt}" width="${(w + 6).toFixed(1)}" height="${H - pt - pb}" class="ov-hit"/></g>${lab}
+      <text x="${cx.toFixed(1)}" y="${H - pb + 15}" text-anchor="middle" class="ov-ax${on ? " b" : ""}">${d.d}</text>`; }).join("");
+  return `<div class="ov-dec" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average return by estimate decile">${grid}${bars}
+    <text x="${pl}" y="${H - 3}" class="ov-ax">Lowest estimates</text><text x="${W - pr}" y="${H - 3}" text-anchor="end" class="ov-ax">Highest estimates</text></svg></div>`;
+}
+
+/* the share's standing on each input (percentile among shares) and what that did to its estimate */
+function ovFactors(r, h) {
+  const c = h === "63" ? r.c3 : r.c, w = SO.coef[h], x = r.x; if (!c) return "";
+  const mx = Math.max(10, ...c.map((v) => Math.abs(v || 0)));
+  const DIR = { r1: "a rise last month", r3: "a rise over 3 months", r6x: "a strong 6 months", r12x: "a strong 12 months", vs200: "being far above the 200-day average", hi52: "being near the 52-week high", vol: "high volatility", seas: "beating others in these weeks before", sec: "a strong sector" };
+  const rows = SO.feats.map((k, i) => ({ k, i, c: c[i] || 0, p: x ? x[i] : null })).sort((a, b) => Math.abs(b.c) - Math.abs(a.c));
+  return `<div class="ov-ftw"><table class="ov-ft"><thead><tr><th>Input</th><th>Percentile among shares</th><th>Effect on ${h === "21" ? "1-month" : "3-month"} estimate</th></tr></thead><tbody>${rows.map((o) => {
+    const p = o.p, wt = w[o.k], bw = Math.abs(o.c) / mx * 50;
+    return `<tr><td><b title="${esc(SO.label[o.k])}">${esc(OV_SHORT[o.k] || SO.label[o.k])}</b><small>Historically, ${esc(DIR[o.k])} was followed by ${wt >= 0 ? "higher" : "lower"} returns</small></td>
+      <td>${p == null ? "–" : `<span class="ov-pct" title="${p}th percentile"><i style="left:${p}%"></i></span><small>${p === 50 && o.k === "seas" && r.ss && r.ss[2] < 5 ? "Not enough years" : p + "th percentile" + (p >= 80 ? ", high" : p <= 20 ? ", low" : "")}</small>`}</td>
+      <td><span class="ov-eff" title="${(o.c / 100).toFixed(2)} percentage points"><i class="${o.c >= 0 ? "up" : "dn"}" style="${o.c >= 0 ? "left:50%" : "right:50%"};width:${bw.toFixed(1)}%"></i></span><small>${o.c >= 0 ? "+" : "−"}${Math.abs(o.c / 100).toFixed(2)} pts</small></td></tr>`; }).join("")}</tbody></table></div>`;
+}
+
+/* calendar-month record against the Nifty: bars with 95% whiskers across years; bars that pass the luck bar are solid */
+function ovSeason(key, r) {
+  const M = SO.months, have = r.sx.filter((v) => v != null).length;
+  if (have < 12) return `<p class="ix-empty">A seasonal record needs at least 5 years of each calendar month; this share has ${r.n || 0} ${r.n === 1 ? "year" : "years"} of prices.</p>`;
+  const now = new Date().getMonth(), nx = [now, (now + 1) % 12, (now + 2) % 12];
+  const W = fitW(key, 640), H = 220, pl = 44, pr = 8, pt = 12, pb = 44;
+  const m = r.sx.map((v) => v / 1000), se = r.sx.map((v, i) => (r.st && r.st[i] ? Math.abs(v / 1000 / (r.st[i] / 10)) : 0));
+  const sig = M.map((_, i) => r.n >= SO_TMINY && r.st && r.st[i] != null && Math.abs(r.st[i] / 10) >= SO_TSIG);
+  const vals = m.flatMap((v, i) => [v - 1.96 * se[i], v + 1.96 * se[i]]), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), pad = (hi - lo) * 0.06;
+  const L = lo - pad, R = hi + pad, Y = (v) => pt + (R - Math.max(L, Math.min(R, v))) / (R - L) * (H - pt - pb), bw = (W - pl - pr) / 12;
+  const grid = ovTicks(L, R, 4).map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${Math.abs(v) < 1e-12 ? "ov-g0" : "ov-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="ov-ax">${Math.abs(v) < 1e-12 ? "0%" : ovP(v, 0)}</text>`).join("");
+  const bars = M.map((mn, i) => { const x = pl + i * bw + 4, w = bw - 8, cx = x + w / 2, y1 = Y(Math.max(0, m[i])), y2 = Y(Math.min(0, m[i])), t = r.st && r.st[i] != null ? (r.st[i] / 10).toFixed(1) : "–";
+    return `<g class="ov-sb ${m[i] >= 0 ? "up" : "dn"}${sig[i] ? " sig" : ""}"><title>${mn}: ${ovP(m[i])} against the Nifty on average over ${r.n} years (95% range ${ovP(m[i] - 1.96 * se[i])} to ${ovP(m[i] + 1.96 * se[i])}); beat it in ${r.sb[i]}% of years; average return ${ovP(r.sm[i] / 1000)}; how sure ${t}</title>
+      <rect x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, y2 - y1).toFixed(1)}" rx="3"/><line x1="${cx.toFixed(1)}" x2="${cx.toFixed(1)}" y1="${Y(m[i] - 1.96 * se[i]).toFixed(1)}" y2="${Y(m[i] + 1.96 * se[i]).toFixed(1)}" class="ov-wh"/>
+      <rect x="${(x - 4).toFixed(1)}" y="${pt}" width="${(w + 8).toFixed(1)}" height="${H - pt - pb}" class="ov-hit"/></g>
+      <text x="${cx.toFixed(1)}" y="${H - pb + 15}" text-anchor="middle" class="ov-ax${nx.includes(i) ? " b" : ""}">${mn}</text><text x="${cx.toFixed(1)}" y="${H - pb + 30}" text-anchor="middle" class="ov-ax sm">${r.sb[i]}%</text>
+      ${nx.includes(i) ? `<line x1="${x.toFixed(1)}" x2="${(x + w).toFixed(1)}" y1="${H - pb + 19}" y2="${H - pb + 19}" class="ov-nx"/>` : ""}`; }).join("");
+  const ns = sig.filter(Boolean).length;
+  return `<div class="ov-sea" data-fit="${key}"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average return against the Nifty by calendar month">${grid}${bars}<text x="${pl - 6}" y="${H - pb + 30}" text-anchor="end" class="ov-ax sm">Beat</text></svg></div>
+    <p class="ix-fine">Bars: average return against the Nifty 50 in each month over ${r.n} years; whiskers: the 95% range of that average; below: share of years it beat the Nifty. Underlined: the next three months. ${ns ? `Solid bars (${ns}) are consistent across years beyond luck (how sure ${SO_TSIG}+, ${SO_TMINY}+ years); even so about 1 in 5 such bars across all shares may be luck.` : "No bar is consistent enough across years to call a pattern (how sure " + SO_TSIG + "+): whiskers that cross zero mean the average could be luck."}</p>`;
+}
+
+/* ---------- the share's outlook ---------- */
+function ovPx(sym) {   // price history for the fan chart (shared cache with the quote panel)
+  const t = sym + ".NS"; if (typeof EQ === "undefined") return null;
+  if (EQ.charts[t]) return EQ.charts[t];
+  if (!OV.pxBusy[t]) { OV.pxBusy[t] = true; fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)).then((r) => r.json().then((j) => { EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; })).catch(() => { EQ.charts[t] = { error: "Could not reach the price source." }; }).finally(() => render()); }
+  return null;
+}
+function ovBeta(C) {   // the share's sensitivity to the Nifty over the last year of daily returns (1 if it cannot be measured)
+  const N = INS && INS.nifty; if (!C || !C.c || !N || !N.dates) return 1;
+  const nm = new Map(N.dates.map((d, i) => [d, N.close[i]])), a = [], b = [];
+  for (let i = Math.max(1, C.c.length - 250); i < C.c.length; i++) { const n1 = nm.get(C.dates[i]), n0 = nm.get(C.dates[i - 1]); if (n1 && n0 && C.c[i - 1]) { a.push(C.c[i] / C.c[i - 1] - 1); b.push(n1 / n0 - 1); } }
+  if (a.length < 60) return 1; const mb = b.reduce((s, x) => s + x, 0) / b.length, ma = a.reduce((s, x) => s + x, 0) / a.length;
+  let cv = 0, vb = 0; for (let i = 0; i < a.length; i++) { cv += (a[i] - ma) * (b[i] - mb); vb += (b[i] - mb) ** 2; }
+  return vb > 0 ? Math.max(0.2, Math.min(2.5, cv / vb)) : 1;
+}
+IV.ovH = "21";
+function soPanel(sym, compact) {
+  if (SO === null) { loadSO(); return `<p class="ix-empty">Loading the outlook…</p>`; }
+  if (!SO.s) return `<p class="ix-empty">The share outlook has not been computed yet. It updates after each close.</p>`;
+  if (FC === null) loadFc();
+  const r = soRow(sym);
+  if (!r) return `<p class="ix-empty">No outlook for this share: it is not in the NSE equity list with enough price history.</p>`;
+  if (!r.o) return `<div class="ov">${`<p class="ix-empty">No estimate today: the share did not meet the ₹20 price and ₹50 lakh daily trading test at the last close, or has under a year of prices.</p>`}<h4 class="ov-h">Seasonal record</h4>${ovSeason("sea-" + sym, r)}</div>`;
+  const h = IV.ovH, j = h === "21" ? 0 : 4, pct = r.o[j + 1], dec = Math.min(10, Math.floor(pct / 10) + 1), T = SO.track[h].test, D = T && T.deciles;
+  const dd = D ? D.find((x) => x.d === dec) : null, hl = h === "21" ? "month" : "3 months";
+  // absolute price range: the market's own range (Nifty outlook) times the share's beta, combined with the share's range against the average share
+  const C = ovPx(sym), beta = C && C.c ? ovBeta(C) : 1, N = FC && FC.nifty ? FC.nifty.h : null;
+  let fan = "";
+  if (C && C.c && N && r.o) {
+    const last = C.c[C.c.length - 1], cone = ["21", "63"].map((hh) => { const jj = hh === "21" ? 0 : 4, m = N[hh].q, rel = [r.o[jj + 2] / 10000, r.o[jj] / 10000, r.o[jj + 3] / 10000];
+      const mid = beta * m[2] + rel[1], half80 = Math.sqrt((beta * (m[4] - m[0]) / 2) ** 2 + ((rel[2] - rel[0]) / 2) ** 2), z = 0.6745 / 1.2816;
+      return { h: +hh, label: hh === "21" ? "Next month" : "Next 3 months", q: [mid - half80, mid - half80 * z, mid, mid + half80 * z, mid + half80].map((v) => last * (1 + v)) }; });
+    fan = ovFan("fan-" + sym, C.dates, C.c, cone, ovR);
+  } else fan = `<div class="ov-fan ov-wait">${C && C.error ? esc(C.error) : "Loading the price history…"}</div>`;
+  const seg = (v, l) => `<button type="button" aria-pressed="${IV.ovH === v}" onclick="event.stopPropagation();IV.ovH='${v}';render()">${l}</button>`;
+  const tile = (k, v, s, c) => `<div class="ov-tile"><span class="k">${k}</span><b class="${c || ""}">${v}</b><small>${s}</small></div>`;
+  return `<div class="ov">
+    <div class="ov-top"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div><span class="ix-fine">Prices up to ${inDate(SO.asof)}. Ranked among ${ixN(SO.eligible_today)} liquid NSE shares.</span></div>
+    <div class="ov-tiles">${tile("Outlook decile", `${dec}<span class="ov-of">/10</span>`, `${pct}th percentile of all estimates`)}
+      ${tile(`Estimate, next ${hl}`, soBp(r.o[j]), "against the average share", inCl(r.o[j]))}
+      ${tile("8 in 10 outcomes", `${soBp(r.o[j + 2], 0)} to ${soBp(r.o[j + 3], 0)}`, "against the average share, in testing")}
+      ${dd ? tile(`Decile ${dec} since ${T.start.slice(0, 4)}`, ovP(dd.mean, 2), `a ${hl}, positive in ${Math.round(dd.pos * 100)}% of periods`, inCl(dd.mean)) : ""}</div>
+    <div class="ov-grid">
+      <section class="ov-card"><h4 class="ov-h">Price and estimated range</h4>${fan}
+        <p class="ix-fine">Range combines the Nifty's own estimated range (scaled by this share's sensitivity to it, ${beta.toFixed(2)} over the last year) with the share's range against the average share. Approximate; 2 in 10 outcomes fall outside by design.</p></section>
+      <section class="ov-card"><h4 class="ov-h">How each estimate decile did, ${T ? T.start.slice(0, 4) + "–" + T.end.slice(0, 4) : ""}</h4>${ovDeciles("dec-" + sym + h, D, dec, hl)}
+        <p class="ix-fine">Average return over the following ${hl} against the average share, for shares in each tenth of the estimate (whiskers: 95% range). This share is in decile ${dec}, highlighted. Top tenth minus bottom tenth: ${T ? ovP(T.spread) : "–"}, positive in ${T ? Math.round(T.spread_hit * 100) : "–"}% of periods; how sure ${T ? T.t : "–"}.</p></section>
+    </div>
+    <section class="ov-card"><h4 class="ov-h">What drives the estimate</h4>${ovFactors(r, h)}</section>
+    ${compact ? "" : `<section class="ov-card"><h4 class="ov-h">Seasonal record against the Nifty</h4>${ovSeason("sea-" + sym, r)}</section>`}
+  </div>`;
+}
+
+/* ---------- ranked shares: a screener table ---------- */
+IV.soShow = "top";
+const OV_SHORT = { r1: "Last month", r3: "3-month move", r6x: "6-month momentum", r12x: "12-month momentum", vs200: "vs 200-day avg", hi52: "Near 52-week high", vol: "Volatility", seas: "Seasonality", sec: "Sector strength" };
+function soLists() {
+  if (SO === null) { loadSO(); return `<section class="ix-sec"><p class="ix-empty">Loading the share outlook…</p></section>`; }
+  if (!SO.s) return "";
+  const h = IV.soH, j = h === "21" ? 0 : 4, hl = h === "21" ? "month" : "3 months", T = SO.track[h].test;
+  const all = Object.keys(SO.s).map((s) => [s, soRow(s)]).filter(([, r]) => r && r.o && (!IV.soSec || r.sec === IV.soSec)).sort((a, b) => b[1].o[j] - a[1].o[j]);
+  const H = (typeof openPos === "function" ? openPos() : []).concat(typeof WL !== "undefined" ? WL : []).filter((p) => p.exchange !== "BSE"), seen = new Set();
+  const hold = new Set(H.filter((p) => !seen.has(p.symbol) && seen.add(p.symbol)).map((p) => p.symbol));
+  const rank = new Map(all.map(([s], i) => [s, i + 1]));
+  let rows = IV.soShow === "top" ? all.slice(0, 25) : IV.soShow === "bottom" ? all.slice(-25).reverse() : all.filter(([s]) => hold.has(s));
+  const lim = Math.max(0.01, ...rows.map(([, r]) => Math.max(Math.abs(r.o[j + 2]), Math.abs(r.o[j + 3])) / 10000));   // one scale for every range bar
+  const X = (v) => (50 + (v / lim) * 50).toFixed(1);
+  const why = (r) => { const c = h === "63" ? r.c3 : r.c; if (!c) return ""; const k = SO.feats.map((f, i) => [f, c[i]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0]; return k ? `<span class="ov-tag ${k[1] >= 0 ? "up" : "dn"}" title="${esc(SO.label[k[0]])}">${esc(OV_SHORT[k[0]] || k[0])}</span>` : ""; };
+  const body = rows.map(([s, r]) => { const p = r.o[j] / 10000, lo = r.o[j + 2] / 10000, hi = r.o[j + 3] / 10000, dec = Math.min(10, Math.floor(r.o[j + 1] / 10) + 1);
+    return `<tr onclick="openStock('${esc(s)}','NSE')"><td class="ov-rk">${rank.get(s)}</td><td class="ov-sym"><b>${esc(s)}</b>${hold.has(s) ? ` <span class="ov-own">yours</span>` : ""}<small>${esc(typeof inShort === "function" ? inShort(s) : "")}</small></td>
+      <td class="ov-sec">${r.sec ? esc(r.sec) : "–"}</td><td><span class="ov-dp d${dec}">D${dec}</span></td>
+      <td class="ov-num ${inCl(p)}">${ovP(p)}</td>
+      <td class="ov-rng"><span class="ov-rb" title="8 in 10 outcomes in testing: ${ovP(lo, 0)} to ${ovP(hi, 0)}"><i class="z"></i><i class="r" style="left:${X(lo)}%;width:${(X(hi) - X(lo)).toFixed(1)}%"></i><i class="m" style="left:${X(p)}%"></i></span><small>${ovP(lo, 0)} to ${ovP(hi, 0)}</small></td>
+      <td class="ov-why">${why(r)}</td></tr>`; }).join("");
+  const secs = [...new Set(Object.values(SO.s).map((r) => r.sec).filter(Boolean))].sort();
+  const seg = (k, v, l) => `<button type="button" aria-pressed="${IV[k] === v}" onclick="IV.${k}='${v}';render()">${l}</button>`;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Shares: estimated return against the average share, next ${hl}</h2>
+    <p>From each share's momentum, distance from its averages, volatility, sector strength and record in the same weeks of past years. The chart shows how each tenth of the estimate actually did on ${T ? T.start.slice(0, 4) + "–" + T.end.slice(0, 4) : ""}, years the model had not seen.</p></header>
+    <div class="ov-filters"><div class="seg2">${seg("soH", "21", "Next month")}${seg("soH", "63", "Next 3 months")}</div><div class="seg2">${seg("soShow", "top", "Highest 25")}${seg("soShow", "bottom", "Lowest 25")}${seg("soShow", "mine", `Yours (${hold.size})`)}</div>
+      <label class="cd-sort">Sector <select onchange="IV.soSec=this.value;render()"><option value="">All sectors</option>${secs.map((x) => `<option${IV.soSec === x ? " selected" : ""}>${esc(x)}</option>`).join("")}</select></label></div>
+    <div class="ov-grid ov-g2"><section class="ov-card"><h4 class="ov-h">How each decile did, ${T ? T.start.slice(0, 4) + "–" + T.end.slice(0, 4) : ""}</h4>${ovDeciles("dec-list" + h, T && T.deciles, IV.soShow === "bottom" ? 1 : 10, hl)}
+      <p class="ix-fine">Average return over the following ${hl} against the average share, by tenth of the estimate (whiskers: 95% range). Top minus bottom tenth ${T ? ovP(T.spread) : "–"}, positive in ${T ? Math.round(T.spread_hit * 100) : "–"}% of periods (how sure ${T ? T.t : "–"}). Only shares listed today were tested, which flatters the past.</p></section>
+      <section class="ov-card ov-key"><h4 class="ov-h">Reading the table</h4><dl><dt><span class="ov-dp d10">D10</span></dt><dd>Decile of the estimate: D10 is the highest tenth of ${ixN(SO.eligible_today)} shares, D1 the lowest.</dd>
+        <dt><span class="ov-rb sm"><i class="z"></i><i class="r" style="left:30%;width:45%"></i><i class="m" style="left:55%"></i></span></dt><dd>8 in 10 outcomes for such estimates in testing, on one scale for every row; the line in the middle is zero.</dd>
+        <dt><span class="ov-tag up">Input</span></dt><dd>The input that moved the estimate most: green raised it, red lowered it.</dd></dl></section></div>
+    <div class="ov-scroll"><table class="ov-t"><thead><tr><th>#</th><th>Share</th><th class="ov-sec">Sector</th><th>Decile</th><th>Estimate</th><th class="ov-rng">8 in 10 outcomes</th><th class="ov-why">Main input</th></tr></thead>
+      <tbody>${body || `<tr><td colspan="7" class="ix-empty">${IV.soShow === "mine" ? "None of your holdings or watchlist shares has an estimate today." : "No shares match."}</td></tr>`}</tbody></table></div>
+    <p class="ix-fine">${ixN(all.length)} shares with an estimate (₹20 or more, at least ₹50 lakh traded a day). Select a row for the chart and full outlook.</p></section>`;
+}
+
+/* ---------- Nifty readings: a forest plot of how the next period differed after readings like today's ---------- */
+function fcDrivers(h) {
+  const D = (FC.drivers || []).map((d) => { const s = d.h[h], diff = s.mean != null && s.mean_all != null ? s.mean - s.mean_all : null, se = s.se != null ? s.se : diff != null && s.t ? Math.abs(diff / s.t) : null; return { d, s, diff, se }; });
+  const lim = Math.max(0.01, ...D.filter((x) => x.diff != null).map((x) => Math.abs(x.diff) + 1.96 * (x.se || 0))) * 1.1;
+  const X = (v) => (50 + (v / lim) * 50).toFixed(2), used = new Set(FC.nifty.inputs);
+  const tk = ovTicks(-lim * 0.8, lim * 0.8, 2).filter((v) => Math.abs(v) <= lim * 0.8);
+  const rows = D.map(({ d, s, diff, se }) => { const sig = s.t != null && Math.abs(s.t) >= 2;
+    return `<tr><td><b>${esc(d.label)}</b>${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}<small>${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)} today, ${Math.round(d.pct * 100)}th percentile since ${FC.nifty.first.slice(0, 4)}</small></td>
+      <td class="ov-fp">${diff == null ? "–" : `<span class="ov-ci${sig ? " sig" : ""}" title="${ovP(diff, 2)} against all periods; 95% range ${ovP(diff - 1.96 * se, 2)} to ${ovP(diff + 1.96 * se, 2)}"><i class="z"></i><i class="w" style="left:${X(diff - 1.96 * se)}%;width:${(X(diff + 1.96 * se) - X(diff - 1.96 * se)).toFixed(2)}%"></i><i class="d ${diff >= 0 ? "up" : "dn"}" style="left:${X(diff)}%"></i></span>`}</td>
+      <td class="ov-num">${ovP(diff, 1)}</td><td class="ov-num">${fcP(s.med)}<small>rose ${Math.round(s.pup * 100)}%</small></td><td>${fcSig(s)}</td></tr>`; }).join("");
+  const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
+  const T = D.map((x) => x.s.t).filter((t) => t != null), k = T.filter((t) => Math.abs(t) >= 2).length;
+  return `<section class="ix-sec"><header class="ix-h"><h2>What the Nifty did after readings like today's</h2><p>For each reading, the Nifty's average ${FC_HL[h]} after days in the same fifth of history as today, minus its average over all periods, with the 95% range of that difference (judged on periods that do not overlap). A range that crosses the zero line means the reading told us nothing reliable on its own.</p></header>
+    <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
+    ${T.length ? `<p class="fc-test ${k ? "pos" : "neu"}">${k ? `${k} of ${T.length} readings were followed by a ${FC_HL[h]} that differed from normal by more than luck.` : `All ${T.length} ranges cross zero: no reading, on its own, was followed by a ${FC_HL[h]} that differed from normal by more than luck. That is why the Nifty estimate's direction has had no edge; its range is the useful part.`}</p>` : ""}
+    <div class="ov-scroll"><table class="ov-t ov-fpt"><thead><tr><th>Reading</th><th class="ov-fp"><span class="ov-fpax">${tk.map((v) => `<span style="left:${X(v)}%">${Math.abs(v) < 1e-12 ? "0" : ovP(v, 1)}</span>`).join("")}</span>Difference from all periods</th><th>Difference</th><th>Median after</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="ix-fine">Dot: the average difference; bar: its 95% range; solid when beyond luck. Median after: the Nifty's median ${FC_HL[h]} after such readings, and how often it rose (all periods: ${fcP(D[0] ? D[0].s.med_all : null)}, rose ${D[0] ? Math.round(D[0].s.pup_all * 100) : "–"}%).</p></section>`;
+}
+
+/* ---------- Nifty: price and the estimated cone ---------- */
+function fcNiftyFan() {
+  const N = INS && INS.nifty, F = FC.nifty; if (!N || !N.close || !F) return "";
+  const cone = ["21", "63"].map((h) => ({ h: +h, label: h === "21" ? "Next month" : "Next 3 months", q: F.h[h].level }));
+  return ovFan("fan-nifty", N.dates, N.close, cone, (v) => Math.round(v).toLocaleString("en-IN"));
 }
 
 /* ----- entry point ----- */
