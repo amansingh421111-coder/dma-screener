@@ -13,13 +13,15 @@ const ixN = (v) => Number(v || 0).toLocaleString("en-IN");
 
 /* ===================== data loading, linking, numbers ===================== */
 let AUDITI = null;
+let IN_UNI = null;
 let INS = null, FUND = null, DEEPI = null, BSEU = null, LIVE = null, INAMES = null, CMATCH = null, LIVET = null;
 async function loadFeed(fresh) {
   if (IV.feedBusy) return; IV.feedBusy = true; if (fresh) render();
   try {
-    if (INAMES === null) { INAMES = {}; try { const r = await fetch("/names.json", { cache: "no-cache" }); if (r.ok) INAMES = await r.json(); } catch (e) {} CMATCH = inMatcher(INAMES); }
+    if (INAMES === null) { INAMES = {}; try { const r = await fetch("/names.json", { cache: "no-cache" }); if (r.ok) INAMES = await r.json(); } catch (e) {} }
+    if (IN_UNI === null) { IN_UNI = {}; try { const r = await fetch("/universe_nse.csv"); if (r.ok) (await r.text()).split("\n").slice(1).forEach((ln) => { const m = ln.match(/^([^,]+),("([^"]*)"|[^,]*)/); if (m) IN_UNI[m[1].trim()] = (m[3] != null ? m[3] : m[2]).trim(); }); } catch (e) {} }
     const r = await fetch("/api/dma?a=feed" + (fresh ? "&fresh=1" : "")), j = await r.json();
-    if (r.ok && j.themes) { LIVE = j; IV.feedErr = ""; } else IV.feedErr = j.error || "Live news unavailable.";
+    if (r.ok && j.themes) { LIVE = j; IV.feedErr = ""; LINKC.clear(); CMATCH = inMatcher(INAMES, IN_UNI, inAllStories()); } else IV.feedErr = j.error || "Live news unavailable.";
   } catch (e) { IV.feedErr = "Live news unavailable."; }
   IV.feedBusy = false; if (view_ === "ins" || view_ === "pos") render(); inSchedule();
 }
@@ -35,20 +37,67 @@ function inSchedule() {   // refresh while the tab is open: every 5 minutes in m
   clearTimeout(LIVET); const m = LIVE && LIVE.refresh_min ? LIVE.refresh_min : 5;
   LIVET = setTimeout(() => { if (view_ === "ins" && !document.hidden) { loadFeed(); MKT = null; loadMkt(); } else inSchedule(); }, m * 60000);
 }
-function inMatcher(names) {
-  const stop = new Set("india indian bank power energy capital finance industries global international national general united steel motors life money gold silver oil gas trade home first star sun".split(" "));
-  const P = [], firsts = new Set(), esc2 = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  for (const [sym, nm0] of Object.entries(names || {})) { const nm = Array.isArray(nm0) ? nm0[0] : nm0; if (!nm) continue;
-    const base = nm.replace(/\b(limited|ltd\.?|company|corporation|corp\.?|co\.|inc\.?|\(india\)|india)\b/gi, "").replace(/^[\s.,&-]+|[\s.,&-]+$/g, "").replace(/\s+/g, " ");
-    const w = base.split(" ").filter(Boolean); let c = w.length >= 3 && w.slice(0, 2).join(" ").length < 9 ? w.slice(0, 3).join(" ") : w.length >= 2 ? w.slice(0, 2).join(" ") : base;
+// Common words that are also the first word of some company name: never matched on their own
+const IN_COMMON = new Set(("india indian bharat hindustan national global international general united future capital power energy asian gold golden silver star sun max prime delta alpha apex metro city royal super smart eco green indo bombay mumbai delhi kolkata chennai gujarat punjab kerala karnataka tamil andhra rajasthan bengal orient western eastern southern northern central first new modern premier standard classic jai shree shri sri sai network media digital life home paper steel cement sugar textiles motors auto chemicals pharma labs foods hotels bank finance housing agro tech info systems solutions services industries enterprises holdings ventures trust fund group infra projects construction electric cables pipes glass plastics polymers rubber tyres fashion retail trading exports logistics shipping ports airlines aviation travel entertainment studios films broadcast communications telecom satellite ocean river sky space jet ace ideal excel elite vision insight innovative creative advanced precision quality reliable safe secure speed swift rapid fine pure fresh natural organic health care wellness sports games kids mother people world earth nation union federal liberty victory glory pride hope faith grace unity harmony peace bright shine light fire water wind solar hydro nuclear thermal oil petro coal mining minerals metals iron copper zinc aluminium nickel diamond pearl ruby emerald crystal platinum polar tiger lion eagle falcon phoenix dragon panther mars orbit galaxy cosmos atlas olympus everest summit peak crown empire kingdom imperial majestic grand supreme ultimate infinity zenith vertex matrix vector nexus quest venture pioneer frontier horizon spectrum signal pulse wave trend market stock share deal talks court police army election budget policy rate rates price prices markets shares stocks today live update news report results profit growth stake block exclusive video watch big top best key major sensex nifty adani tata birla bajaj mahindra jindal godrej kotak hdfc icici reliance").split(" "));
+// Words that are also people's names, foreign companies, or everyday terms. A listed company whose name starts with one of these
+// ("Gandhi Special Tubes", "Goyal Aluminiums", "Dollar Industries") is matched only by its full name, never by that word alone.
+const IN_NOTALONE = new Set(("gandhi goyal mukesh akash anant ambani modi shah nehru rahul piyush nirmala gautam ratan nandan narayana murthy premji azim nadar kumar singh sharma gupta agarwal agrawal jain patel mehta reddy iyer nair menon bose kapoor khanna malhotra chopra arora bhatia sinha mishra pandey yadav trump musk biden xi putin elon dollar rupee euro yen paramount oracle warner action wealth essar james chase morgan stanley goldman citi apple google amazon meta microsoft nvidia tesla intel samsung sony boeing airbus walmart netflix disney ford toyota honda hyundai suzuki nissan bmw volvo shell exxon chevron bp total aramco opec nato asean brics china japan korea russia ukraine israel iran pakistan america american british europe european african africa dubai saudi qatar white house senate congress supreme parliament minister ministry government state central reserve federal crude brent copper").split(" "));
+const IN_ACRO = new Set("BSE NSE SEBI RBI IPO ETF GST CEO CFO CTO USA UAE UK US EU IMF WTO FII DII FPI GDP CPI WPI EMI SIP NAV AI EV IT PSU MSME NBFC PTC ACE AGM EGM OFS QIP NCD MF LIC SBI".split(" "));
+const IN_MKTCTX = /\b(shares?|stocks?|scrip|Q[1-4]|quarter|results?|profit|loss|revenue|earnings|EBITDA|margin|IPO|listing|lists?|order|contract|deal|dividend|bonus|split|buyback|rights issue|target price|rating|upgrade|downgrade|stake|block|merger|acquisition|acquire|board|Sensex|Nifty|NSE|BSE|crore|lakh|Rs|₹|rall(y|ies)|surges?|jumps?|soars?|slumps?|plunges?|falls?|gains?|rises?|tanks?|hits|record|52-week|top (gainers|losers))\b/i;
+function inMatcher(names, uni, stories) {
+  const P = [], esc2 = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), all = {};
+  const isFund = (nm) => /\b(ETF|BeES|Fund|FOF|Index Fund|Nifty|Sensex|Liquid|Gilt|Bond)\b/i.test(nm);
+  for (const [sym, nm] of Object.entries(uni || {})) if (nm && !isFund(nm)) all[sym] = nm;
+  for (const [sym, nm0] of Object.entries(names || {})) { const nm = Array.isArray(nm0) ? nm0[0] : nm0; if (nm && !isFund(nm)) all[sym] = nm; else if (nm) delete all[sym]; }
+  const clean = (nm) => nm.replace(/\b(limited|ltd\.?|company|corporation|corp\.?|co\.|inc\.?|\(india\)|india)\b/gi, "").replace(/^[\s.,&-]+|[\s.,&-]+$/g, "").replace(/\s+/g, " ");
+  const firstCount = {}, phrase = {};
+  for (const nm of Object.values(all)) { const w = clean(nm).split(" ")[0]; if (w) firstCount[w] = (firstCount[w] || 0) + 1; }
+  for (const [sym, nm] of Object.entries(all)) {
+    const base = clean(nm), w = base.split(" ").filter(Boolean); if (!w.length) continue;
+    let c = w.length >= 3 && w.slice(0, 2).join(" ").length < 9 ? w.slice(0, 3).join(" ") : w.length >= 2 ? w.slice(0, 2).join(" ") : base;
     if (/ (of|&|and)$/.test(c)) c = w.slice(0, 3).join(" ");
-    if (c.length >= 5 && !stop.has(c.toLowerCase()) && !/ (of|&|and)$/.test(c)) P.push([sym, new RegExp("\\b" + esc2(c) + "\\b")]);
-    if (sym.length >= 3 && /^[A-Z]+$/.test(sym) && !stop.has(sym.toLowerCase())) P.push([sym, new RegExp("\\b" + sym + "\\b")]);
-    const generic = w.length >= 2 && /^(industries|enterprises|group|holdings|ventures)$/i.test(w[1]);
-    if (generic && w[0].length >= 5 && /^[A-Z]/.test(w[0]) && !firsts.has(w[0])) { firsts.add(w[0]); P.push([sym, new RegExp("\\b" + esc2(w[0]) + "\\b(?! (Power|Capital|Infra|Home|Retail|Securities|Finance))")]); }
+    if (c.length >= 5 && !IN_COMMON.has(c.toLowerCase()) && !/ (of|&|and)$/.test(c)) {
+      // two listed companies sharing a name phrase ("Anand Rathi Wealth", "Anand Rathi Share and Stock Brokers"): the phrase goes to the one with the shorter, plainer name
+      if (!phrase[c] || base.length < phrase[c][1].length) phrase[c] = [sym, base];
+    }
+    // a distinctive first word on its own ("Lenskart", "Zomato"), when no other listed company starts with it
+    if (w.length >= 2 && w[0].length >= 5 && /^[A-Z][a-z]+$/.test(w[0]) && firstCount[w[0]] === 1 && !IN_COMMON.has(w[0].toLowerCase()) && !IN_NOTALONE.has(w[0].toLowerCase())) P.push([sym, new RegExp("\\b" + esc2(w[0]) + "\\b"), "one", w[0], base]);
+    if (sym.length >= 3 && /^[A-Z]+$/.test(sym) && !IN_COMMON.has(sym.toLowerCase()) && !IN_ACRO.has(sym) && !IN_NOTALONE.has(sym.toLowerCase())) P.push([sym, new RegExp("\\b" + sym + "\\b"), "sym", sym, base]);
   }
-  return (t, who) => { const h = []; for (const [s, r] of P) if (!h.includes(s) && r.test(t)) h.push(s);
-    for (const [n, s] of (LIVE && LIVE.owners) || []) if ((who || []).includes(n) && names[s] && !h.includes(s)) h.push(s); return h.slice(0, 4); };
+  for (const [c, [sym, base]] of Object.entries(phrase)) {
+    const single = !c.includes(" ");
+    if (single && IN_NOTALONE.has(c.toLowerCase())) continue;
+    P.push([sym, new RegExp("\\b" + esc2(c) + "\\b"), single ? "one" : "name", c, base]);
+  }
+  // a single word or ticker that turns up in a large share of all headlines is an ordinary word, not the company: drop it.
+  // Counted once from a word index, so this stays fast with thousands of headlines.
+  const TOK = /[A-Za-z0-9][A-Za-z0-9&'-]*/g, st = stories || [], lim = Math.max(25, st.length * 0.012), freq = {};
+  for (const x of st) for (const tok of new Set((x.t || "").match(TOK) || [])) freq[tok] = (freq[tok] || 0) + 1;
+  const key = {};   // first word of the pattern -> patterns, so a headline only tries the patterns its own words can start
+  for (const [sym, r, k, c, base] of P) { if (k !== "name" && (freq[c] || 0) > lim) continue; const f = (c.match(TOK) || [""])[0]; (key[f] = key[f] || []).push([sym, r, k, base]); }
+  const cap = (x) => /^[A-Z][a-z]/.test(x || "");
+  return (t, who) => {
+    t = t || ""; const toks = t.match(TOK) || [], title = toks.filter((x) => /^[A-Z]/.test(x)).length / Math.max(1, toks.length) > 0.6, found = [];
+    for (const tok of new Set(toks)) for (const [s, r, k, base] of key[tok] || []) {
+      const m = r.exec(t); if (!m) continue;
+      if (k !== "name") {
+        // a lone word or ticker needs the headline to be about markets, and must not sit inside someone's name ("Rahul Gandhi", "Raymond James")
+        if (k === "one" && !IN_MKTCTX.test(t)) continue;
+        if (k === "one" && !title) {
+          const before = t.slice(0, m.index).match(/([A-Za-z]+) $/), after = t.slice(m.index + m[0].length).match(/^ ([A-Za-z]+)/);
+          if (before && cap(before[1]) && m.index > before[1].length + 1 && !IN_MKTCTX.test(before[1])) continue;
+          if (after && cap(after[1]) && !base.includes(after[1]) && !IN_MKTCTX.test(after[1])) continue;
+        }
+      }
+      found.push([s, m.index, m.index + m[0].length]);
+    }
+    // a match inside a longer one ("PNB" inside "PNB Housing") belongs to the longer one
+    const h = [];
+    for (const f of found.sort((a, b) => (b[2] - b[1]) - (a[2] - a[1]))) if (!h.includes(f[0]) && !found.some((g) => g !== f && g[0] !== f[0] && g[1] <= f[1] && g[2] >= f[2] && g[2] - g[1] > f[2] - f[1])) h.push(f[0]);
+    h.sort((a, b) => found.find((f) => f[0] === a)[1] - found.find((f) => f[0] === b)[1]);
+    for (const [n, s] of (LIVE && LIVE.owners) || []) if ((who || []).includes(n) && all[s] && !h.includes(s)) h.push(s);
+    return h.slice(0, 4);
+  };
 }
 
 async function loadIns() {
@@ -108,6 +157,9 @@ const IMPACT = [
 ];
 const SEC_IDX = { "Technology": "^CNXIT", "Financial Services": "^NSEBANK", "Healthcare": "^CNXPHARMA", "Basic Materials": "^CNXMETAL", "Energy": "^CNXENERGY", "Real Estate": "^CNXREALTY",
   "Consumer Cyclical": "^CNXAUTO", "Consumer Defensive": "^CNXFMCG", "Communication Services": "^CNXMEDIA", "Utilities": "^CNXENERGY", "Industrials": "^CNXINFRA" };
+// what a whole theme usually moves, used only when a headline names no stock and no specific topic
+const THEME_IDX = { rates: ["^NSEBANK", "NIFTY_FIN_SERVICE.NS"], macro: ["^NSEI", "INR=X"], geo: ["BZ=F", "^NSEI"], trade: ["^NSEI", "^CNXIT"], politics: ["^NSEI"], people: ["^NSEI"],
+  energy: ["BZ=F", "^CNXENERGY"], fx: ["INR=X", "^NSEI"], regulator: ["NIFTY_FIN_SERVICE.NS"], tech: ["^CNXIT"], world: ["^NSEI", "000001.SS"], ratings: ["^NSEI"], corporate: ["^NSEI"], other: ["^NSEI"] };
 const LINKC = new Map();
 function inLinks(x) {   // -> {sym:[...], idx:[...], why:[...]}
   if (LINKC.has(x.u)) return LINKC.get(x.u);
@@ -115,7 +167,9 @@ function inLinks(x) {   // -> {sym:[...], idx:[...], why:[...]}
   (CMATCH ? CMATCH(t, x.who) : []).forEach((s) => add(sym, s));
   for (const [rx, s] of ALIAS) if (rx.test(t)) add(sym, s);
   for (const r of IMPACT) if (r.rx.test(t)) { add(why, r.why); r.idx.forEach((k) => add(idx, k)); r.sym.forEach((s) => sym.length < 8 && add(sym, s)); }
-  const o = { sym: sym.slice(0, 7), idx: idx.slice(0, 4), why: why.slice(0, 3) }; LINKC.set(x.u, o); return o;
+  let via = "";
+  if (!sym.length && !idx.length && x.th && THEME_IDX[x.th]) { THEME_IDX[x.th].forEach((k) => add(idx, k)); via = "theme"; }
+  const o = { sym: sym.slice(0, 7), idx: idx.slice(0, 4), why: why.slice(0, 3), via }; LINKC.set(x.u, o); return o;
 }
 function inPx(sym) {   // latest move for a stock: screener price (15-minute delay) if it has one, else last close from the daily update
   const q = (typeof data !== "undefined" && ((data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === "NSE") || (data.quotes || {})["NSE:" + sym])) || null;
@@ -123,7 +177,7 @@ function inPx(sym) {   // latest move for a stock: screener price (15-minute del
   const n = INAMES && INAMES[sym]; return Array.isArray(n) ? n[2] : null;
 }
 function inIdxPx(k) { const L = MKT && MKT.series && MKT.series.find((x) => x.t === k); if (!L || L.c.length < 2) return null; const c = L.c; return (c[c.length - 1] / c[c.length - 2] - 1) * 100; }
-function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.sym.includes(f.slice(2)); }
+function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); if (L.via === "theme") return false; return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.sym.includes(f.slice(2)); }
 function inAllStories() { const N = LIVE || (INS && INS.news); if (!N || !N.themes) return []; const seen = new Set(), out = []; for (const t of N.themes) for (const s of t.stories) if (!seen.has(s.u)) { seen.add(s.u); out.push(Object.assign({ th: t.id }, s)); } return out; }
 function inCountFor(f) { return inAllStories().filter((x) => inStoryMatchesLink(x, f)).length; }
 
@@ -375,7 +429,7 @@ function inLinkChips(x, max) {
   const L = inLinks(x); if (!L.sym.length && !L.idx.length) return "";
   const idx = L.idx.slice(0, 3).map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="openIndex('${k}')" title="${esc(MK_NAMES[k] || k)}: chart, moves and linked news">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
   const st = L.sym.slice(0, max || 5).map((s) => { const v = inPx(s); return `<button type="button" class="lk-s" onclick="openStock('${esc(s)}','NSE')" title="${esc(s)}: price, chart and links">${esc(s)}${v != null ? ` <span class="${inCl(v)}">${inPct(v)}</span>` : ""}</button>`; }).join("");
-  return `<div class="ns-l"><span class="ns-why">${L.why.length ? "Linked through " + esc(L.why.join(", ")) : "Named in the headline"}</span>${idx}${st}</div>`;
+  return `<div class="ns-l"><span class="ns-why">${L.via === "theme" ? "Market-wide, through its theme" : L.why.length ? "Linked through " + esc(L.why.join(", ")) : "Named in the headline"}</span>${idx}${st}</div>`;
 }
 function inStory(x, o) {
   o = o || {}; const N = LIVE || {}, th = (N.themes || []).find((t) => t.id === x.th);
@@ -386,14 +440,23 @@ function inStory(x, o) {
 }
 
 /* ----- overview ----- */
+function inTopNow(n) {   // most outlets, weighted towards the newest: a story fades by half every 8 hours
+  const now = Date.now(), all = inAllStories().filter((x) => x.d && now - Date.parse(x.d) < 36 * 3600e3);
+  const sc = (x) => Math.min(x.n || 1, 8) / (1 + (now - Date.parse(x.d)) / (8 * 3600e3)), seen = [];
+  return all.sort((a, b) => sc(b) - sc(a)).filter((x) => { const k = x.t.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(" ").filter((w) => w.length > 3).slice(0, 6).join(" "); if (seen.includes(k)) return false; seen.push(k); return true; }).slice(0, n);
+}
 function inOverview() {
-  const N = LIVE, top = (N && N.top) || [];
+  const N = LIVE, top = N ? inTopNow(8) : [], tu = new Set(top.map((x) => x.u));
+  const latest = N ? inAllStories().filter((x) => !tu.has(x.u)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))).slice(0, 8) : [];
+  const every = N ? (N.refresh_min >= 60 ? "hour" : (N.refresh_min || 5) + " minutes") : "";
   const news = !N ? `<p class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</p>`
-    : `<ol class="nsl">${top.slice(0, 1).map((x) => inStory(x, { lead: true })).join("")}${top.slice(1, 8).map((x) => inStory(x)).join("")}</ol>
-       <div class="ix-more"><button class="btn sm" onclick="inGo('news')">Open the news desk</button><span class="ix-fine">${ixN(N.pool)} headlines from ${(N.themes || []).length} themes over ${N.days || 7} days, refreshed every ${N.refresh_min === 60 ? "hour" : (N.refresh_min || 5) + " minutes"}${N.market_open ? " while the market is open" : " until the market opens"}.</span></div>`;
+    : `<ol class="nsl">${top.slice(0, 1).map((x) => inStory(x, { lead: true })).join("")}${top.slice(1).map((x) => inStory(x)).join("")}</ol>`;
+  const just = !N ? "" : `<section class="ix-sec o1"><header class="ix-h"><h2>Just in</h2><p>The newest headlines from every theme, updated ${inAgo(N.updated)}. Refreshed every ${every}${N.market_open ? " while the market is open" : ""}.</p></header>
+    <ol class="nsl sm">${latest.map((x) => inStory(x)).join("")}</ol>
+    <div class="ix-more"><button class="btn sm" onclick="IV.list='latest';inTheme('all')">All the latest news</button><span class="ix-fine">${ixN(N.pool)} headlines from ${(N.themes || []).length} themes over ${N.days || 7} days.</span></div></section>`;
   return `<div class="ix-grid"><div class="ix-main">
-    <section class="ix-sec o1"><header class="ix-h"><h2>Top stories</h2><p>The stories carried by the most outlets in the last 48 hours, with the indices and stocks they are linked to.</p></header>${news}</section>
-    ${inSectorChart(false)}</div>
+    <section class="ix-sec o1"><header class="ix-h"><h2>Top stories</h2><p>Carried by the most outlets, weighted towards the last few hours, with the indices and stocks each is linked to.</p></header>${news}</section>
+    ${just}${inSectorChart(false)}</div>
     <aside class="ix-rail">${inMarketRead()}${inHoldNews()}${inMostLinked(6)}</aside></div>`;
 }
 const MR_TK = { trend: "^NSEI", rsi: "^NSEI", macd: "^NSEI", dow: "^BSESN", vix: "^INDIAVIX", crude: "BZ=F", rupee: "INR=X", us10y: "^TNX", gold: "GC=F", copper: "HG=F", dxy: "DX-Y.NYB", global: "^GSPC" };
@@ -474,7 +537,7 @@ function inNewsView() {
   const head = lf ? `<div class="nd-filter"><span>Stories linked to <b>${esc(lfName)}</b></span><button class="btn sm" onclick="IV.linkF='';render()">Clear</button></div>`
     : cur ? `<div class="nd-about"><h2>${esc(cur.name)}</h2><p>${esc(cur.why)} <span class="ix-fine">Most exposed: ${esc(cur.sectors)}.</span></p>${inRefBtn(cur.ref, "th-" + cur.id)}</div>` : `<div class="nd-about"><h2>All stories</h2><p>Every story collected in the last ${N.days} days from established outlets, grouped when several outlets carry it.</p></div>`;
   const bar = `<div class="nd-bar"><div class="seg2"><button type="button" aria-pressed="${IV.list !== "latest" && !lf}" ${lf ? "disabled" : ""} onclick="IV.list='top';render()">Most reported</button><button type="button" aria-pressed="${IV.list === "latest" || !!lf}" onclick="IV.list='latest';render()">Latest</button></div>
-    <span class="ix-fine">${inListNote(list, cur, lf, total)}</span><span class="nd-st"><span class="nd-live ${N.market_open ? "on" : ""}" title="${N.market_open ? "Refreshed every 5 minutes while the market is open" : "Refreshed every hour while the market is closed"}">${N.market_open ? "Live" : "Hourly"}</span><span class="ix-fine">Updated ${inAgo(N.updated)}</span><button class="btn sm" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing" : "Refresh"}</button></span></div>`;
+    <span class="ix-fine">${inListNote(list, cur, lf, total)}</span><span class="nd-st"><span class="nd-live ${N.market_open ? "on" : ""}" title="Refreshed every ${N.refresh_min || 5} minutes${N.market_open ? " while the market is open" : " while the market is closed"}">${N.market_open ? "Live" : "Every " + (N.refresh_min || 15) + " min"}</span><span class="ix-fine">Updated ${inAgo(N.updated)}</span><button class="btn sm" onclick="loadFeed(true)" ${IV.feedBusy ? "disabled" : ""}>${IV.feedBusy ? "Refreshing" : "Refresh"}</button></span></div>`;
   const fid = lf ? "all" : IV.theme, F = IV.full[fid], avail = lf ? null : cur ? cur.total : total, canFull = !inFullFor(fid) && (lf || avail > list.length);
   const more = list.length > IV.shown ? `<button class="btn nd-more" onclick="IV.shown+=30;render()">Show 30 more</button>`
     : canFull ? `<button class="btn nd-more" onclick="inLoadFull('${fid}')" ${F && F.loading ? "disabled" : ""}>${F && F.loading ? "Loading…" : lf ? `Search all ${N.days} days of stories` : `Load all ${ixN(avail)} stories from the last ${N.days} days`}</button>${F && F.error ? `<p class="ix-fine">${esc(F.error)}</p>` : ""}` : "";

@@ -287,7 +287,7 @@ table.sx2 th:first-child,table.sx2 td:first-child{text-align:left}table.sx2 tr:l
 .sx-mc .sx-panel{padding:14px 0 4px}
 .sx-sig a{color:var(--accent);font-weight:600;text-decoration:none}
 @media(max-width:760px){.sx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sx-t{display:none}.sx-m{display:block}.sx-bar .sp{display:none}.sx-seg button{padding:7px 11px}}
-.sx-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;border-radius:50%;border:1px solid var(--mute);color:var(--mute);font:italic 700 9px/1 Georgia,serif;text-transform:none;letter-spacing:0;cursor:help;vertical-align:1px;flex:none}.sx-i:hover,.sx-i:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff;outline:0}
+.sx-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;border-radius:50%;border:1px solid var(--mute);color:var(--mute);font:italic 700 9px/1 Georgia,serif;text-transform:none;letter-spacing:0;cursor:pointer;vertical-align:1px;flex:none}.sx-i:hover,.sx-i:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff;outline:0}
 table.sx th .th{display:inline-flex;align-items:center;gap:0;white-space:normal;line-height:1.25;text-align:right;justify-content:flex-end}
 table.sx th{vertical-align:bottom}
 .sx-g{padding:0 14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 28px}
@@ -296,6 +296,12 @@ table.sx th{vertical-align:bottom}
 .sx-gl dl>div{padding:8px 10px;border-radius:8px;border-left:2px solid var(--line)}.sx-gl dt{font-weight:700;font-size:13.5px;margin-bottom:2px}.sx-gl dd{margin:0;font-size:13px;color:var(--mute)}
 .sx-gl dl>div.hl{background:color-mix(in srgb,var(--accent) 12%,var(--card));border-left-color:var(--accent)}
 .sx-plain{background:color-mix(in srgb,var(--accent) 7%,var(--card));border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 14px!important;font-size:13.5px!important;line-height:1.55}
+.gtip{position:fixed;z-index:80;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:10px 12px 10px;font-size:13px;line-height:1.5;text-transform:none;letter-spacing:0;font-weight:400;text-align:left}
+.gtip::before{content:"";position:absolute;top:-6px;left:calc(var(--ax,50%) - 6px);width:10px;height:10px;background:inherit;border-left:1px solid var(--line-2);border-top:1px solid var(--line-2);transform:rotate(45deg)}
+.gtip.up::before{top:auto;bottom:-6px;transform:rotate(225deg)}
+.gtip-h{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px}.gtip-h b{flex:1;font-size:13.5px}
+.gtip-x{border:0;background:none;color:var(--mute);font-size:18px;line-height:1;padding:0 2px;cursor:pointer}.gtip-x:hover{color:var(--ink)}
+.gtip-b{color:var(--ink-2);max-height:45vh;overflow:auto}.gtip-more{margin-top:8px;border:0;background:none;padding:0;color:var(--accent);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .sx-kpi .l .sx-i{margin-left:6px}.sx-bar label .sx-i{margin:0 4px}
 .sx-checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}.sx-checks li{display:flex;gap:10px;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 .sx-checks .mk{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
@@ -434,7 +440,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.7</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-11.8</span></footer>
 
 </main>
 <script src="insights.js"></script>
@@ -1142,7 +1148,22 @@ const GLOSS=[
 ];
 const GLK=Object.fromEntries(GLOSS.map(g=>[g[0],g]));
 function sxHelp(id){SGUIDE=true;SGLOS=true;render();const e=$("g_"+id);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.classList.add("hl");setTimeout(()=>e.classList.remove("hl"),2200)}}
-const ii=id=>`<span class="sx-i" role="button" tabindex="0" aria-label="What does ${esc(GLK[id][1])} mean?" title="${esc(GLK[id][2].replace(/<[^>]+>/g,""))}" onclick="event.stopPropagation();sxHelp('${id}')" onkeydown="if(event.key==='Enter')sxHelp('${id}')">i</span>`;
+const ii=id=>`<span class="sx-i" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" aria-label="What does ${esc(GLK[id][1])} mean?" onclick="event.stopPropagation();tipShow(this,'${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();tipShow(this,'${id}')}">i</span>`;
+let TIPA=null;
+function tipHide(back){const t=$("gtip");if(t)t.hidden=true;if(TIPA){TIPA.setAttribute("aria-expanded","false");if(back&&document.contains(TIPA))TIPA.focus()}TIPA=null}
+function tipShow(a,id){if(TIPA===a){tipHide(true);return}tipHide();const g=GLK[id];if(!g)return;let t=$("gtip");
+ if(!t){t=document.createElement("div");t.id="gtip";t.className="gtip";t.setAttribute("role","dialog");t.addEventListener("click",e=>e.stopPropagation());document.body.appendChild(t)}
+ t.setAttribute("aria-label",g[1]);
+ t.innerHTML=`<div class="gtip-h"><b>${esc(g[1])}</b><button type="button" class="gtip-x" aria-label="Close" onclick="tipHide(true)">×</button></div><div class="gtip-b">${g[2]}</div><button type="button" class="gtip-more" onclick="tipHide();sxHelp('${id}')">Open full glossary</button>`;
+ t.hidden=false;TIPA=a;a.setAttribute("aria-expanded","true");tipPlace();t.querySelector(".gtip-x").focus({preventScroll:true})}
+function tipPlace(){const t=$("gtip"),a=TIPA;if(!t||t.hidden||!a)return;if(!document.contains(a)){tipHide();return}
+ const r=a.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=window.innerHeight,w=Math.min(320,vw-24);t.style.width=w+"px";
+ let x=r.left+r.width/2-w/2;x=Math.max(12,Math.min(x,vw-w-12));const h=t.offsetHeight;let y=r.bottom+8,up=false;
+ if(y+h>vh-8&&r.top-8-h>8){y=r.top-8-h;up=true}t.style.left=x+"px";t.style.top=Math.max(8,y)+"px";t.classList.toggle("up",up);
+ t.style.setProperty("--ax",Math.max(14,Math.min(w-14,r.left+r.width/2-x))+"px")}
+document.addEventListener("click",()=>{if(TIPA)tipHide()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&TIPA)tipHide(true)});
+addEventListener("scroll",()=>tipPlace(),{passive:true,capture:true});addEventListener("resize",()=>tipPlace());
 function sxPlain(s){const t=s.test,pm=s.params;if(!t)return `This rule produced too few trades in the fair-test period to say anything about it.`;
  const per=s.x?`from ${SX.split_year} on`:"in the fair-test period",surev=t.t==null?"":t.t>=2?"Judged month by month, that gap is unlikely to be luck.":t.t>=1?"Judged month by month, that gap could still be luck.":t.t>=-1?"Judged month by month, that gap is too small to tell apart from luck.":"The rule did worse than the control.";
  const e=t.edge;return `Over <b>${t.n.toLocaleString("en-IN")}</b> trades ${per}, this rule won <b>${pu(t.win_rate)}</b> of the time and made <b>${pp(t.avg_ret)}</b> per trade on average (for every ₹1,00,000 put into a trade, about ₹${Math.round(Math.abs(t.avg_ret)*1e5).toLocaleString("en-IN")} ${t.avg_ret>=0?"profit":"loss"}). ${s.x?"Other stocks bought on the same days":"Buying the same stocks on random days"} with the same ${pm.stop}% stop, ${pm.target}% target and ${pm.max_hold}-day limit made <b>${pp(t.baseline)}</b>. ${e==null?"":e>0?`So the rule added <b>${pp(e,2)}</b> per trade.`:e<0?`So the rule did <b>${pp(Math.abs(e),2)}</b> per trade <i>worse</i>.`:"So the rule made no difference."} ${surev}`}
