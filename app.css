@@ -765,5 +765,8 @@ td.fc-sn{position:relative;padding-left:40px}.fc-sn .fc-rk{position:absolute;lef
  .fc-t:not(.fc-d){min-width:0}.fc-t:not(.fc-d) th:nth-child(n+4),.fc-t:not(.fc-d) td:nth-child(n+4){display:none}.fc-t .ov-rb{min-width:80px}
 }
 .fc-phone{display:none}@media(max-width:640px){.fc-phone{display:block}}
-@media(max-width:640px){.ov-t .ov-rk,.ov-t th:first-child{display:none}.ov-rng small{display:none}.ov-rng{min-width:72px}.ov-sym small{max-width:104px}}
+@media(max-width:640px){.ov-t:not(.ov-fpt) .ov-rk,.ov-t:not(.ov-fpt) th:first-child{display:none}.ov-rng small{display:none}.ov-rng{min-width:72px}.ov-sym small{max-width:104px}}
 @media(max-width:640px){.ov-fpt{min-width:0}.ov-fpt td:first-child{min-width:0}.ov-fpt th:nth-child(3),.ov-fpt td:nth-child(3){display:none}.ov-fp{min-width:120px}.ov-fpv{display:none}.ov-fpt td:last-child small{display:none}.fc-t .ov-rb{min-width:70px}}
+.ov-t td{white-space:normal}
+@media(max-width:640px){.ov-fpt th:nth-child(3),.ov-fpt td:nth-child(3){display:none}.ov-fpt td:first-child b{font-size:12.5px}.ov-fpt .fc-tag{display:none}.ov-fpt td:last-child{min-width:84px}}
+@media(max-width:640px){.ov-fpt th:last-child,.ov-fpt td:last-child{display:none}}
