@@ -1148,7 +1148,7 @@ function coPanel(sym, ex) {
   const money = f ? `<section class="ov-card"><h4 class="ov-h">How it makes money</h4>
     <div class="ov-tiles co-tiles">${tile("Revenue, last 12 months", coCr(f.rev), f.revg != null ? `${coPc(f.revg)} latest quarter vs a year earlier` : "")}${tile("Net profit, last 12 months", coCr(f.ni), f.npm != null ? `${coPc(f.npm)} of revenue kept as profit` : "", f.ni < 0 ? "sx-neg" : "")}
       ${tile("Operating margin", coPc(f.opm), SM && SM.opm != null ? `sector median ${coPc(SM.opm)}` : "")}${tile("Return on equity", coPc(f.roe), SM && SM.roe != null ? `sector median ${coPc(SM.roe)}` : "")}</div>
-    ${coQuarters("coq-" + sym, f.q)}${f.cur && f.cur !== "INR" ? `<p class="ix-fine">${esc(f.sym || sym)} reports its accounts in ${esc(f.cur)}; amounts here are converted to rupees${f.fx ? ` at ₹${f.fx.toFixed(2)} per ${esc(f.cur)}` : ""}.</p>` : ""}</section>` : "";
+    ${coQuarters("coq-" + sym, f.q)}${f.cur && f.cur !== "INR" ? `<p class="ix-fine">${esc(f.sym || sym)} reports its accounts in ${f.cur === "USD" ? "US dollars" : esc(f.cur)}; amounts here are converted to rupees${f.fx ? ` at ₹${f.fx.toFixed(2)} per ${esc(f.cur)}` : ""}.</p>` : ""}</section>` : "";
   // 3. its market now
   const S = INS && INS.sectors ? INS.sectors.find((x) => x.kind === "stocks" && x.name === sec) : null;
   const FS = FC && FC.sectors && FC.sectors.list ? (typeof fcSecRows === "function" ? fcSecRows() : []) : [], fr = FS.findIndex((o) => o.name === sec);
@@ -1157,7 +1157,7 @@ function coPanel(sym, ex) {
   const market = sec ? `<section class="ov-card"><h4 class="ov-h">How its market is doing now</h4><div class="ov-tiles co-tiles">
       ${S ? tile(`${esc(sec)} vs Nifty 50, 3 months`, coPts(S.rel3), `1 month: ${coPts(S.rel1)}; ${S.above200}% of its shares above the 200-day average`, coCl(S.rel3)) : ""}
       ${im3 != null && nm3 != null ? tile(`${esc(f.ind)} vs Nifty 50, 3 months`, coPts((im3 - nm3 / 100) * 100), `median share of ${indPeers.length} covered companies, against the Nifty 50`, coCl((im3 - nm3 / 100) * 100)) : ""}
-      ${fr >= 0 ? tile("Sector outlook rank", `${fr + 1}<span class="ov-of">/${FS.length}</span>`, `next-month estimate against other sectors: ${FS[fr].e21.p > 0 ? "+" : ""}${coPc(FS[fr].e21.p, 2)} (Outlook tab)`) : ""}
+      ${fr >= 0 ? tile("Sector outlook rank", `${fr + 1}<span class="ov-of">/${FS.length}</span>`, `next-month estimate against other sectors: ${Math.abs(FS[fr].e21.p) < 5e-5 ? "0.00%" : (FS[fr].e21.p > 0 ? "+" : "") + coPc(FS[fr].e21.p, 2)} (Outlook tab)`) : ""}
       ${SM && SM.revg != null ? tile("Sector revenue growth", coPc(SM.revg), `median of ${SM.n} covered companies, latest quarter vs a year earlier`) : ""}</div></section>` : "";
   // 4. how the company is doing
   const rows = f ? [["Revenue growth", f.revg, SM && SM.revg, true, coPc], ["Operating margin", f.opm, SM && SM.opm, true, coPc], ["Return on equity", f.roe, SM && SM.roe, true, coPc], ["Debt to equity", f.de, SM && SM.de, false, (v) => (v == null ? "–" : v.toFixed(2))], ["P/E", f.pe > 0 ? f.pe : null, SM && SM.pe, null, (v) => (v == null ? "–" : v.toFixed(1))]] : [];
