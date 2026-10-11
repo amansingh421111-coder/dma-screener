@@ -37,6 +37,7 @@ FEATS = ["r1", "r3", "r6x", "r12x", "vs200", "hi52", "vol", "seas", "sec"]
 LABEL = {"r1": "Last month's move", "r3": "Last 3 months' move", "r6x": "6-month momentum (skipping the last month)",
          "r12x": "12-month momentum (skipping the last month)", "vs200": "Distance from the 200-day average", "hi52": "Distance from the 52-week high",
          "vol": "Volatility (3 months)", "seas": "Seasonality: same weeks in past years", "sec": "Its sector's last 3 months"}
+SEAS_MIN = 5                 # a calendar month needs at least 5 years before its average is shown
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
@@ -188,9 +189,12 @@ def score(rows, raw, h, test=True):
         sp.append(y[o[-q:]].mean() - y[o[:q]].mean())
     sp = np.array(sp); step = max(1, h // STEP); ni = ic[::step]; ni = ni[np.isfinite(ni)]
     t = float(ni.mean() / (ni.std(ddof=1) / np.sqrt(len(ni)))) if len(ni) > 3 and ni.std() > 0 else None
-    single = {k: rnd(np.nanmean(np.array(raw[k])[sel]), 3) for k in FEATS}
+    single, single_t = {}, {}
+    for k in FEATS:
+        v = np.array(raw[k])[sel]; single[k] = rnd(np.nanmean(v), 3); nv = v[::step]; nv = nv[np.isfinite(nv)]
+        single_t[k] = rnd(float(nv.mean() / (nv.std(ddof=1) / np.sqrt(len(nv)))), 2) if len(nv) > 3 and nv.std() > 0 else None
     return dict(n=len(sel), start=str(rows[sel[0]]["d"].date()), end=str(rows[sel[-1]]["d"].date()), ic=rnd(np.nanmean(ic), 3), ic_pos=rnd(np.nanmean(ic > 0), 3),
-                t=rnd(t, 2), spread=rnd(sp.mean()), spread_hit=rnd((sp > 0).mean(), 3), n_indep=int(len(ni)), single=single,
+                t=rnd(t, 2), spread=rnd(sp.mean()), spread_hit=rnd((sp > 0).mean(), 3), n_indep=int(len(ni)), single=single, single_t=single_t,
                 stocks=int(np.median([len(rows[n]["p"]) for n in sel])))
 
 
@@ -241,22 +245,26 @@ def main():
     if nm is not None:
         for mi in range(12):
             v = nm[nm.index.month == mi + 1]
-            nifty_seas.append(dict(m=MONTHS[mi], avg=rnd(v.mean()), med=rnd(v.median()), up=rnd((v > 0).mean(), 3), n=int(len(v))))
+            o_ = nm[nm.index.month != mi + 1]; se = np.sqrt(v.var(ddof=1) / len(v) + o_.var(ddof=1) / len(o_)) if len(v) > 2 else np.nan
+            nifty_seas.append(dict(m=MONTHS[mi], avg=rnd(v.mean()), med=rnd(v.median()), up=rnd((v > 0).mean(), 3), n=int(len(v)),
+                                   t=rnd((v.mean() - o_.mean()) / se, 2) if se and np.isfinite(se) and se > 0 else None))
     out_s = {}
     for j, s in enumerate(syms):
         c = C[s].dropna()
         if len(c) < 260: continue
         mt = month_table(c)
         ex = mt - nm.reindex(mt.index) if nm is not None else mt * np.nan
-        sm, su, sx, sb, sn = [], [], [], [], []
+        sm, su, sx, sb, sn, st = [], [], [], [], [], []
         for mi in range(12):
             v = mt[mt.index.month == mi + 1]; e = ex[ex.index.month == mi + 1].dropna()
-            v = v[(v > -0.6) & (v < 1.5)]                                                     # a month beyond -60% / +150% is treated as bad data
-            sm.append(None if len(v) < 3 else round(float(v.mean()) * 1000)); su.append(None if len(v) < 3 else round(float((v > 0).mean()) * 100))
-            sx.append(None if len(e) < 3 else round(float(e.clip(-0.6, 1.5).mean()) * 1000)); sb.append(None if len(e) < 3 else round(float((e > 0).mean()) * 100)); sn.append(int(len(v)))
+            ok_ = (v > -0.6) & (v < 1.5); v = v[ok_]; e = e[(e > -0.6) & (e < 1.5)]                # a month beyond -60% / +150% is treated as bad data
+            enough = len(e) >= SEAS_MIN
+            sm.append(round(float(v.mean()) * 1000) if len(v) >= SEAS_MIN else None); su.append(round(float((v > 0).mean()) * 100) if len(v) >= SEAS_MIN else None)
+            sx.append(round(float(e.mean()) * 1000) if enough else None); sb.append(round(float((e > 0).mean()) * 100) if enough else None); sn.append(int(len(e)))
+            st.append(round(float(e.mean() / (e.std(ddof=1) / np.sqrt(len(e)))) * 10) if enough and e.std(ddof=1) > 0 else None)
         o = today.get(s, {})
         bp = lambda v: None if v is None or not np.isfinite(v) else int(round(v * 10000))    # basis points keep the file small
-        row = dict(sm=sm, su=su, sx=sx, sb=sb, n=max(sn), sec=sec.get(s))
+        row = dict(sm=sm, su=su, sx=sx, sb=sb, st=st, n=max(sn), sec=sec.get(s))
         if "21" in o and "63" in o:
             row["o"] = [bp(o["21"]["p"]), round(o["21"]["pct"] * 100), bp(o["21"]["lo"]), bp(o["21"]["hi"]), bp(o["63"]["p"]), round(o["63"]["pct"] * 100), bp(o["63"]["lo"]), bp(o["63"]["hi"])]
             row["c"] = [bp(o["21"]["c"][k]) for k in FEATS]; row["c3"] = [bp(o["63"]["c"][k]) for k in FEATS]
@@ -264,23 +272,30 @@ def main():
             r21 = (c / c.shift(21) - 1).tail(756).dropna(); r63 = (c / c.shift(63) - 1).tail(756).dropna()
             if len(r21) > 100: row["typ"] = [bp(r21.quantile(0.1)), bp(r21.quantile(0.9)), bp(r63.quantile(0.1)), bp(r63.quantile(0.9))]
         out_s[s] = row
-    # sector seasonality: average excess over the Nifty by calendar month, equal weight of members
-    sec_seas = {}
-    if nm is not None:
-        by = {}
-        for s, r in out_s.items():
-            if r.get("sec"): by.setdefault(r["sec"], []).append(r["sx"])
-        for g, L in by.items():
-            if len(L) < 8: continue
-            sec_seas[g] = [rnd(float(np.mean([x[mi] for x in L if x[mi] is not None])) / 1000) if any(x[mi] is not None for x in L) else None for mi in range(12)]
+    # sector seasonality, year by year: each sector's equal-weighted month return minus the average sector's that month,
+    # then for each calendar month the mean over years and its t (years are independent draws)
+    sec_seas, sec_t = {}, {}
+    MR = C.resample("ME").last().pct_change(fill_method=None)
+    MR = MR[MR.index < pd.Timestamp.today().normalize().replace(day=1)].where((MR > -0.6) & (MR < 1.5))
+    gs = pd.Series({s_: sec.get(s_) for s_ in MR.columns}).dropna()
+    SR = pd.DataFrame({g: MR[list(L)].mean(axis=1).where(MR[list(L)].notna().sum(axis=1) >= 8) for g, L in gs.groupby(gs).groups.items() if len(L) >= 8})
+    if not SR.empty:
+        D = SR.sub(SR.mean(axis=1), axis=0)
+        for g in D.columns:
+            av, tt = [], []
+            for mi in range(12):
+                v = D[g][D.index.month == mi + 1].dropna()
+                if len(v) >= SEAS_MIN and v.std(ddof=1) > 0: av.append(rnd(v.mean())); tt.append(rnd(v.mean() / (v.std(ddof=1) / np.sqrt(len(v))), 2))
+                else: av.append(None); tt.append(None)
+            sec_seas[g], sec_t[g] = av, tt
     fmt = dict(o="21-day estimate vs the average share, its percentile, low, high; then the same for 63 days (basis points, percent)",
                c="contributions of each input to the 21-day estimate (basis points, order of feats)", c3="the same for 63 days",
                sm="average return by calendar month (tenths of a percent)", su="share of years it rose (percent)", sx="average return against the Nifty 50 (tenths of a percent)",
-               sb="share of years it beat the Nifty 50 (percent)", n="years of history", ss="seasonality input now: same 21 / 63 days in past years vs the average share (basis points), years used",
+               sb="share of years it beat the Nifty 50 (percent)", st="t of the average against the Nifty across years (x10); months with under 5 years are null", n="years of history", ss="seasonality input now: same 21 / 63 days in past years vs the average share (basis points), years used",
                typ="its own 21-day and 63-day moves over the last 3 years: 10th and 90th percentile (basis points)")
     out = dict(fmt=fmt, updated=dt.datetime.now(dt.timezone.utc).isoformat(), asof=str(dates[last].date()), synthetic=bool(a.synthetic), split=SPLIT,
                shares=len(syms), eligible_today=int(elig.iloc[last].sum()), first=str(dates[0].date()), feats=FEATS, label=LABEL,
-               track=track, coef=coef, nifty_seas=nifty_seas, sector_seas=sec_seas, months=MONTHS, s=out_s)
+               track=track, coef=coef, nifty_seas=nifty_seas, sector_seas=sec_seas, sector_seas_t=sec_t, months=MONTHS, s=out_s)
     (ROOT / a.out).write_text(json.dumps(out, separators=(",", ":"), allow_nan=False))
     for h in H:
         t = track[str(h)]["test"] or {}; tr = track[str(h)]["train"] or {}

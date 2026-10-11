@@ -30,6 +30,12 @@ JUNK = re.compile(r"(stocks? to (buy|watch)|top \d+ (stocks|picks)|stock picks|b
 
 MARKET = r'\b(tariffs?|trade|market|stocks?|shares|economy|economic|rates?|inflation|oil|crude|diesel|gas|sanctions?|tax|budget|gst|deficit|spending|subsidy|visa|h-1b|investment|invest|deal|war|iran|china|india|fed\b|tesla|spacex|starlink|x\.?ai|crypto|bitcoin|dollar|rupee|ban|regulat|industry|companies|company|business|jobs|chips?|ai\b|semiconductor|bank|price|growth|recession|imports?|exports?)'
 
+# a court, probe or ban is market news only when a company, market or money is in the headline; a tech headline only when it is about business
+BIZ = r"\b(compan(y|ies)|shares?|stocks?|firms?|banks?|ltd|limited|group|markets?|investors?|listed|brokers?|exchanges?|platforms?|insurers?|lenders?|telecom|pharma|crores?|lakh crore|billions?|millions?|deals?|mergers?|ipo|funds?|revenues?|profits?|tax(es)?|fraud|loans?|default|dues|tariffs?|finance|borrowing|bonds?|yields?|assets|credit|debt)\b"
+TBIZ = r"\b(shares?|stocks?|markets?|revenues?|earnings|profits?|spending|capex|invest(ment|ments|s|ors?)?|borrowing|debt|funding|raises?|deals? (worth|for|to buy)|acquisitions?|stake|billions?|trillions?|valuation|worth|ipo|layoffs?|jobs|hiring|h-?1-?b|visa|green cards?|chips?|semiconductors?|data cent(er|re)s?|cloud|orders?|contracts?|supply|demand|exports?|tariffs?|spectrum|economy|india)\b"
+REG_STRONG = r"\b(sebi|sec\b|nclt|nclat|antitrust|cci\b|competition commission|irdai|pfrda|rbi (penalty|fine|action|bars|curbs|cancels|imposes)|insider trading|front[- ]running|market manipulation)\b"
+TECH_STRONG = r"\b(nvidia|semiconductor|chipmakers?|tsmc|ai (spending|capex|bubble|chips?|stocks?|deal)|data cent(er|re)s?)\b"
+
 # Themes: how a kind of news reaches Indian share prices, with the NISM section the channel comes from.
 THEMES = [
     dict(id="rates", name="Central banks and interest rates", ref="rates", sectors="Banks, NBFCs, real estate, autos (loan-funded demand); foreign flows",
@@ -59,20 +65,20 @@ THEMES = [
          q=["rupee dollar forex", "FPI FII outflows inflows India equities"], kw=r"\b(rupee|dollar|forex|currency|fpi|fii|foreign investors?|outflows?|inflows?)\b"),
     dict(id="regulator", name="Regulators, courts and investigations", ref="corp", sectors="The companies named; sometimes a whole segment (derivatives, brokers, platforms)",
          why="Orders, penalties and rule changes alter what companies may do and can trigger exchange surveillance.",
-         q=["SEBI order rules", "SEC investigation company", "antitrust probe fine company", "court ruling company shares"], kw=r"\b(sebi|sec\b|regulator|probe|investigation|penalty|fine[sd]?|ban|court|ruling|antitrust|nclt|ed\b|cbi|raid)\b"),
+         q=["SEBI order rules", "SEC investigation company", "antitrust probe fine company", "court ruling company shares"], kw=r"\b(regulator|probe|investigation|penalty|fine[sd]?|ban|court|ruling|ed\b|cbi|raid)\b", need=BIZ, strong=REG_STRONG),
     dict(id="corporate", name="Company results, deals and boardrooms", ref="corp", sectors="The companies named and their peers",
          why="Results, mergers, buybacks, management changes and governance issues change a company's value directly.",
          q=["quarterly results India company profit", "merger acquisition deal billion", "CEO resigns OR appointed company", "boardroom battle shareholders activist", "IPO listing India"],
          kw=r"\b(results?|profit|revenue|earnings|merger|acqui|buyback|stake|ceo|chairman|board|resign|ipo|listing|dividend|bonus|demerger)"),
     dict(id="tech", name="Big tech, AI and chips", ref="global", sectors="IT services, semiconductors and electronics makers, data centres, telecom",
          why="Spending plans of the world's largest tech companies drive demand for Indian IT services and global sentiment.",
-         q=["Nvidia Apple Microsoft AI spending", "artificial intelligence chips semiconductor", "Tesla SpaceX xAI Musk business"], kw=r"\b(ai|artificial intelligence|nvidia|apple|microsoft|google|alphabet|amazon|meta|openai|tesla|chip|semiconductor|xai|spacex)\b"),
+         q=["Nvidia Apple Microsoft AI spending", "artificial intelligence chips semiconductor", "Tesla SpaceX xAI Musk business"], kw=r"\b(ai|artificial intelligence|nvidia|apple|microsoft|google|alphabet|amazon|meta|openai|tesla|chip|semiconductor|xai|spacex)\b", need=TBIZ, strong=TECH_STRONG),
     dict(id="world", name="China and world markets", ref="global", sectors="Metals, chemicals, exporters; overall risk appetite",
          why="Integrated economies mean a problem in one region spreads; China drives global metal and commodity demand.",
          q=["China economy stimulus stocks", "global stock markets selloff OR rally", "Wall Street stocks close"], kw=r"\b(china|chinese|beijing|wall street|s&p|nasdaq|dow|nikkei|hang seng|global markets|stocks)\b"),
     dict(id="ratings", name="Credit ratings and sovereign outlook", ref="corp", sectors="Banks and the whole market (foreign funding costs)",
          why="Rating changes for India or large companies change borrowing costs and foreign investors' appetite.",
-         q=["Moody's OR Fitch OR S&P rating India", "credit rating downgrade upgrade company"], kw=r"\b(moody|fitch|s&p global ratings|rating|downgrade|upgrade|outlook)\b"),
+         q=["Moody's OR Fitch OR S&P rating India", "credit rating downgrade upgrade company"], kw=r"\b(rating|downgrades?d?|upgrades?d?|outlook)\b", need=BIZ, strong=r"\b(moody.?s|fitch|s&p global ratings|credit rating|crisil|icra|care ratings|india ratings|sovereign rating)\b"),
 ]
 PEOPLE = [("Elon Musk", r"\bmusk\b"), ("Donald Trump", r"\btrump\b"), ("Jerome Powell", r"\bpowell\b"), ("Nirmala Sitharaman", r"sitharaman"), ("RBI Governor", r"rbi governor|sanjay malhotra"),
           ("Narendra Modi", r"\bmodi\b"), ("Xi Jinping", r"\bxi\b|xi jinping"), ("Vladimir Putin", r"\bputin\b"), ("Warren Buffett", r"buffett"), ("Jensen Huang", r"jensen huang"),
@@ -169,8 +175,10 @@ def collect(names=None, days=3, log=None):
             if x["d"] and x["d"] < cutoff: continue
             name = SOURCES.get(x["dom"]) or next((v for k, v in SOURCES.items() if x["dom"].endswith("." + k)), None)
             if not name or JUNK.search(x["t"]): continue
-            if not re.search(th["kw"], x["t"], re.I): continue        # the headline itself must be about the theme
-            if th.get("need") and not re.search(th["need"], x["t"], re.I): continue   # and, for people and politics, about money or markets
+            strong = th.get("strong") and re.search(th["strong"], x["t"], re.I)
+            if not strong:
+                if not re.search(th["kw"], x["t"], re.I): continue        # the headline itself must be about the theme
+                if th.get("need") and not re.search(th["need"], x["t"], re.I): continue   # and, where set, about money, companies or markets
             x["src"] = name; keep.append(x)
         st = cluster(keep)
         for s in st:

@@ -6,7 +6,7 @@ const CFG = require("./_newscfg.json");
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36";
 const RX = (s) => new RegExp(s, "i");
 const JUNK = RX(CFG.junk), MARKET = RX(CFG.market);
-const THEMES = CFG.themes.map((t) => ({ ...t, kwR: RX(t.kw), needR: t.need ? RX(t.need) : null }));
+const THEMES = CFG.themes.map((t) => ({ ...t, kwR: RX(t.kw), needR: t.need ? RX(t.need) : null, strongR: t.strong ? RX(t.strong) : null }));
 const PEOPLE = CFG.people.map(([n, r]) => [n, RX(r)]);
 const STOP = new Set("the and for with from after over amid says said will its this that into than what how why are has have was were been new more about".split(" "));
 
@@ -70,7 +70,8 @@ function build(items) {
   THEMES.forEach((t) => (by[t.id] = []));
   for (const x of items) {
     if (x.d < cut) continue;
-    const hit = THEMES.filter((t) => t.id !== "other" && t.kwR.test(x.t) && (!t.needR || t.needR.test(x.t)));
+    // a strong word (SEBI, NCLT, Nvidia...) places a headline on its own; otherwise the theme word plus, where set, a money or company word
+    const hit = THEMES.filter((t) => t.id !== "other" && ((t.strongR && t.strongR.test(x.t)) || (t.kwR.test(x.t) && (!t.needR || t.needR.test(x.t)))));
     if (hit.length) hit.slice(0, 2).forEach((t) => by[t.id].push(x));
     else if (MARKET.test(x.t) && (x.o === "BUSINESS" || x.o === "other" || /^(corporate|world|fx|energy|rates|macro)$/.test(x.o))) by.other.push(x);
   }

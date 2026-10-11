@@ -166,10 +166,11 @@ function inLinks(x) {   // -> {sym:[...], idx:[...], why:[...]}
   const t = x.t, sym = [], idx = [], why = [], add = (a, v) => { if (v && !a.includes(v)) a.push(v); };
   (CMATCH ? CMATCH(t, x.who) : []).forEach((s) => add(sym, s));
   for (const [rx, s] of ALIAS) if (rx.test(t)) add(sym, s);
+  const named = sym.slice();   // companies the headline itself names; the rest below are linked through the topic
   for (const r of IMPACT) if (r.rx.test(t)) { add(why, r.why); r.idx.forEach((k) => add(idx, k)); r.sym.forEach((s) => sym.length < 8 && add(sym, s)); }
   let via = "";
   if (!sym.length && !idx.length && x.th && THEME_IDX[x.th]) { THEME_IDX[x.th].forEach((k) => add(idx, k)); via = "theme"; }
-  const o = { sym: sym.slice(0, 7), idx: idx.slice(0, 4), why: why.slice(0, 3), via }; LINKC.set(x.u, o); return o;
+  const o = { sym: sym.slice(0, 7), named, idx: idx.slice(0, 4), why: why.slice(0, 3), via }; LINKC.set(x.u, o); return o;
 }
 function inPx(sym) {   // latest move for a stock: screener price (15-minute delay) if it has one, else last close from the daily update
   const q = (typeof data !== "undefined" && ((data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === "NSE") || (data.quotes || {})["NSE:" + sym])) || null;
@@ -177,7 +178,12 @@ function inPx(sym) {   // latest move for a stock: screener price (15-minute del
   const n = INAMES && INAMES[sym]; return Array.isArray(n) ? n[2] : null;
 }
 function inIdxPx(k) { const L = MKT && MKT.series && MKT.series.find((x) => x.t === k); if (!L || L.c.length < 2) return null; const c = L.c; return (c[c.length - 1] / c[c.length - 2] - 1) * 100; }
-function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); if (L.via === "theme") return false; return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.sym.includes(f.slice(2)); }
+function inStockNews(sym, list) {
+  const byDate = (a, b) => String(b.d || "").localeCompare(String(a.d || "")), named = [], topic = [];
+  for (const x of list || inAllStories()) { const L = inLinks(x); if (L.named.includes(sym)) named.push(x); else if (L.sym.includes(sym)) topic.push(x); }
+  return { named: named.sort(byDate), topic: topic.sort(byDate) };
+}
+function inStoryMatchesLink(x, f) { if (!f) return true; const L = inLinks(x); if (L.via === "theme") return false; return f.startsWith("i:") ? L.idx.includes(f.slice(2)) : L.named.includes(f.slice(2)); }
 function inAllStories() { const N = LIVE || (INS && INS.news); if (!N || !N.themes) return []; const seen = new Set(), out = []; for (const t of N.themes) for (const s of t.stories) if (!seen.has(s.u)) { seen.add(s.u); out.push(Object.assign({ th: t.id }, s)); } return out; }
 function inCountFor(f) { return inAllStories().filter((x) => inStoryMatchesLink(x, f)).length; }
 
@@ -330,7 +336,7 @@ function inName(sym) {
 function inNewsBadge(sym, ex) {   // used in My Positions: how many live stories name this holding
   if (LIVE === null && !IV.feedBusy) { loadFeed(); return ""; }
   if (ex === "BSE") return "";
-  const n = inAllStories().filter((x) => inLinks(x).sym.includes(sym)).length;
+  const n = inStockNews(sym).named.length;
   return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();IV.stab='news';go('ins');inPick('${esc(sym)}','NSE')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
 }
 
@@ -470,7 +476,7 @@ function inMarketRead() {
 }
 function inShort(s) { const v = INAMES && INAMES[s], n = Array.isArray(v) ? v[0] : v || ""; return n.replace(/\s+(Limited|Ltd\.?)$/i, ""); }
 function inDirectCounts() {
-  const c = {}; for (const x of inAllStories()) { const L = inLinks(x); for (const s of L.sym) { if (!c[s]) c[s] = { n: 0, d: 0 }; c[s].n++; } }
+  const c = {}; for (const x of inAllStories()) { const L = inLinks(x); for (const s of L.named) { if (!c[s]) c[s] = { n: 0, d: 0 }; c[s].n++; } }   // headlines that name the company
   return c;
 }
 function inHoldNews() {
@@ -623,13 +629,13 @@ function inStocksView() {
     const ln = inStockLinked(), secK = f && SEC_IDX[f.sec];
     const sector = secK ? inAllStories().filter((x) => !ln.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
     const q = (name ? name.replace(/\b(limited|ltd\.?|ltd)\b/gi, "").trim() : IV.sym) + " share", N2 = IV.news[q];
-    body = `<div class="sk-2"><section><h3>Linked from the live feed</h3>${ln.length ? `<ol class="nsl sm">${ln.slice(0, 15).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}${sector.length ? `<h3 style="margin-top:16px">Its sector (${esc(MK_NAMES[secK])})</h3><ol class="nsl sm">${sector.map((x) => inStory(x)).join("")}</ol>` : ""}</section>
+    body = `<div class="sk-2"><section><h3>Headlines naming it, live feed</h3>${ln.length ? `<ol class="nsl sm">${ln.slice(0, 15).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}${sector.length ? `<h3 style="margin-top:16px">Its sector (${esc(MK_NAMES[secK])})</h3><ol class="nsl sm">${sector.map((x) => inStory(x)).join("")}</ol>` : ""}</section>
     <section><h3>Company search, last 14 days</h3>${!N2 || N2.loading ? `<p class="ix-empty">Loading…</p>` : N2.error ? `<p class="ix-empty">${esc(N2.error)}</p>` : N2.items && N2.items.length ? `<ol class="nsl sm">${N2.items.slice(0, 15).map((x) => inStory({ t: x.t, u: x.u, s: x.s, d: x.d, n: 1 }, { theme: false })).join("")}</ol>` : `<p class="ix-empty">No headlines found.</p>`}</section></div>`;
   }
   return strip + `<article class="sk">${head}${tabbar}<div class="sk-body">${body}</div></article>`;
 }
 function inDate(d) { if (!d) return ""; const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? String(d) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
-function inStockLinked() { return IV.sym ? inAllStories().filter((x) => inLinks(x).sym.includes(IV.sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : []; }
+function inStockLinked() { return IV.sym ? inStockNews(IV.sym).named : []; }
 
 /* ----- outlook: 1- and 3-month estimates from forecast.json (computed after each close by forecast.py) ----- */
 let FC = null;
@@ -696,31 +702,37 @@ function fcSecRows() {   // estimates shown against the average sector (the leve
     o = Object.assign({}, o, { avg: FC_AVG(L) });
     return Object.assign({}, o, { e21: rel("21"), e63: rel("63"), why }); }).sort((a, b) => b.e21.p - a.e21.p);
 }
-const FC_POS = /\b(rise|rises|rising|rose|jumps?|jumped|surges?|surged|soars?|soared|gains?|gained|rall(y|ies|ied)|beats?|record high|upgrades?d?|wins?|bags?|secures?|profit (up|rises|jumps|soars)|strong|higher)\b/i;
-const FC_NEG = /\b(falls?|fell|drops?|dropped|slumps?|slumped|plunges?|plunged|tanks?|tanked|declines?|declined|miss(es|ed)?|downgrades?d?|loss|losses|weak|cuts?|probe|penalty|fraud|raids?|resigns?|lower|crash(es|ed)?)\b/i;
-function fcSecNews() {   // headlines of the last 7 days linked to a covered stock, by that stock's sector, with a plain word count of up and down words
-  const out = {}; if (!LIVE || !INAMES) return out; const now = Date.now();
-  for (const x of (inFullFor("all") || inAllStories())) {
+function fcSecNews() {   // headlines naming a covered company, grouped by that company's sector, newest first
+  const out = {}; if (!LIVE || !INAMES) return out; const now = Date.now(), full = inFullFor("all");
+  if (!full && !(IV.full.all && (IV.full.all.loading || IV.full.all.error))) inLoadFull("all");
+  for (const x of (full || inAllStories())) {
     if (!x.d || now - Date.parse(x.d) > 7 * 864e5) continue;
-    const secs = new Set(inLinks(x).sym.map((s) => INAMES[s] && INAMES[s][3]).filter(Boolean));
-    for (const s of secs) { const o = out[s] || (out[s] = { n: 0, up: 0, dn: 0 }); o.n++; const p = FC_POS.test(x.t), q = FC_NEG.test(x.t); if (p && !q) o.up++; else if (q && !p) o.dn++; }
+    const secs = new Set(inLinks(x).named.map((s) => INAMES[s] && INAMES[s][3]).filter(Boolean));
+    for (const s of secs) { const o = out[s] || (out[s] = { n: 0, last: null }); o.n++; if (!o.last || String(x.d) > String(o.last.d)) o.last = x; }
   }
-  return out;
+  out._full = !!full; return out;
 }
 function fcSectors() {
   const S = FC.sectors, rows = fcSecRows(), tr = S.track, news = fcSecNews(), n = rows.length;
   const t1 = tr["21"].test, t3 = tr["63"].test;
   const cell = (e) => e ? `<span class="${Math.abs(e.p) < 0.0005 ? "" : inCl(e.p)} fc-num">${fcP(e.p)}</span><small class="fc-rng">${fcP(e.lo, 0)} to ${fcP(e.hi, 0)}</small>` : "–";
   const body = rows.map((o, i) => { const nw = news[o.name], r = o.results || {};
-    return `<tr class="${i < 3 ? "fc-top" : i >= n - 3 ? "fc-bot" : ""}"><td class="fc-sn">${entG("sec", o.name)}<small>${o.n} stocks</small></td><td>${cell(o.e21)}</td><td>${cell(o.e63)}</td>
+    return `<tr class="${i < 3 ? "fc-top" : i >= n - 3 ? "fc-bot" : ""}"><td class="fc-sn"><span class="fc-rk">${i + 1}</span>${entG("sec", o.name)}<small>${o.n} stocks</small></td><td>${cell(o.e21)}</td><td>${cell(o.e63)}</td>
       <td class="fc-why">${o.why.length ? o.why.map(([k, c]) => `<span class="${c > 0 ? "up" : "dn"}"><i aria-hidden="true">${c > 0 ? "+" : "−"}</i>${esc(FC_REASON[k](o, o.avg, c))}</span>`).join("") : `<span class="fc-mute">Close to the average on every input</span>`}</td>
       <td class="fc-res">${r.profit_up != null ? `Profit up at <b>${Math.round(r.profit_up * 100)}%</b> of ${r.n}<small>Median change ${fcP(r.profit_g, 0)}${r.pe ? `, P/E ${r.pe.toFixed(0)}` : ""}</small>` : "–"}</td>
-      <td class="fc-nw">${nw ? `<button type="button" class="ent" onclick="openGroup('sec','${esc(o.name)}')">${nw.n} headline${nw.n === 1 ? "" : "s"}</button><small>${nw.up} rising, ${nw.dn} falling words</small>` : `<span class="fc-mute">None linked</span>`}</td></tr>`; }).join("");
+      <td class="fc-nw">${nw ? `<button type="button" class="ent" onclick="openGroup('sec','${esc(o.name)}')">${nw.n} headline${nw.n === 1 ? "" : "s"}</button>${nw.last ? `<a class="fc-nl" href="${esc(nw.last.u)}" target="_blank" rel="noopener noreferrer">${esc(nw.last.t)}</a>` : ""}` : `<span class="fc-mute">No headline names one of its companies</span>`}</td></tr>`; }).join("");
   return `<section class="ix-sec"><header class="ix-h"><h2>Sectors: which may do better or worse than the rest</h2>
     <p>Estimated return against the average sector, with the range 8 in 10 past estimates fell within. The estimate uses each sector's recent strength against the Nifty, how many of its stocks are in uptrends, and how it has reacted to crude, the rupee and US yields. Ordered by the next-month estimate.</p></header>
-    <div class="fc-scroll"><table class="fc-t"><thead><tr><th>Sector</th><th>Next month</th><th>Next 3 months</th><th>Main reasons <span class="fc-key"><i class="up">+</i> raises the estimate <i class="dn">−</i> lowers it</span></th><th>Latest results<span class="fc-tag">not in the estimate</span></th><th>News, 7 days<span class="fc-tag">not in the estimate</span></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="fc-scroll"><table class="fc-t"><thead><tr><th>Sector</th><th>Next month</th><th>Next 3 months</th><th>Main reasons <span class="fc-key"><i class="up">+</i> raises the estimate <i class="dn">−</i> lowers it</span></th><th>Latest results<span class="fc-tag">not in the estimate</span></th><th>${news._full ? "News, last 7 days" : "News, latest headlines"}<span class="fc-tag">not in the estimate</span></th></tr></thead><tbody>${body}</tbody></table></div>
     <p class="fc-test ${t1 && t1.t >= 2 ? "pos" : "neu"}"><b>Tested on ${t1.start.slice(0, 4)}–${t1.end.slice(0, 4)}.</b> The 3 sectors ranked highest beat the 3 ranked lowest by ${fcP(t1.spread)} a month on average, in ${Math.round(t1.spread_hit * 100)}% of months; over 3 months by ${fcP(t3.spread)}, in ${Math.round(t3.spread_hit * 100)}% of periods. Rank agreement with what happened: ${t1.ic.toFixed(2)} (how sure: ${t1.t}); last 3 months' leaders alone scored ${t1.ic_mom.toFixed(2)}. A modest edge: about 4 times in 10 the ranking was wrong.</p>
-    <p class="ix-fine">Results: the latest quarter's net profit against the same quarter a year earlier, companies covered here (Yahoo Finance). News: headlines naming a company in the sector; “rising” and “falling” count words such as jumps, beats, falls or misses, not a judgement of the story.</p></section>`;
+    <p class="ix-fine">Rank 1 is the highest next-month estimate. The estimates differ by fractions of a percent because the method shrinks them towards the average; the ranking is what was tested. Results: the latest quarter's net profit against the same quarter a year earlier, companies covered here (Yahoo Finance). News: headlines that name one of the sector's companies (not stories linked only through a topic such as crude), with the newest shown.</p></section>`;
+}
+// a difference is called better or worse only when it is beyond normal variation (|t| >= 2 on non-overlapping periods)
+function fcSig(s) {
+  if (s.t == null) return `<span class="fc-mute">Not tested yet</span>`;
+  const d = s.mean - s.mean_all, sig = Math.abs(s.t) >= 2;
+  return sig ? `<span class="${inCl(d)}">${d > 0 ? "Better than usual" : "Worse than usual"}</span><small>how sure ${s.t.toFixed(1)}, about ${s.n_indep} separate periods</small>`
+    : `<span class="fc-mute">Within normal variation</span><small>how sure ${s.t.toFixed(1)}; needs 2 or more</small>`;
 }
 function fcDrivers(h) {
   const D = FC.drivers || [], used = new Set(FC.nifty.inputs);
@@ -728,11 +740,11 @@ function fcDrivers(h) {
     return `<tr><td>${esc(d.label)}${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}</td><td class="fc-num">${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)}</td>
       <td><span class="fc-pr" title="Higher than ${Math.round(d.pct * 100)}% of trading days since ${FC.nifty.first.slice(0, 4)}"><i style="left:${(d.pct * 100).toFixed(1)}%"></i></span><small>${d.pct < 0.2 ? "Low" : d.pct > 0.8 ? "High" : "Middle"} for history</small></td>
       <td><span class="${inCl(s.med)}">${fcP(s.med)}</span> <small>rose ${Math.round(s.pup * 100)}%</small></td><td class="fc-mute">${fcP(s.med_all)} <small>rose ${Math.round(s.pup_all * 100)}%</small></td>
-      <td class="${Math.abs(diff) < 0.004 ? "fc-mute" : inCl(diff)}">${Math.abs(diff) < 0.004 ? "About the same" : diff > 0 ? "Better than usual" : "Worse than usual"}</td></tr>`; }).join("");
+      <td>${fcSig(s)}</td></tr>`; }).join("");
   const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
-  return `<section class="ix-sec"><header class="ix-h"><h2>What the estimate is built from</h2><p>Each reading today, where it sits in history, and what the Nifty did over the ${FC_HL[h]} after readings in the same fifth of history. One reading at a time; the estimate above uses them together. “Context only” readings are shown but were left out by the 2011–2018 test.</p></header>
+  return `<section class="ix-sec"><header class="ix-h"><h2>What the estimate is built from</h2><p>Each reading today, where it sits in history, and what the Nifty did over the ${FC_HL[h]} after readings in the same fifth of history (median, and how often it rose). A difference is called better or worse only when it is larger than normal variation, judged on periods that do not overlap. One reading at a time; the estimate above uses them together. “Context only” readings are shown but were left out by the 2011–2018 test.</p></header>
     <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
-    <div class="fc-scroll"><table class="fc-t fc-d"><thead><tr><th>Reading</th><th>Today</th><th>Against history</th><th>After similar readings</th><th>All periods</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="fc-scroll"><table class="fc-t fc-d"><thead><tr><th>Reading</th><th>Today</th><th>Against history</th><th>After similar readings</th><th>All periods</th><th>Difference</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 function fcAnalogs(h) {
   const o = FC.nifty.h[h], id = "fc-an";
@@ -741,35 +753,50 @@ function fcAnalogs(h) {
     <button type="button" class="btn ghost sm" aria-expanded="${open}" onclick="inTog('${id}')">${open ? "Hide the list" : "Show the list"}</button>
     ${open ? `<ul class="fc-an">${o.analogs.map((a) => `<li><span>${inDate(a.d)}</span><b class="${inCl(a.r)}">${fcP(a.r)}</b></li>`).join("")}</ul>` : ""}</section>`;
 }
+function niceTicks(lo, hi, n) {   // round steps (1, 2, 2.5, 5 x 10^k) covering lo..hi
+  const raw = (hi - lo) / Math.max(1, n), p = Math.pow(10, Math.floor(Math.log10(raw))), st = [1, 2, 2.5, 5, 10].map((m) => m * p).find((x) => x >= raw) || raw;
+  const out = []; for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-12; v += st) out.push(+v.toFixed(10)); return out;
+}
 function fcTrack(h) {
   const T = FC.nifty.track[h], S = T.series || [], t = T.test; if (S.length < 10) return "";
-  const W = 760, Hh = 230, pl = 40, pr = 10, pt = 10, pb = 22, ys = S.flatMap((r) => [r.q[0], r.q[4], r.a]).filter((v) => v != null).sort((a, b) => a - b);
-  const lo = ys[Math.floor(ys.length * 0.01)], hi = ys[Math.ceil(ys.length * 0.99) - 1], cl = (v) => Math.max(lo, Math.min(hi, v));
-  const X = (i) => pl + i / (S.length - 1) * (W - pl - pr), Y = (v) => pt + (hi - cl(v)) / (hi - lo) * (Hh - pt - pb);
+  const W = fitW("fct", 760), Hh = 240, pl = 46, pr = 12, pt = 12, pb = 26;
+  const ys = S.flatMap((r) => [r.q[0], r.q[4], r.a]).filter((v) => v != null).sort((a, b) => a - b);
+  // the scale covers 98% of the numbers so one crash does not flatten the rest; points beyond it are drawn as arrows on the edge
+  const lo = Math.min(-0.02, ys[Math.floor(ys.length * 0.01)]), hi = Math.max(0.02, ys[Math.ceil(ys.length * 0.99) - 1]);
+  const X = (i) => pl + i / (S.length - 1) * (W - pl - pr), Y = (v) => pt + (hi - Math.max(lo, Math.min(hi, v))) / (hi - lo) * (Hh - pt - pb);
   const band = S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[4]).toFixed(1)}`).join(" ") + " " + S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[0]).toFixed(1)}`).reverse().join(" ");
   const mid = S.map((r, i) => `${X(i).toFixed(1)},${Y(r.q[2]).toFixed(1)}`).join(" ");
-  const dots = S.map((r, i) => { const out = r.a < r.q[0] || r.a > r.q[4]; return `<circle cx="${X(i).toFixed(1)}" cy="${Y(r.a).toFixed(1)}" r="${out ? 2.4 : 1.6}" class="${out ? "fc-out" : "fc-in"}"><title>${inDate(r.d)}: estimate ${fcP(r.q[0])} to ${fcP(r.q[4])}, actual ${fcP(r.a)}</title></circle>`; }).join("");
+  let clipped = 0;
+  const dots = S.map((r, i) => { const out = r.a < r.q[0] || r.a > r.q[4], x = X(i).toFixed(1), tip = `<title>${inDate(r.d)}: range ${fcP(r.q[0])} to ${fcP(r.q[4])}, actual ${fcP(r.a)}</title>`;
+    if (r.a > hi || r.a < lo) { clipped++; const y = r.a > hi ? pt : Hh - pb; return `<path d="M${x},${y} l-4,${r.a > hi ? 7 : -7} l8,0 z" class="fc-out">${tip}</path>`; }
+    return `<circle cx="${x}" cy="${Y(r.a).toFixed(1)}" r="${out ? 2.6 : 1.8}" class="${out ? "fc-out" : "fc-in"}">${tip}</circle>`; }).join("");
   const yrs = []; let py = ""; S.forEach((r, i) => { const y = r.d.slice(0, 4); if (y !== py) { yrs.push([i, y]); py = y; } });
-  const grid = [lo, 0, hi].map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${v === 0 ? "fc-g0" : "fc-g"}"/><text x="${pl - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${fcP(v, 0)}</text>`).join("");
+  const grid = niceTicks(lo, hi, 5).map((v) => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="${Math.abs(v) < 1e-9 ? "fc-g0" : "fc-g"}"/><text x="${pl - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${Math.abs(v) < 1e-9 ? "0%" : fcP(v, 0)}</text>`).join("");
+  const xl = yrs.filter(([i], k) => k === 0 || X(i) - X(yrs[k - 1][0]) > 40).map(([i, y]) => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${Hh - pb}" y2="${Hh - pb + 4}" class="fc-g0"/><text x="${X(i).toFixed(1)}" y="${Hh - 8}" class="fc-yr">${y}</text>`).join("");
   const cal = (t.cal || []).map((c) => `<tr><td>${Math.round(c.lo * 100)}–${Math.round(c.hi * 100)}%</td><td>${Math.round(c.pred * 100)}%</td><td>${Math.round(c.act * 100)}%</td><td class="fc-mute">${c.n}</td></tr>`).join("");
-  return `<section class="ix-sec"><header class="ix-h"><h2>Track record: every weekly estimate since ${t.start.slice(0, 4)}</h2><p>The shaded band is the 8-in-10 range the method gave each week, using only what was known that day; the line is its middle estimate; each dot is what the Nifty then did over the ${FC_HL[h]}. Red dots fell outside the range; the few beyond the scale (such as March 2020) sit on its edge.</p></header>
-    <svg class="fc-svg" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Weekly estimates against outcomes">${grid}<polygon points="${band}" class="fc-band"/><polyline points="${mid}" class="fc-midl"/>${dots}${yrs.map(([i, y]) => `<text x="${X(i).toFixed(1)}" y="${Hh - 6}" class="fc-yr">${y}</text>`).join("")}</svg>
-    <div class="fc-stats"><div><b>${Math.round(t.cover80 * 100)}%</b><span>of outcomes inside the range (aim 80%)</span></div><div><b>${Math.round(t.cover50 * 100)}%</b><span>inside the middle half (aim 50%)</span></div>
-      <div><b>${Math.round(t.hit * 100)}%</b><span>right on up or down (always “up”: ${Math.round(t.hit_always_up * 100)}%)</span></div><div><b>${t.skill > 0 ? "+" : ""}${(t.skill * 100).toFixed(1)}%</b><span>better than the all-history range (above 0 = better)</span></div></div>
+  const sk = t.skill * 100;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Track record: every weekly estimate since ${t.start.slice(0, 4)}</h2><p>The shaded band is the 8-in-10 range the method gave each week, using only what was known that day; the line is its middle estimate; each dot is what the Nifty then did over the ${FC_HL[h]}. Red marks fell outside the range${clipped ? `; ${clipped} beyond the scale (such as March 2020) are arrows on its edge` : ""}.</p></header>
+    <div class="fc-chart" data-fit="fct"><svg class="fc-svg" viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" role="img" aria-label="Weekly estimates against outcomes">${grid}<polygon points="${band}" class="fc-band"/><polyline points="${mid}" class="fc-midl"/>${dots}${xl}</svg></div>
+    <div class="fc-stats"><div><b>${Math.round(t.cover80 * 100)}%</b><span>of outcomes inside the 8-in-10 range (aim: 80%)</span></div><div><b>${Math.round(t.cover50 * 100)}%</b><span>inside the middle half (aim: 50%)</span></div>
+      <div><b>${Math.round(t.hit * 100)}%</b><span>right on up or down; always saying “up” was right ${Math.round(t.hit_always_up * 100)}%</span></div><div><b>${sk >= 0 ? "+" : "−"}${Math.abs(sk).toFixed(1)}%</b><span>how much closer the ranges were than simply using every past period's range (0 = no better)</span></div></div>
     ${cal ? `<details class="fc-cal"><summary>When it said a rise was this likely, how often did one follow?</summary><table class="fc-t"><thead><tr><th>Said</th><th>Average said</th><th>Happened</th><th>Weeks</th></tr></thead><tbody>${cal}</tbody></table></details>` : ""}
-    <p class="ix-fine">Weekly estimates overlap (a 3-month window spans 13 weeks), so the ${t.n} weeks are worth roughly ${Math.round(t.n * 5 / +h)} independent tries. Settings were chosen on ${T.train.start.slice(0, 4)}–2018 only.</p></section>`;
+    <p class="ix-fine">Weekly estimates overlap (a ${h === "21" ? "one-month window spans about 4 weeks" : "3-month window spans 13 weeks"}), so the ${t.n} weeks are worth roughly ${Math.round(t.n * 5 / +h)} independent tries. Settings were chosen on ${T.train.start.slice(0, 4)}–2018 only.</p></section>`;
 }
 function fcLive() {
-  const N = LIVE; const rows = [];
+  const N = LIVE; const rows = [], now = Date.now();
   if (N) for (const t of N.themes || []) { const per = (t.total || 0) / (N.days || 7); if (per >= 3) rows.push({ t, r: (t.day || 0) / per }); }
   rows.sort((a, b) => b.r - a.r);
-  const heat = rows.slice(0, 5).map(({ t, r }) => { const lead = (t.stories || []).slice().sort((a, b) => String(b.d || "").localeCompare(String(a.d || "")))[0];
-    return `<li><div class="fc-lh"><button type="button" class="ns-th" onclick="inTheme('${t.id}')">${esc(t.short || t.name)}</button><span class="${r >= 1.3 ? "fc-hot" : "fc-mute"}">${t.day || 0} stories today, ${r >= 1.3 ? (r).toFixed(1) + "× the usual pace" : r < 0.7 ? "quieter than usual" : "about the usual pace"}</span></div>
-      ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a>` : ""}</li>`; }).join("");
+  const heat = rows.slice(0, 5).map(({ t, r }) => {
+    // lead: the story carried by the most outlets in the last 24 hours (newest breaks a tie), not simply the newest
+    const day = (t.stories || []).filter((x) => x.d && now - Date.parse(x.d) < 864e5), pool = day.length ? day : (t.stories || []);
+    const lead = pool.slice().sort((a, b) => (Math.min(b.n || 1, 8) - Math.min(a.n || 1, 8)) || String(b.d || "").localeCompare(String(a.d || "")))[0];
+    return `<li><div class="fc-lh"><button type="button" class="ns-th" onclick="inTheme('${t.id}')">${esc(t.short || t.name)}</button><span class="${r >= 1.3 ? "fc-hot" : "fc-mute"}">${t.day || 0} stories in the last 24 hours, ${r >= 1.3 ? r.toFixed(1) + "× its daily average this week" : r < 0.7 ? "quieter than its daily average" : "about its daily average"}</span></div>
+      ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a><div class="ix-fine">${esc(lead.s || "")}${lead.n > 1 ? `, ${lead.n} outlets` : ""}${lead.d ? `, ${inAgo(lead.d)}` : ""}</div>` : ""}</li>`; }).join("");
+  const sess = MKT ? (MKT.market_open ? "today, about 15 minutes delayed" : "in the latest session") : "";
   const mk = ["BZ=F", "INR=X", "^INDIAVIX", "^GSPC", "^TNX", "GC=F"].map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="openIndex('${k}')">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
-  return `<section class="ix-sec"><header class="ix-h"><h2>What could move these numbers: live, and not in the estimates</h2><p>News, politics and policy cannot be tested on 18 years of history the way prices can, so they are shown here beside the estimates instead of being mixed into them. Updated with the news feed.</p></header>
-    <h3 class="fc-h3">Busiest news themes today</h3>${N ? `<ul class="fc-heat">${heat}</ul>` : `<p class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</p>`}
-    <h3 class="fc-h3">Global markets today</h3><div class="fc-mk">${mk}</div></section>`;
+  return `<section class="ix-sec"><header class="ix-h"><h2>What could move these numbers: live, and not in the estimates</h2><p>News, politics and policy cannot be tested on 18 years of history the way prices can, so they are shown here beside the estimates instead of being mixed into them. Updated with the news feed${N ? `, last ${inAgo(N.updated)}` : ""}.</p></header>
+    <h3 class="fc-h3">Busiest news themes</h3>${N ? `<ul class="fc-heat">${heat}</ul>` : `<p class="ix-empty">${esc(IV.feedErr || "Loading the latest headlines…")}</p>`}
+    <h3 class="fc-h3">Global markets ${esc(sess)}</h3><div class="fc-mk">${mk}</div>${MKT ? `<p class="ix-fine">Prices updated ${inAgo(MKT.updated)}. Select one for its chart.</p>` : ""}</section>`;
 }
 function fcMethod() {
   const N = FC.nifty, inp = N.inputs.map((k) => (FC.feat[k] || {}).label || k).join("; ");
@@ -832,13 +859,21 @@ function soVerdictLine(h) {
   const t = SO.track[h].test; if (!t) return "";
   return `Tested on ${t.start.slice(0, 4)}–${t.end.slice(0, 4)}: the tenth of shares ranked highest beat the tenth ranked lowest by ${inPct(t.spread * 100)} on average over ${h === "21" ? "a month" : "3 months"}, in ${Math.round(t.spread_hit * 100)}% of ${h === "21" ? "months" : "periods"} (rank agreement ${t.ic.toFixed(2)}, how sure ${t.t}).`;
 }
-function soSeasStrip(r, opts) {
-  opts = opts || {}; const M = SO.months, now = new Date().getMonth(), next = [now, (now + 1) % 12, (now + 2) % 12];
-  const mx = Math.max(30, ...r.sx.filter((v) => v != null).map(Math.abs));
-  return `<div class="so-ss" role="table" aria-label="Average return by calendar month">${M.map((m, i) => { const x = r.sx[i], a = r.sm[i], tone = x == null ? "" : x > 0 ? "up" : "dn", al = x == null ? 0 : Math.min(1, Math.abs(x) / mx);
-    return `<div class="so-m${next.includes(i) ? " nx" : ""}" role="row" title="${m}: average ${a == null ? "–" : inPct(a / 10)} (rose in ${r.su[i] ?? "–"}% of years); against the Nifty ${x == null ? "–" : inPct(x / 10)} (beat it in ${r.sb[i] ?? "–"}% of years)">
-      <span class="so-ml">${m}</span><span class="so-mb ${tone}" style="--a:${(0.12 + al * 0.78).toFixed(2)}">${x == null ? "–" : inPct(x / 10, 1)}</span><span class="so-mu">${r.sb[i] == null ? "" : r.sb[i] + "%"}</span></div>`; }).join("")}</div>
-    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years, and below it the share of years it beat the Nifty. The next three months are outlined. With ${r.n} years, each month rests on ${r.n} numbers, so one big year can swing an average.</p>`;
+// how many calendar months must agree before a seasonal pattern is called consistent: with 12 months tested per share,
+// |t| >= 2.5 leaves about 1 false call in 7 shares; below that a month's average is shown but not called a pattern
+const SO_TSIG = 2.5;
+function soSeasStrip(r) {
+  const M = SO.months, now = new Date().getMonth(), next = [now, (now + 1) % 12, (now + 2) % 12];
+  const have = r.sx.filter((v) => v != null).length;
+  if (have < 12) return `<p class="ix-empty">A seasonal pattern needs at least 5 years of each calendar month; this share has ${r.n || 0} ${r.n === 1 ? "year" : "years"} of prices${have ? ` (enough for ${have} of 12 months)` : ""}.</p>`;
+  const mx = Math.max(30, ...r.sx.map(Math.abs)), st = r.st || [];
+  const sig = M.map((_, i) => st[i] != null && Math.abs(st[i] / 10) >= SO_TSIG);
+  const cells = M.map((m, i) => { const x = r.sx[i], a = r.sm[i], tone = x > 0 ? "up" : "dn", al = Math.min(1, Math.abs(x) / mx), t = st[i] != null ? st[i] / 10 : null;
+    return `<div class="so-m${next.includes(i) ? " nx" : ""}${sig[i] ? " sig" : ""}" role="row" title="${m}: average ${inPct(a / 10)} (rose in ${r.su[i]}% of years); against the Nifty ${inPct(x / 10)}, beat it in ${r.sb[i]}% of years${t != null ? `; how sure ${t.toFixed(1)}` : ""}">
+      <span class="so-ml">${m}</span><span class="so-mb ${tone}" style="--a:${(0.12 + al * 0.78).toFixed(2)}">${inPct(x / 10, 1)}</span><span class="so-mu">${r.sb[i]}%${sig[i] ? " ●" : ""}</span></div>`; }).join("");
+  const ns = sig.filter(Boolean).length, nxt = next.filter((i) => sig[i]).map((i) => `${M[i]} (${inPct(r.sx[i] / 10)} against the Nifty, beat it in ${r.sb[i]}% of ${r.n} years)`);
+  return `<div class="so-ss" role="table" aria-label="Average return against the Nifty by calendar month">${cells}</div>
+    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years; below it, the share of years it beat the Nifty. The next three months are outlined. ${ns ? `● marks a month consistent enough to stand out from luck (how sure ${SO_TSIG} or more across years): ${ns} of 12.` : "No month stands out from luck (none reaches how sure " + SO_TSIG + " across years); read the colours as history, not a pattern."}${nxt.length ? ` Coming up: ${esc(nxt.join("; "))}.` : ""}</p>`;
 }
 function soPanel(sym, compact) {
   if (SO === null) { loadSO(); return `<p class="ix-empty">Loading the outlook…</p>`; }
@@ -849,9 +884,9 @@ function soPanel(sym, compact) {
     return `<div class="so-e"><div class="so-k">${h === "21" ? "Next month" : "Next 3 months"}</div>
       <div class="so-big"><span class="${inCl(p)}">${soBp(p)}</span><small>against the typical share</small></div>
       <div class="so-rank" title="Ranked against ${ixN(SO.eligible_today)} shares"><i style="left:${pct}%"></i></div><div class="so-rl"><span>Lowest</span><b>${pct >= 50 ? "Top " + Math.max(1, 100 - pct) + "%" : "Bottom " + Math.max(1, pct) + "%"} of ${ixN(SO.eligible_today)} shares</b><span>Highest</span></div>
-      <p class="so-rg">8 in 10 similar estimates ended between <b>${soBp(lo, 0)}</b> and <b>${soBp(hi, 0)}</b> against the typical share.</p>
+      <p class="so-rg">In testing, 8 in 10 outcomes for estimates like this ended between <b>${soBp(lo, 0)}</b> and <b>${soBp(hi, 0)}</b> against the typical share.</p>
       ${why.length ? `<ul class="so-why">${why.map((x) => `<li class="${x.c > 0 ? "up" : "dn"}"><i aria-hidden="true">${x.c > 0 ? "+" : "−"}</i>${esc(SO_TXT[x.k][x.hi ? 0 : 1])}${x.k === "seas" && r.ss ? ` (${r.ss[2]} years)` : ""}</li>`).join("")}</ul>` : ""}</div>`; };
-  const typ = r.typ ? `<p class="ix-fine">Its own moves over the last 3 years: 8 in 10 one-month moves between ${soBp(r.typ[0], 0)} and ${soBp(r.typ[1], 0)}; three-month moves between ${soBp(r.typ[2], 0)} and ${soBp(r.typ[3], 0)}. Add the market's own move (see the Outlook tab) to these.</p>` : "";
+  const yrs = Math.min(3, r.n || 3), typ = r.typ ? `<p class="ix-fine">Its own moves over the last ${yrs === 3 ? "3 years" : yrs <= 1 ? "year" : yrs + " years"}: 8 in 10 one-month moves between ${soBp(r.typ[0], 0)} and ${soBp(r.typ[1], 0)}; three-month moves between ${soBp(r.typ[2], 0)} and ${soBp(r.typ[3], 0)}. Add the market's own move (see the Outlook tab) to these.</p>` : "";
   const t = SO.track["21"].test;
   return `<div class="so">${r.o ? `<div class="so-two">${est("21", 0)}${est("63", 4)}</div>${typ}
     <p class="fc-test ${t && t.t >= 2 ? "pos" : "neu"}"><b>How reliable.</b> ${soVerdictLine("21")} Estimates for single shares are a small tilt inside a wide range: the range matters more than the middle. <span class="fc-mute">Key: <i class="so-k-up">+</i> raises the estimate, <i class="so-k-dn">−</i> lowers it.</span></p>`
@@ -880,23 +915,29 @@ function soLists() {
     ${hold.length ? `<h3 class="fc-h3">Your holdings and watchlist</h3><ul class="ml so-l">${hold.sort((a, b) => b[1].o[j] - a[1].o[j]).map(([s, r]) => li(s, r)).join("")}</ul>` : ""}
     <div class="so-cols"><div><h3 class="fc-h3">Ranked highest</h3><ul class="ml so-l">${all.slice(0, 15).map(([s, r]) => li(s, r)).join("")}</ul></div>
       <div><h3 class="fc-h3">Ranked lowest</h3><ul class="ml so-l">${all.slice(-15).reverse().map(([s, r]) => li(s, r)).join("")}</ul></div></div>
-    <p class="ix-fine">${ixN(all.length)} shares with an estimate (₹20 or more, at least ₹50 lakh traded a day). Each figure is against the typical share (half of all shares are estimated above it, half below); the small numbers are the range 8 in 10 similar estimates fell within. Select a share for its chart and full outlook.</p></section>`;
+    <p class="ix-fine">${ixN(all.length)} shares with an estimate (₹20 or more, at least ₹50 lakh traded a day). Each figure is against the typical share (half of all shares are estimated above it, half below); the small numbers are the range 8 in 10 outcomes for such estimates fell within in testing. Select a share for its chart and full outlook.</p></section>`;
 }
 function soSeasonality() {
   if (!SO || !SO.nifty_seas || !SO.nifty_seas.length) return "";
   const N = SO.nifty_seas, now = new Date().getMonth(), nx = [now, (now + 1) % 12, (now + 2) % 12];
-  const mx = Math.max(...N.map((x) => Math.abs(x.avg || 0)), 0.01);
-  const nrow = N.map((x, i) => `<div class="so-m${nx.includes(i) ? " nx" : ""}" title="${x.m}: average ${inPct(x.avg * 100)}, median ${inPct(x.med * 100)}, rose in ${Math.round(x.up * 100)}% of ${x.n} years"><span class="so-ml">${x.m}</span><span class="so-mb ${x.avg > 0 ? "up" : "dn"}" style="--a:${(0.12 + Math.min(1, Math.abs(x.avg) / mx) * 0.78).toFixed(2)}">${inPct(x.avg * 100)}</span><span class="so-mu">${Math.round(x.up * 100)}%</span></div>`).join("");
-  // shown against the average sector that month: equal-weighted survivors beat the Nifty in most months, which would hide the rotation
-  const S0 = Object.entries(SO.sector_seas || {}).sort((a, b) => a[0].localeCompare(b[0]));
-  const avgM = SO.months.map((_, i) => { const v = S0.map(([, x]) => x[i]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
-  const S = S0.map(([g, v]) => [g, v.map((x, i) => (x == null || avgM[i] == null ? null : x - avgM[i]))]);
-  const smx = Math.max(0.005, ...S.flatMap(([, v]) => v.filter((x) => x != null).map(Math.abs)));
-  const cell = (v, i) => `<td class="${nx.includes(i) ? "nx" : ""}"><span class="so-hm ${v == null ? "" : v > 0 ? "up" : "dn"}" style="--a:${v == null ? 0 : (0.1 + Math.min(1, Math.abs(v) / smx) * 0.8).toFixed(2)}">${v == null ? "–" : inPct(v * 100, 1)}</span></td>`;
-  const t21 = SO.track["21"].test, sIC = t21 && t21.single ? t21.single.seas : null;
-  return `<section class="ix-sec"><header class="ix-h"><h2>Seasonal patterns</h2><p>How the market and each sector have done in each calendar month. ${sIC != null ? `Tested as a predictor for single shares (same weeks in the last 10 years), seasonality's rank agreement with the next month was ${sIC.toFixed(3)} on ${t21.start.slice(0, 4)}–${t21.end.slice(0, 4)}: ${Math.abs(sIC) < 0.01 ? "close to nothing on its own" : sIC > 0 ? "a small positive signal" : "slightly the wrong way"}.` : ""}</p></header>
-    <h3 class="fc-h3">Nifty 50 by month, since ${N[0] && N[0].n ? new Date().getFullYear() - N[0].n : ""}</h3><div class="so-ss">${nrow}</div><p class="ix-fine">Average monthly return, and below it the share of years the month was positive. The next three months are outlined.</p>
-    ${S.length ? `<h3 class="fc-h3">Sectors against the average sector, by month</h3><div class="fc-scroll"><table class="so-hmt"><thead><tr><th>Sector</th>${SO.months.map((m, i) => `<th class="${nx.includes(i) ? "nx" : ""}">${m}</th>`).join("")}</tr></thead><tbody>${S.map(([g, v]) => `<tr><td>${entG("sec", g)}</td>${v.map(cell).join("")}</tr>`).join("")}</tbody></table></div><p class="ix-fine">Equal-weighted shares in each sector: the month's average return against the Nifty 50, minus the same figure for the average sector, so green means the sector has tended to lead in that month. Only shares listed today are included.</p>` : ""}</section>`;
+  const mx = Math.max(...N.map((x) => Math.abs(x.avg || 0)), 0.01), nsig = (x) => x.t != null && Math.abs(x.t) >= 2;
+  const nrow = N.map((x, i) => `<div class="so-m${nx.includes(i) ? " nx" : ""}${nsig(x) ? " sig" : ""}" title="${x.m}: average ${inPct(x.avg * 100)}, median ${inPct(x.med * 100)}, rose in ${Math.round(x.up * 100)}% of ${x.n} years${x.t != null ? `; against the other months, how sure ${x.t.toFixed(1)}` : ""}"><span class="so-ml">${x.m}</span><span class="so-mb ${x.avg > 0 ? "up" : "dn"}" style="--a:${(0.12 + Math.min(1, Math.abs(x.avg) / mx) * 0.78).toFixed(2)}">${inPct(x.avg * 100)}</span><span class="so-mu">${Math.round(x.up * 100)}%${nsig(x) ? " ●" : ""}</span></div>`).join("");
+  const nS = N.filter(nsig);
+  // sectors: computed year by year as each sector's month minus the average sector's month (new files); older files get the same done here
+  const S0 = Object.entries(SO.sector_seas || {}).sort((a, b) => a[0].localeCompare(b[0])), T = SO.sector_seas_t || null;
+  let S = S0;
+  if (!T) { const avgM = SO.months.map((_, i) => { const v = S0.map(([, x]) => x[i]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }); S = S0.map(([g, v]) => [g, v.map((x, i) => (x == null || avgM[i] == null ? null : x - avgM[i]))]); }
+  const smx = Math.max(0.005, ...S.flatMap(([, v]) => v.filter((x) => x != null).map(Math.abs))), cells = S.length * 12;
+  const ssig = (g, i) => T && T[g] && T[g][i] != null && Math.abs(T[g][i]) >= 3;
+  const cell = (g, v, i) => `<td class="${nx.includes(i) ? "nx" : ""}"><span class="so-hm ${v == null ? "" : v > 0 ? "up" : "dn"}${ssig(g, i) ? " sig" : ""}" style="--a:${v == null ? 0 : (0.1 + Math.min(1, Math.abs(v) / smx) * 0.8).toFixed(2)}" title="${esc(g)}, ${SO.months[i]}: ${v == null ? "not enough years" : inPct(v * 100, 1) + " against the average sector"}${T && T[g] && T[g][i] != null ? `, how sure ${T[g][i].toFixed(1)}` : ""}">${v == null ? "–" : inPct(v * 100, 1)}${ssig(g, i) ? " ●" : ""}</span></td>`;
+  const nCell = T ? S.reduce((k, [g]) => k + SO.months.filter((_, i) => ssig(g, i)).length, 0) : 0;
+  const t21 = SO.track["21"].test, sIC = t21 && t21.single ? t21.single.seas : null, sT = t21 && t21.single_t ? t21.single_t.seas : null;
+  const verdict = sIC == null ? "" : sT != null ? (sT >= 2 ? `a small but consistent signal (rank agreement ${sIC.toFixed(3)}, how sure ${sT.toFixed(1)})` : sT <= -2 ? `consistently the wrong way (how sure ${sT.toFixed(1)})` : `not distinguishable from luck (rank agreement ${sIC.toFixed(3)}, how sure ${sT.toFixed(1)})`) : `rank agreement ${sIC.toFixed(3)} (how sure not yet computed)`;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Seasonal patterns</h2><p>How the market and each sector have done in each calendar month.${verdict ? ` As a predictor for single shares (the same weeks in each of the last 10 years), seasonality was ${verdict} on ${t21.start.slice(0, 4)}–${t21.end.slice(0, 4)}; it is one of the inputs to the share estimates above, not a forecast on its own.` : ""}</p></header>
+    <h3 class="fc-h3">Nifty 50 by month, ${N[0].n} years</h3><div class="so-ss">${nrow}</div>
+    <p class="ix-fine">Average monthly return; below it, the share of years the month was positive. The next three months are outlined. ${nS.length ? `● marks a month that differs from the other months by more than luck (how sure 2 or more): ${nS.map((x) => x.m).join(", ")}. With 12 months tested, about 1 could do so by chance.` : "No month differs from the others by more than luck (how sure 2 or more); with " + N[0].n + " years per month the averages are history, not a rule."}</p>
+    ${S.length ? `<h3 class="fc-h3">Sectors against the average sector, by month</h3><div class="fc-scroll"><table class="so-hmt"><thead><tr><th>Sector</th>${SO.months.map((m, i) => `<th class="${nx.includes(i) ? "nx" : ""}">${m}</th>`).join("")}</tr></thead><tbody>${S.map(([g, v]) => `<tr><td>${entG("sec", g)}</td>${v.map((x, i) => cell(g, x, i)).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="ix-fine">Equal-weighted shares in each sector: the month's return minus the average sector's return that month, averaged over the years, so green means the sector has tended to lead in that month. ${T ? `● marks the ${nCell} of ${cells} cells consistent across years beyond luck (how sure 3 or more; at that bar about ${Math.max(0, Math.round(cells * 0.0027))} would pass by chance).` : ""} Only shares listed today are included, and a month needs 5 years of data.</p>` : ""}</section>`;
 }
 
 /* ----- entry point ----- */
@@ -933,7 +974,7 @@ function scrIns(sym, ex) {
   if (!pre && FUND) scrTech(sym, ex);
   const live = IV.chart[k], t = pre ? pre.t : live && live.t ? live.t : null;
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
-  const news = ex === "NSE" ? inAllStories().filter((x) => inLinks(x).sym.includes(sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : [];
+  const news = ex === "NSE" ? inStockNews(sym).named : [];
   const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
   const tabs = [["read", "Key readings"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
   const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");

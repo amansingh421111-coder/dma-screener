@@ -66,14 +66,14 @@ function entChart(C, fmt, maA, maB) {
   const N = (ENT_RANGES.find((r) => r[0] === EQ.range) || ENT_RANGES[2])[2], c = C.c, n = c.length, s0 = Math.max(0, n - N);
   const A = entSma(c, maA), B = entSma(c, maB), xs = c.slice(s0), a = A.slice(s0), b = B.slice(s0), d = C.dates.slice(s0), m = xs.length;
   const vals = xs.concat(a.filter((x) => x != null), b.filter((x) => x != null)), lo = Math.min(...vals), hi = Math.max(...vals);
-  const W = 600, H = 220, L = 6, R = 58, T = 10, Bm = 22, iw = W - L - R, ih = H - T - Bm, px = (i) => L + (m < 2 ? 0 : (i / (m - 1)) * iw), py = (v) => T + ih - ((v - lo) / (hi - lo || 1)) * ih;
+  const W = typeof fitW === "function" ? fitW("eqch", 600) : 600, H = 230, L = 6, R = 58, T = 10, Bm = 22, iw = W - L - R, ih = H - T - Bm, px = (i) => L + (m < 2 ? 0 : (i / (m - 1)) * iw), py = (v) => T + ih - ((v - lo) / (hi - lo || 1)) * ih;
   const line = (arr) => arr.map((v, i) => (v == null ? null : `${px(i).toFixed(1)},${py(v).toFixed(1)}`)).filter(Boolean).join(" ");
   const up = xs[m - 1] >= xs[0], grid = [hi, (hi + lo) / 2, lo].map((v) => `<line x1="${L}" x2="${W - R}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}" class="eq-gr"/><text x="${W - R + 6}" y="${(py(v) + 4).toFixed(1)}" class="eq-ax">${fmt(v)}</text>`).join("");
   const ticks = [0, Math.floor(m / 2), m - 1].map((i, j) => `<text x="${px(i).toFixed(1)}" y="${H - 6}" class="eq-ax" text-anchor="${j === 0 ? "start" : j === 2 ? "end" : "middle"}">${esc(entD(d[i]))}</text>`).join("");
   EQ.hover = { xs, a, b, d, px, py, m, L, iw, W, fmt, maA, maB };
   const chg = (xs[m - 1] / xs[0] - 1) * 100;
   return `<div class="eq-rng" role="group" aria-label="Chart range">${ENT_RANGES.map(([k, l]) => `<button type="button" aria-pressed="${EQ.range === k}" onclick="EQ.range='${k}';entDraw()">${l}</button>`).join("")}<span class="${chg >= 0 ? "pos" : "neg"}">${inPct(chg)} over this range</span></div>
-  <div class="eq-ch" onmousemove="entHover(event)" onmouseleave="entHover(null)" ontouchmove="entHover(event.touches[0])"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart with ${maA}-day and ${maB}-day averages">${grid}${ticks}
+  <div class="eq-ch" data-fit="eqch" onmousemove="entHover(event)" onmouseleave="entHover(null)" ontouchmove="entHover(event.touches[0])"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Price chart with ${maA}-day and ${maB}-day averages">${grid}${ticks}
    <polyline points="${line(b)}" class="eq-mb"/><polyline points="${line(a)}" class="eq-ma"/><polyline points="${line(xs)}" class="eq-pl ${up ? "up" : "dn"}"/><line id="eq-hl" x1="0" x2="0" y1="${T}" y2="${T + ih}" class="eq-hl" visibility="hidden"/><circle id="eq-hd" r="3.5" class="eq-hd ${up ? "up" : "dn"}" visibility="hidden"/></svg><div class="eq-tip" id="eq-tip" hidden></div></div>
   <div class="eq-lg"><span><i class="pl ${up ? "up" : "dn"}"></i>Price</span><span><i class="ma"></i>${maA}-day average</span><span><i class="mb"></i>${maB}-day average</span></div>`;
 }
@@ -116,7 +116,7 @@ function entStock(e) {
   const m44 = c && c.length >= 44 ? entSma(c, 44)[c.length - 1] : null, m200 = c && c.length >= 200 ? entSma(c, 200)[c.length - 1] : null;
   const ccy = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const hold = typeof openPos === "function" ? openPos().find((p) => p.symbol === sym && p.exchange === ex) : null, wl = typeof WL !== "undefined" ? WL.find((w) => w.symbol === sym && w.exchange === ex) : null;
-  const news = typeof inAllStories === "function" && ex === "NSE" ? inAllStories().filter((x) => inLinks(x).sym.includes(sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : [];
+  const news = typeof inAllStories === "function" && ex === "NSE" ? inStockNews(sym).named : [];
   const y = c ? c.slice(-252) : null, code = ex === "BSE" && EQ.bse ? EQ.bse[sym] : null;
   const head = `<div class="eq-h"><div><h2>${esc(sym)} <span class="tag ex">${ex}</span></h2><p>${esc(name)}</p>${F && F.sec ? `<p class="eq-sec">${entG("sec", F.sec)}${F.ind ? ` <span aria-hidden="true">›</span> ${entG("ind", F.ind)}` : ""}</p>` : ""}</div>
    <div class="eq-px"><b>${last != null ? ccy(last) : "–"}</b><span class="${inCl(d1)}">${d1 != null ? inPct(d1, 2) + " today" : ""}</span><small>${q && q.price != null ? "Screener price, about 15 minutes delayed in market hours" : C && C.dates ? "Close of " + entD(C.dates[C.dates.length - 1], true) : ""}</small></div></div>`;
@@ -194,4 +194,6 @@ function entDraw() {
   const body = e.t === "stock" ? entStock(e) : e.t === "index" ? entIndex(e) : entGroup(e);
   p.innerHTML = `<div class="eq-top">${EQ.stack.length > 1 ? `<button type="button" class="btn ghost sm" onclick="entBack()">‹ Back</button>` : ""}<span class="grow"></span><button type="button" class="eq-x" onclick="entClose()" aria-label="Close">✕</button></div><div class="eq-b">${body}</div>`;
   p.dataset.k = JSON.stringify(e); if (same) p.querySelector(".eq-b").scrollTop = sc;
+  const ch = p.querySelector("[data-fit]");   // the quote panel draws itself; measure its chart box the same way as the page does
+  if (ch && typeof FITW !== "undefined" && ch.clientWidth > 0 && Math.abs((FITW[ch.dataset.fit] || 0) - ch.clientWidth) > 6) { FITW[ch.dataset.fit] = ch.clientWidth; requestAnimationFrame(entDraw); }
 }
