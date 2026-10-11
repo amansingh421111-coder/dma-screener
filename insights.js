@@ -1,7 +1,7 @@
 /* Insights tab: a market desk. Live market tape, top stories linked to indices and stocks, a news desk by theme,
    market tables and readings, and a page per stock. Readings apply fixed rules to public numbers and cite the NISM
    workbook section each rule paraphrases. No buy/sell verdicts, no price targets.
-   Data: /api/dma?a=feed (live news), /api/dma?a=mkt (live prices), /insights.json, /fund.json, /names.json, /forecast.json (outlook),
+   Data: /api/dma?a=feed (live news), /api/dma?a=mkt (live prices), /insights.json, /fund.json, /names.json, /forecast.json (outlook), /stock_outlook.json (share outlook, seasonality),
    /api/dma?a=chart (price history for any stock), /api/dma?a=news (headlines for one company).
    Styles live in app.css. */
 const IV = { view: "overview", theme: "all", who: "", list: "top", linkF: "", stab: "summary", secPer: "rel3", secSrc: "index", shown: 30,
@@ -601,7 +601,7 @@ function inStocksView() {
   const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
    <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
    <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
-  const tabs = [["summary", "Summary"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
+  const tabs = [["summary", "Summary"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
   const rl = (L, pre) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, pre + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings.</p>`);
   let body = "";
@@ -611,7 +611,8 @@ function inStocksView() {
     const top = all.filter((r) => r.tone !== "neu").slice(0, 6);
     const ln = inStockLinked().slice(0, 4);
     body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
-  } else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
+  } else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : `<p class="ix-empty">The outlook covers NSE shares.</p>`;
+  else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
   else if (IV.stab === "fin") {
     const q = f && f.q && f.q.length ? `<h3>Quarterly results</h3><div class="tw"><table class="mt"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div>` : "";
     body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${rl(R.F, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
@@ -784,7 +785,7 @@ function inOutlookView() {
   const h = IV.fcH;
   return `<section class="ix-sec"><header class="ix-h"><h2>Outlook: the next month and the next 3 months</h2><p>Estimated from what happened after the past moments most like today, not from opinion. Each number comes with how it held up when tested on years it had not seen. Prices up to ${inDate(FC.nifty.asof)}.</p></header>
     <div class="fc-two">${fcNiftyCard("21")}${fcNiftyCard("63")}</div></section>
-    ${fcSectors()}${fcLive()}${fcDrivers(h)}${fcTrack(h)}${fcAnalogs(h)}${fcMethod()}`;
+    ${fcSectors()}${soLists()}${soSeasonality()}${fcLive()}${fcDrivers(h)}${fcTrack(h)}${fcAnalogs(h)}${fcMethod()}`;
 }
 function inOutlookCard() {
   if (FC === null) { loadFc(); return ""; }
@@ -794,6 +795,108 @@ function inOutlookCard() {
     ${fcNiftyCard("21", true)}
     <p class="fc-mini"><span>Ranked highest for next month:</span> ${top.map((o) => entG("sec", o.name)).join(", ")}</p><p class="fc-mini"><span>Ranked lowest:</span> ${bot.map((o) => entG("sec", o.name)).join(", ")}</p>
     <p class="ix-fine">${esc(fcVerdict(FC.nifty.track["21"].test).dir)}</p></section>`;
+}
+
+/* ----- share-level outlook and seasonality (stock_outlook.json, computed after each close by stock_outlook.py) ----- */
+let SO = null;
+async function loadSO() {
+  if (SO !== null) return; SO = {};
+  try { const r = await fetch("/stock_outlook.json", { cache: "no-cache" }); if (r.ok) { SO = await r.json(); SOMID = null; } } catch (e) {}
+  render();
+}
+const soBp = (v, d = 1) => (v == null ? "–" : inPct(v / 100, d));
+const SO_TXT = {   // [when the input is high, when it is low]
+  r1: ["Rose more than most shares last month", "Fell more than most shares last month"],
+  r3: ["Rose more than most shares over 3 months", "Fell more than most shares over 3 months"],
+  r6x: ["Strong 6-month run (before last month)", "Weak 6 months (before last month)"],
+  r12x: ["Strong 12-month run (before last month)", "Weak 12 months (before last month)"],
+  vs200: ["Well above its 200-day average", "Below its 200-day average"],
+  hi52: ["Close to its 52-week high", "Far below its 52-week high"],
+  vol: ["More volatile than most shares", "Steadier than most shares"],
+  seas: ["Has tended to beat the average share in these weeks of the year", "Has tended to lag the average share in these weeks of the year"],
+  sec: ["Its sector is among the strongest over 3 months", "Its sector is among the weakest over 3 months"],
+};
+// the model's numbers are against the median share; a skewed market makes the average estimate slightly positive,
+// so estimates are shown against today's middle estimate (half the shares above, half below)
+let SOMID = null;
+function soMid() { if (SOMID) return SOMID; const v = (j) => { const a = Object.values(SO.s).filter((r) => r.o).map((r) => r.o[j]).sort((x, y) => x - y); return a.length ? a[a.length >> 1] : 0; }; SOMID = [v(0), v(4)]; return SOMID; }
+function soRow(sym) {
+  const r = SO && SO.s ? SO.s[sym] : null; if (!r || !r.o || r._c) return r;
+  const m = soMid(); r.o = [r.o[0] - m[0], r.o[1], r.o[2] - m[0], r.o[3] - m[0], r.o[4] - m[1], r.o[5], r.o[6] - m[1], r.o[7] - m[1]]; r._c = true; return r;
+}
+function soReasons(r, h) {
+  const c = h === "63" ? r.c3 : r.c, w = SO.coef[h]; if (!c) return [];
+  return SO.feats.map((k, i) => ({ k, c: c[i], hi: w[k] ? c[i] / 10000 / w[k] > 0 : true })).filter((x) => Math.abs(x.c) >= 5).sort((a, b) => Math.abs(b.c) - Math.abs(a.c)).slice(0, 3);
+}
+function soVerdictLine(h) {
+  const t = SO.track[h].test; if (!t) return "";
+  return `Tested on ${t.start.slice(0, 4)}–${t.end.slice(0, 4)}: the tenth of shares ranked highest beat the tenth ranked lowest by ${inPct(t.spread * 100)} on average over ${h === "21" ? "a month" : "3 months"}, in ${Math.round(t.spread_hit * 100)}% of ${h === "21" ? "months" : "periods"} (rank agreement ${t.ic.toFixed(2)}, how sure ${t.t}).`;
+}
+function soSeasStrip(r, opts) {
+  opts = opts || {}; const M = SO.months, now = new Date().getMonth(), next = [now, (now + 1) % 12, (now + 2) % 12];
+  const mx = Math.max(30, ...r.sx.filter((v) => v != null).map(Math.abs));
+  return `<div class="so-ss" role="table" aria-label="Average return by calendar month">${M.map((m, i) => { const x = r.sx[i], a = r.sm[i], tone = x == null ? "" : x > 0 ? "up" : "dn", al = x == null ? 0 : Math.min(1, Math.abs(x) / mx);
+    return `<div class="so-m${next.includes(i) ? " nx" : ""}" role="row" title="${m}: average ${a == null ? "–" : inPct(a / 10)} (rose in ${r.su[i] ?? "–"}% of years); against the Nifty ${x == null ? "–" : inPct(x / 10)} (beat it in ${r.sb[i] ?? "–"}% of years)">
+      <span class="so-ml">${m}</span><span class="so-mb ${tone}" style="--a:${(0.12 + al * 0.78).toFixed(2)}">${x == null ? "–" : inPct(x / 10, 1)}</span><span class="so-mu">${r.sb[i] == null ? "" : r.sb[i] + "%"}</span></div>`; }).join("")}</div>
+    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years, and below it the share of years it beat the Nifty. The next three months are outlined. With ${r.n} years, each month rests on ${r.n} numbers, so one big year can swing an average.</p>`;
+}
+function soPanel(sym, compact) {
+  if (SO === null) { loadSO(); return `<p class="ix-empty">Loading the outlook…</p>`; }
+  if (!SO.s) return `<p class="ix-empty">The share outlook has not been computed yet. It updates after each close.</p>`;
+  const r = soRow(sym);
+  if (!r) return `<p class="ix-empty">No outlook for this share: it is not in the NSE equity list with enough price history.</p>`;
+  const est = (h, j) => { if (!r.o) return ""; const p = r.o[j], pct = r.o[j + 1], lo = r.o[j + 2], hi = r.o[j + 3], why = soReasons(r, h);
+    return `<div class="so-e"><div class="so-k">${h === "21" ? "Next month" : "Next 3 months"}</div>
+      <div class="so-big"><span class="${inCl(p)}">${soBp(p)}</span><small>against the typical share</small></div>
+      <div class="so-rank" title="Ranked against ${ixN(SO.eligible_today)} shares"><i style="left:${pct}%"></i></div><div class="so-rl"><span>Lowest</span><b>${pct >= 50 ? "Top " + Math.max(1, 100 - pct) + "%" : "Bottom " + Math.max(1, pct) + "%"} of ${ixN(SO.eligible_today)} shares</b><span>Highest</span></div>
+      <p class="so-rg">8 in 10 similar estimates ended between <b>${soBp(lo, 0)}</b> and <b>${soBp(hi, 0)}</b> against the typical share.</p>
+      ${why.length ? `<ul class="so-why">${why.map((x) => `<li class="${x.c > 0 ? "up" : "dn"}"><i aria-hidden="true">${x.c > 0 ? "+" : "−"}</i>${esc(SO_TXT[x.k][x.hi ? 0 : 1])}${x.k === "seas" && r.ss ? ` (${r.ss[2]} years)` : ""}</li>`).join("")}</ul>` : ""}</div>`; };
+  const typ = r.typ ? `<p class="ix-fine">Its own moves over the last 3 years: 8 in 10 one-month moves between ${soBp(r.typ[0], 0)} and ${soBp(r.typ[1], 0)}; three-month moves between ${soBp(r.typ[2], 0)} and ${soBp(r.typ[3], 0)}. Add the market's own move (see the Outlook tab) to these.</p>` : "";
+  const t = SO.track["21"].test;
+  return `<div class="so">${r.o ? `<div class="so-two">${est("21", 0)}${est("63", 4)}</div>${typ}
+    <p class="fc-test ${t && t.t >= 2 ? "pos" : "neu"}"><b>How reliable.</b> ${soVerdictLine("21")} Estimates for single shares are a small tilt inside a wide range: the range matters more than the middle. <span class="fc-mute">Key: <i class="so-k-up">+</i> raises the estimate, <i class="so-k-dn">−</i> lowers it.</span></p>`
+    : `<p class="ix-empty">No estimate today: the share did not meet the ₹${20} price and ₹50 lakh daily trading test at the last close, or has under a year of prices.</p>`}
+    ${compact ? "" : `<h4 class="so-h">Seasonal pattern</h4>${soSeasStrip(r)}`}</div>`;
+}
+function soLine(sym) {   // one line for the quote panel
+  if (SO === null) { loadSO(); return ""; }
+  const r = soRow(sym); if (!r || !r.o) return "";
+  return `<li><b>Outlook:</b> next month ${soBp(r.o[0])} against the typical share (${r.o[1] >= 50 ? "top " + Math.max(1, 100 - r.o[1]) : "bottom " + Math.max(1, r.o[1])}% of ${ixN(SO.eligible_today)}), 3 months ${soBp(r.o[4])}. <button type="button" class="ent" onclick="go('ins');inPick('${esc(sym)}','NSE');IV.stab='outlook';render()">Details</button></li>`;
+}
+/* lists for the Outlook tab: shares ranked highest and lowest, holdings, and seasonality tables */
+IV.soSec = ""; IV.soH = "21";
+function soLists() {
+  if (SO === null) { loadSO(); return `<section class="ix-sec"><p class="ix-empty">Loading the share outlook…</p></section>`; }
+  if (!SO.s) return "";
+  const h = IV.soH, j = h === "21" ? 0 : 4, all = Object.keys(SO.s).map((s) => [s, soRow(s)]).filter(([s, r]) => r.o && (!IV.soSec || r.sec === IV.soSec));
+  all.sort((a, b) => b[1].o[j] - a[1].o[j]);
+  const secs = [...new Set(Object.values(SO.s).map((r) => r.sec).filter(Boolean))].sort();
+  const li = (s, r) => `<li><button type="button" onclick="openStock('${esc(s)}','NSE')"><b>${esc(s)}</b><span class="ml-name">${esc(typeof inShort === "function" ? inShort(s) : "")}</span><span class="${inCl(r.o[j])} so-v">${soBp(r.o[j])}</span><small>${soBp(r.o[j + 2], 0)} to ${soBp(r.o[j + 3], 0)}</small></button></li>`;
+  const H = (typeof openPos === "function" ? openPos() : []).concat(typeof WL !== "undefined" ? WL : []).filter((p) => p.exchange !== "BSE");
+  const seen = new Set(), hold = H.filter((p) => !seen.has(p.symbol) && seen.add(p.symbol)).map((p) => [p.symbol, soRow(p.symbol)]).filter(([, r]) => r && r.o);
+  const seg = (v, l) => `<button type="button" aria-pressed="${IV.soH === v}" onclick="IV.soH='${v}';render()">${l}</button>`;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Shares: ranked for the ${FC_HL[h]}</h2><p>Each share's estimated return against the typical share, from its own momentum, distance from its averages, volatility, sector strength and how it has done in the same weeks of past years. ${esc(soVerdictLine(h))}</p></header>
+    <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div><label class="cd-sort">Sector <select onchange="IV.soSec=this.value;render()"><option value="">All sectors</option>${secs.map((s) => `<option${IV.soSec === s ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label></div>
+    ${hold.length ? `<h3 class="fc-h3">Your holdings and watchlist</h3><ul class="ml so-l">${hold.sort((a, b) => b[1].o[j] - a[1].o[j]).map(([s, r]) => li(s, r)).join("")}</ul>` : ""}
+    <div class="so-cols"><div><h3 class="fc-h3">Ranked highest</h3><ul class="ml so-l">${all.slice(0, 15).map(([s, r]) => li(s, r)).join("")}</ul></div>
+      <div><h3 class="fc-h3">Ranked lowest</h3><ul class="ml so-l">${all.slice(-15).reverse().map(([s, r]) => li(s, r)).join("")}</ul></div></div>
+    <p class="ix-fine">${ixN(all.length)} shares with an estimate (₹20 or more, at least ₹50 lakh traded a day). Each figure is against the typical share (half of all shares are estimated above it, half below); the small numbers are the range 8 in 10 similar estimates fell within. Select a share for its chart and full outlook.</p></section>`;
+}
+function soSeasonality() {
+  if (!SO || !SO.nifty_seas || !SO.nifty_seas.length) return "";
+  const N = SO.nifty_seas, now = new Date().getMonth(), nx = [now, (now + 1) % 12, (now + 2) % 12];
+  const mx = Math.max(...N.map((x) => Math.abs(x.avg || 0)), 0.01);
+  const nrow = N.map((x, i) => `<div class="so-m${nx.includes(i) ? " nx" : ""}" title="${x.m}: average ${inPct(x.avg * 100)}, median ${inPct(x.med * 100)}, rose in ${Math.round(x.up * 100)}% of ${x.n} years"><span class="so-ml">${x.m}</span><span class="so-mb ${x.avg > 0 ? "up" : "dn"}" style="--a:${(0.12 + Math.min(1, Math.abs(x.avg) / mx) * 0.78).toFixed(2)}">${inPct(x.avg * 100)}</span><span class="so-mu">${Math.round(x.up * 100)}%</span></div>`).join("");
+  // shown against the average sector that month: equal-weighted survivors beat the Nifty in most months, which would hide the rotation
+  const S0 = Object.entries(SO.sector_seas || {}).sort((a, b) => a[0].localeCompare(b[0]));
+  const avgM = SO.months.map((_, i) => { const v = S0.map(([, x]) => x[i]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+  const S = S0.map(([g, v]) => [g, v.map((x, i) => (x == null || avgM[i] == null ? null : x - avgM[i]))]);
+  const smx = Math.max(0.005, ...S.flatMap(([, v]) => v.filter((x) => x != null).map(Math.abs)));
+  const cell = (v, i) => `<td class="${nx.includes(i) ? "nx" : ""}"><span class="so-hm ${v == null ? "" : v > 0 ? "up" : "dn"}" style="--a:${v == null ? 0 : (0.1 + Math.min(1, Math.abs(v) / smx) * 0.8).toFixed(2)}">${v == null ? "–" : inPct(v * 100, 1)}</span></td>`;
+  const t21 = SO.track["21"].test, sIC = t21 && t21.single ? t21.single.seas : null;
+  return `<section class="ix-sec"><header class="ix-h"><h2>Seasonal patterns</h2><p>How the market and each sector have done in each calendar month. ${sIC != null ? `Tested as a predictor for single shares (same weeks in the last 10 years), seasonality's rank agreement with the next month was ${sIC.toFixed(3)} on ${t21.start.slice(0, 4)}–${t21.end.slice(0, 4)}: ${Math.abs(sIC) < 0.01 ? "close to nothing on its own" : sIC > 0 ? "a small positive signal" : "slightly the wrong way"}.` : ""}</p></header>
+    <h3 class="fc-h3">Nifty 50 by month, since ${N[0] && N[0].n ? new Date().getFullYear() - N[0].n : ""}</h3><div class="so-ss">${nrow}</div><p class="ix-fine">Average monthly return, and below it the share of years the month was positive. The next three months are outlined.</p>
+    ${S.length ? `<h3 class="fc-h3">Sectors against the average sector, by month</h3><div class="fc-scroll"><table class="so-hmt"><thead><tr><th>Sector</th>${SO.months.map((m, i) => `<th class="${nx.includes(i) ? "nx" : ""}">${m}</th>`).join("")}</tr></thead><tbody>${S.map(([g, v]) => `<tr><td>${entG("sec", g)}</td>${v.map(cell).join("")}</tr>`).join("")}</tbody></table></div><p class="ix-fine">Equal-weighted shares in each sector: the month's average return against the Nifty 50, minus the same figure for the average sector, so green means the sector has tended to lead in that month. Only shares listed today are included.</p>` : ""}</section>`;
 }
 
 /* ----- entry point ----- */
@@ -832,7 +935,7 @@ function scrIns(sym, ex) {
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
   const news = ex === "NSE" ? inAllStories().filter((x) => inLinks(x).sym.includes(sym)).sort((a, b) => String(b.d || "").localeCompare(String(a.d || ""))) : [];
   const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
-  const tabs = [["read", "Key readings"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
+  const tabs = [["read", "Key readings"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
   const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");
   const wait = !FUND || (!pre && (live === 0 || live === undefined)) ? `<p class="ix-empty">Loading the readings…</p>` : "";
   let body = "";
@@ -841,7 +944,8 @@ function scrIns(sym, ex) {
     const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inPct(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
     const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
     body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
-  } else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
+  } else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : `<p class="ix-empty">The outlook covers NSE shares. Look this company up by its NSE symbol.</p>`;
+  else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
   else if (tab === "fin") body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${rl(R.F, "sf")}` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
   else if (tab === "news") body = news.length ? `<ol class="nsl sm">${news.slice(0, 8).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">${LIVE ? "No story in the live feed (last 7 days) names this stock." : "Loading the news feed…"}</p>`;
   else body = `${typeof entStockLinks === "function" ? `<div class="eq-links">${entStockLinks(sym, ex)}</div>` : ""}<ul class="eq-app" style="margin-top:12px">${typeof entStratToday === "function" ? entStratToday(sym, ex) : ""}</ul>`;

@@ -660,3 +660,30 @@ html.eq-on{overflow:hidden}
 .cd-yrs b{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9.5px;font-weight:400;color:var(--mute)}
 .cd-today{margin-top:10px;font-size:12.5px;line-height:1.9}.cd-today span{color:var(--mute)}
 @media(max-width:900px){.cd-sets{grid-template-columns:1fr}}
+
+/* ---------- share outlook and seasonality ---------- */
+.so-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.so-e{min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--sunken)}
+.so-k{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.so-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px;margin:4px 0 10px}.so-big>span{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.so-big small{color:var(--mute);font-size:12px}
+.so-rank{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--down-soft),var(--sunken) 50%,var(--up-soft));border:1px solid var(--line)}
+.so-rank i{position:absolute;top:-4px;width:4px;height:14px;margin-left:-2px;border-radius:2px;background:var(--accent)}
+.so-rl{display:flex;justify-content:space-between;gap:6px;margin-top:4px;font-size:11px;color:var(--mute)}.so-rl b{color:var(--ink-2);font-weight:600}
+.so-rg{margin:10px 0 0;font-size:12.5px;color:var(--ink-2)}
+.so-why{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:12.5px}.so-why li{display:flex;gap:6px;line-height:1.4}.so-why i{font-style:normal;font-weight:700;width:10px;flex:none}
+.so-why .up i,.so-k-up{color:var(--up);font-style:normal;font-weight:700}.so-why .dn i,.so-k-dn{color:var(--down);font-style:normal;font-weight:700}
+.so-h{margin:16px 0 8px;font-size:13.5px;font-weight:600}
+.so-ss{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+.so-m{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:3px;border:1px solid transparent;border-radius:8px;text-align:center}
+.so-m.nx{border-color:var(--accent)}
+.so-ml{font-size:11px;color:var(--mute)}.so-mu{font-size:10.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.so-mb{padding:6px 2px;border-radius:6px;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.so-mb.up{background:color-mix(in srgb,var(--up) calc(var(--a) * 100%),transparent);color:var(--ink)}
+.so-mb.dn{background:color-mix(in srgb,var(--down) calc(var(--a) * 100%),transparent);color:var(--ink)}
+.so-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.so-l li button{grid-template-columns:auto 1fr auto auto}.so-l small{color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}.so-v{font-weight:600;font-variant-numeric:tabular-nums}
+.so-hmt{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}.so-hmt th{font-weight:600;color:var(--mute);text-align:center;padding:6px 2px}.so-hmt th:first-child{text-align:left}
+.so-hmt td{padding:2px;text-align:center}.so-hmt td:first-child{text-align:left;padding-right:8px;white-space:nowrap}.so-hmt .nx{box-shadow:inset 0 0 0 1px var(--accent)}
+.so-hm{display:block;padding:5px 2px;border-radius:5px;font-variant-numeric:tabular-nums}
+.so-hm.up{background:color-mix(in srgb,var(--up) calc(var(--a) * 100%),transparent)}.so-hm.dn{background:color-mix(in srgb,var(--down) calc(var(--a) * 100%),transparent)}
+@media(max-width:760px){.so-two,.so-cols{grid-template-columns:1fr}.so-ss{grid-template-columns:repeat(6,minmax(0,1fr))}}
