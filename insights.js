@@ -115,6 +115,7 @@ async function loadFund() {
 
 const inNum = (v, d = 1) => (v == null || !isFinite(v) ? "–" : Number(v).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }));
 const inPct = (v, d = 1) => { if (v == null || !isFinite(v)) return "–"; const a = Math.abs(v).toFixed(d); return (+a === 0 ? "" : v > 0 ? "+" : "−") + a + "%"; };
+const inLvl = (v, d = 1) => (v == null || !isFinite(v) ? "–" : (v < 0 ? "−" : "") + Math.abs(v).toFixed(d) + "%");   // a level (ROE, yield, holding), not a change: no plus sign
 const inCl = (v) => (v == null ? "" : v > 0 ? "sx-pos" : v < 0 ? "sx-neg" : "");
 const inAgo = (iso) => { if (!iso) return ""; const m = (Date.now() - new Date(iso)) / 6e4; return m < 60 ? Math.max(1, Math.round(m)) + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
 
@@ -275,17 +276,17 @@ function inStockReadings(t, f, sm, mpe, sym) {
     else add(F, "Valuation: P/E", "neu", "No meaningful P/E (losses or missing earnings). P/E and EV/EBITDA cannot be used when profit is negative; EV/Sales is the fallback" + (f.evs ? ` (EV/Sales ${inNum(f.evs, 1)})` : "") + ".", "ev");
     if (f.pe > 0 && f.epsg != null && f.epsg > 0) { const peg = f.pe / (f.epsg * 100); add(F, "Valuation: PEG", peg < 1 ? "pos" : "neu", `PEG ${inNum(peg, 2)} using the latest quarterly earnings growth of ${inPct(f.epsg * 100)} as the growth rate (a rough proxy). ${peg < 1 ? "Below 1, the rule-of-thumb level for undervalued." : "At or above 1."}`, "peg"); }
     if (f.evebitda != null && f.evebitda > 0 && !fin) add(F, "Valuation: EV/EBITDA", M.evebitda ? (f.evebitda > M.evebitda ? "neg" : "pos") : "neu", `EV/EBITDA ${inNum(f.evebitda, 1)}${M.evebitda ? `, ${vs(f.evebitda, M.evebitda)} the sector median ${inNum(M.evebitda, 1)}` : ""}.`, "ev");
-    if (f.pb != null) add(F, "Valuation: P/B", "neu", `Price to book ${inNum(f.pb, 2)}${M.pb ? ` (sector median ${inNum(M.pb, 2)})` : ""}${f.roe != null ? `, with ROE ${inPct(f.roe * 100)}` : ""}.`, "pb");
-    if (f.roe != null) add(F, "Return on equity", M.roe != null ? (f.roe > M.roe ? "pos" : "neg") : f.roe > 0 ? "neu" : "neg", `ROE ${inPct(f.roe * 100)}${f.roe_src ? ` (worked out as ${esc(f.roe_src)})` : ""}${M.roe != null ? `, ${vs(f.roe, M.roe)} the sector median ${inPct(M.roe * 100)}` : ""}.`, "roe");
+    if (f.pb != null) add(F, "Valuation: P/B", "neu", `Price to book ${inNum(f.pb, 2)}${M.pb ? ` (sector median ${inNum(M.pb, 2)})` : ""}${f.roe != null ? `, with ROE ${inLvl(f.roe * 100)}` : ""}.`, "pb");
+    if (f.roe != null) add(F, "Return on equity", M.roe != null ? (f.roe > M.roe ? "pos" : "neg") : f.roe > 0 ? "neu" : "neg", `ROE ${inLvl(f.roe * 100)}${f.roe_src ? ` (worked out as ${esc(f.roe_src)})` : ""}${M.roe != null ? `, ${vs(f.roe, M.roe)} the sector median ${inLvl(M.roe * 100)}` : ""}.`, "roe");
     if (f.roe != null && f.de != null && !fin && M.roe != null && f.roe > M.roe && f.de > 1) add(F, "DuPont check", "neg", `ROE is above the sector median while debt/equity is ${inNum(f.de, 2)}: part of the ROE may come from leverage rather than margins or efficiency, which brings higher risk.`, "dupont");
-    if (f.opm != null || f.npm != null) add(F, "Margins", M.opm != null && f.opm != null ? (f.opm > M.opm ? "pos" : "neg") : "neu", `Operating margin ${inPct((f.opm || 0) * 100)}${M.opm != null ? ` (sector median ${inPct(M.opm * 100)})` : ""}, net margin ${inPct((f.npm || 0) * 100)}${M.npm != null ? ` (sector median ${inPct(M.npm * 100)})` : ""}.`, "margin");
+    if (f.opm != null || f.npm != null) add(F, "Margins", M.opm != null && f.opm != null ? (f.opm > M.opm ? "pos" : "neg") : "neu", `Operating margin ${inPct((f.opm || 0) * 100)}${M.opm != null ? ` (sector median ${inLvl(M.opm * 100)})` : ""}, net margin ${inPct((f.npm || 0) * 100)}${M.npm != null ? ` (sector median ${inLvl(M.npm * 100)})` : ""}.`, "margin");
     if (f.de != null && !fin) add(F, "Debt to equity", f.de <= 1 ? "pos" : "neg", `Debt/equity ${inNum(f.de, 2)}: ${f.de <= 1 ? "within" : "above"} the conservative benchmark of 1.${M.de != null ? ` Sector median ${inNum(M.de, 2)}.` : ""}`, "de");
     else if (fin) add(F, "Debt to equity", "neu", "This is a financial company; its borrowings and deposits are its raw material, so the debt/equity benchmark of 1 does not apply.", "de");
     if (f.icr != null && !fin) add(F, "Interest coverage", f.icr < 1 ? "neg" : "pos", `EBIT covers interest ${inNum(f.icr, 1)} times${f.fy ? ` (year to ${f.fy})` : ""}${f.icr < 1 ? ": earnings do not cover interest" : ""}.`, "icr");
     if (f.cr != null && !fin) add(F, "Current ratio", f.cr >= 1 ? "pos" : "neu", `Current ratio ${inNum(f.cr, 2)}${f.cr < 1 ? ": current liabilities exceed current assets, which is not always a red flag (some companies run on customers' money)" : ": current assets exceed current liabilities"}.`, "cr");
     if (f.revg != null || f.epsg != null) add(F, "Growth", (f.revg || 0) > 0 && (f.epsg == null || f.epsg > 0) ? "pos" : (f.revg || 0) < 0 && (f.epsg || 0) < 0 ? "neg" : "neu", `Latest quarter vs a year earlier: revenue ${inPct((f.revg ?? NaN) * 100)}, earnings ${inPct((f.epsg ?? NaN) * 100)}. Past growth is a fact; future growth is an assumption.`, "growth");
-    if (f.dy != null) add(F, "Dividend yield", "neu", `Trailing dividend yield ${inPct(f.dy * 100, 2)}${f.payout != null ? `, payout ${inPct(f.payout * 100, 0)} of profit` : ""}.`, "dy");
-    if (f.ins != null) add(F, "Ownership", "neu", `Insiders (promoters and management) hold about ${inPct(f.ins * 100, 0)}${f.inst != null ? ` and institutions ${inPct(f.inst * 100, 0)}` : ""}. Promoter pledges are not in this data; check the latest shareholding filing on the exchange.`, "promoter");
+    if (f.dy != null) add(F, "Dividend yield", "neu", `Trailing dividend yield ${inLvl(f.dy * 100, 2)}${f.payout != null ? `, payout ${inLvl(f.payout * 100, 0)} of profit` : ""}.`, "dy");
+    if (f.ins != null) add(F, "Ownership", "neu", `Insiders (promoters and management) hold about ${inLvl(f.ins * 100, 0)}${f.inst != null ? ` and institutions ${inLvl(f.inst * 100, 0)}` : ""}. Promoter pledges are not in this data; check the latest shareholding filing on the exchange.`, "promoter");
     if (f.beta != null) add(F, "Market risk", "neu", `Beta ${inNum(f.beta, 2)}: it has tended to move ${f.beta > 1 ? "more" : "less"} than the market.`, "beta");
   }
   return { T, F };
@@ -613,7 +614,7 @@ function inStocksView() {
   let body = "";
   if (IV.stab === "summary") {
     const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
-    const keys = `<div class="sk-kv">${t ? kv("vs 44-day avg", inPct(t.vs44), inCl(t.vs44)) + kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("From 52-week high", inPct(t.hi52)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inPct(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>`;
+    const keys = `<div class="sk-kv">${t ? kv("vs 44-day avg", inPct(t.vs44), inCl(t.vs44)) + kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("From 52-week high", inPct(t.hi52)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inLvl(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>`;
     const top = all.filter((r) => r.tone !== "neu").slice(0, 6);
     const ln = inStockLinked().slice(0, 4);
     body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
@@ -624,7 +625,7 @@ function inStocksView() {
     body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${rl(R.F, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
   } else if (IV.stab === "peers") {
     const P = f && f.sec && FUND.fund ? Object.entries(FUND.fund).filter(([s, o]) => o.sec === f.sec && (o.ind === f.ind || !f.ind) && o.mcap).sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 12) : [];
-    body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td>${entS(s, "NSE")}</td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inPct(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inPct(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
+    body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td>${entS(s, "NSE")}</td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inLvl(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inLvl(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
   } else {
     const ln = inStockLinked(), secK = f && SEC_IDX[f.sec];
     const sector = secK ? inAllStories().filter((x) => !ln.includes(x) && inLinks(x).idx.includes(secK)).slice(0, 8) : [];
@@ -732,18 +733,19 @@ function fcSig(s) {
   if (s.t == null) return `<span class="fc-mute">Not tested yet</span>`;
   const d = s.mean - s.mean_all, sig = Math.abs(s.t) >= 2;
   return sig ? `<span class="${inCl(d)}">${d > 0 ? "Better than usual" : "Worse than usual"}</span><small>how sure ${s.t.toFixed(1)}, about ${s.n_indep} separate periods</small>`
-    : `<span class="fc-mute">Within normal variation</span><small>how sure ${s.t.toFixed(1)}; needs 2 or more</small>`;
+    : `<span class="fc-mute">Within normal variation</span><small>how sure ${s.t.toFixed(1)} (2 needed)</small>`;
 }
 function fcDrivers(h) {
   const D = FC.drivers || [], used = new Set(FC.nifty.inputs);
   const rows = D.map((d) => { const s = d.h[h], diff = s.med - s.med_all;
     return `<tr><td>${esc(d.label)}${used.has(d.k) ? "" : ` <span class="fc-tag">context only</span>`}</td><td class="fc-num">${fcVal(d.v, d.k === "vixc" ? "chg" : d.unit)}</td>
       <td><span class="fc-pr" title="Higher than ${Math.round(d.pct * 100)}% of trading days since ${FC.nifty.first.slice(0, 4)}"><i style="left:${(d.pct * 100).toFixed(1)}%"></i></span><small>${d.pct < 0.2 ? "Low" : d.pct > 0.8 ? "High" : "Middle"} for history</small></td>
-      <td><span class="${inCl(s.med)}">${fcP(s.med)}</span> <small>rose ${Math.round(s.pup * 100)}%</small></td><td class="fc-mute">${fcP(s.med_all)} <small>rose ${Math.round(s.pup_all * 100)}%</small></td>
+      <td><span class="fc-num">${fcP(s.med)}</span> <small>rose ${Math.round(s.pup * 100)}%</small></td><td class="fc-mute">${fcP(s.med_all)} <small>rose ${Math.round(s.pup_all * 100)}%</small></td>
       <td>${fcSig(s)}</td></tr>`; }).join("");
   const seg = (v, l) => `<button type="button" aria-pressed="${IV.fcH === v}" onclick="IV.fcH='${v}';render()">${l}</button>`;
   return `<section class="ix-sec"><header class="ix-h"><h2>What the estimate is built from</h2><p>Each reading today, where it sits in history, and what the Nifty did over the ${FC_HL[h]} after readings in the same fifth of history (median, and how often it rose). A difference is called better or worse only when it is larger than normal variation, judged on periods that do not overlap. One reading at a time; the estimate above uses them together. “Context only” readings are shown but were left out by the 2011–2018 test.</p></header>
     <div class="ix-ctl"><div class="seg2">${seg("21", "Next month")}${seg("63", "Next 3 months")}</div></div>
+    ${(() => { const T = D.map((d) => d.h[h].t).filter((t) => t != null), k = T.filter((t) => Math.abs(t) >= 2).length; return T.length ? `<p class="fc-test ${k ? "pos" : "neu"}">${k ? `${k} of ${T.length} readings, on their own, were followed by a ${FC_HL[h]} that differed from normal by more than luck.` : `None of the ${T.length} readings, on its own, was followed by a ${FC_HL[h]} that differed from normal by more than luck. This is why the estimate's direction has had no edge: read the range.`}</p>` : ""; })()}
     <div class="fc-scroll"><table class="fc-t fc-d"><thead><tr><th>Reading</th><th>Today</th><th>Against history</th><th>After similar readings</th><th>All periods</th><th>Difference</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 function fcAnalogs(h) {
@@ -786,10 +788,12 @@ function fcLive() {
   const N = LIVE; const rows = [], now = Date.now();
   if (N) for (const t of N.themes || []) { const per = (t.total || 0) / (N.days || 7); if (per >= 3) rows.push({ t, r: (t.day || 0) / per }); }
   rows.sort((a, b) => b.r - a.r);
+  const used = new Set();   // one story leads one theme only (a headline can sit in two themes)
   const heat = rows.slice(0, 5).map(({ t, r }) => {
     // lead: the story carried by the most outlets in the last 24 hours (newest breaks a tie), not simply the newest
     const day = (t.stories || []).filter((x) => x.d && now - Date.parse(x.d) < 864e5), pool = day.length ? day : (t.stories || []);
-    const lead = pool.slice().sort((a, b) => (Math.min(b.n || 1, 8) - Math.min(a.n || 1, 8)) || String(b.d || "").localeCompare(String(a.d || "")))[0];
+    const lead = pool.filter((x) => !used.has(x.u)).sort((a, b) => (Math.min(b.n || 1, 8) - Math.min(a.n || 1, 8)) || String(b.d || "").localeCompare(String(a.d || "")))[0];
+    if (lead) used.add(lead.u);
     return `<li><div class="fc-lh"><button type="button" class="ns-th" onclick="inTheme('${t.id}')">${esc(t.short || t.name)}</button><span class="${r >= 1.3 ? "fc-hot" : "fc-mute"}">${t.day || 0} stories in the last 24 hours, ${r >= 1.3 ? r.toFixed(1) + "× its daily average this week" : r < 0.7 ? "quieter than its daily average" : "about its daily average"}</span></div>
       ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a><div class="ix-fine">${esc(lead.s || "")}${lead.n > 1 ? `, ${lead.n} outlets` : ""}${lead.d ? `, ${inAgo(lead.d)}` : ""}</div>` : ""}</li>`; }).join("");
   const sess = MKT ? (MKT.market_open ? "today, about 15 minutes delayed" : "in the latest session") : "";
@@ -859,21 +863,22 @@ function soVerdictLine(h) {
   const t = SO.track[h].test; if (!t) return "";
   return `Tested on ${t.start.slice(0, 4)}–${t.end.slice(0, 4)}: the tenth of shares ranked highest beat the tenth ranked lowest by ${inPct(t.spread * 100)} on average over ${h === "21" ? "a month" : "3 months"}, in ${Math.round(t.spread_hit * 100)}% of ${h === "21" ? "months" : "periods"} (rank agreement ${t.ic.toFixed(2)}, how sure ${t.t}).`;
 }
-// how many calendar months must agree before a seasonal pattern is called consistent: with 12 months tested per share,
-// |t| >= 2.5 leaves about 1 false call in 7 shares; below that a month's average is shown but not called a pattern
-const SO_TSIG = 2.5;
+// when a share's calendar month is called a pattern: |t| >= 3.5 across at least 10 years. Checked on the data: about 19% of shares
+// with 10+ years show such a month, against about 4% expected from luck alone (12 months tested, about 15 years each), so
+// roughly 1 mark in 5 may still be luck. Below the bar, a month's average is shown as history, not as a pattern.
+const SO_TSIG = 3.5, SO_TMINY = 10;
 function soSeasStrip(r) {
   const M = SO.months, now = new Date().getMonth(), next = [now, (now + 1) % 12, (now + 2) % 12];
   const have = r.sx.filter((v) => v != null).length;
   if (have < 12) return `<p class="ix-empty">A seasonal pattern needs at least 5 years of each calendar month; this share has ${r.n || 0} ${r.n === 1 ? "year" : "years"} of prices${have ? ` (enough for ${have} of 12 months)` : ""}.</p>`;
   const mx = Math.max(30, ...r.sx.map(Math.abs)), st = r.st || [];
-  const sig = M.map((_, i) => st[i] != null && Math.abs(st[i] / 10) >= SO_TSIG);
+  const sig = M.map((_, i) => r.n >= SO_TMINY && st[i] != null && Math.abs(st[i] / 10) >= SO_TSIG);
   const cells = M.map((m, i) => { const x = r.sx[i], a = r.sm[i], tone = x > 0 ? "up" : "dn", al = Math.min(1, Math.abs(x) / mx), t = st[i] != null ? st[i] / 10 : null;
     return `<div class="so-m${next.includes(i) ? " nx" : ""}${sig[i] ? " sig" : ""}" role="row" title="${m}: average ${inPct(a / 10)} (rose in ${r.su[i]}% of years); against the Nifty ${inPct(x / 10)}, beat it in ${r.sb[i]}% of years${t != null ? `; how sure ${t.toFixed(1)}` : ""}">
       <span class="so-ml">${m}</span><span class="so-mb ${tone}" style="--a:${(0.12 + al * 0.78).toFixed(2)}">${inPct(x / 10, 1)}</span><span class="so-mu">${r.sb[i]}%${sig[i] ? " ●" : ""}</span></div>`; }).join("");
   const ns = sig.filter(Boolean).length, nxt = next.filter((i) => sig[i]).map((i) => `${M[i]} (${inPct(r.sx[i] / 10)} against the Nifty, beat it in ${r.sb[i]}% of ${r.n} years)`);
   return `<div class="so-ss" role="table" aria-label="Average return against the Nifty by calendar month">${cells}</div>
-    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years; below it, the share of years it beat the Nifty. The next three months are outlined. ${ns ? `● marks a month consistent enough to stand out from luck (how sure ${SO_TSIG} or more across years): ${ns} of 12.` : "No month stands out from luck (none reaches how sure " + SO_TSIG + " across years); read the colours as history, not a pattern."}${nxt.length ? ` Coming up: ${esc(nxt.join("; "))}.` : ""}</p>`;
+    <p class="ix-fine">Average return against the Nifty 50 in each calendar month over ${r.n} years; below it, the share of years it beat the Nifty. The next three months are outlined. ${ns ? `● marks a month consistent across years (how sure ${SO_TSIG} or more, ${SO_TMINY}+ years): ${ns} of 12. Even at this bar about 1 mark in 5 across all shares may be luck.` : r.n < SO_TMINY ? `With under ${SO_TMINY} years no month is called a pattern; read the colours as history.` : `No month is consistent enough to call a pattern (how sure ${SO_TSIG} or more across years); read the colours as history.`}${nxt.length ? ` Coming up: ${esc(nxt.join("; "))}.` : ""}</p>`;
 }
 function soPanel(sym, compact) {
   if (SO === null) { loadSO(); return `<p class="ix-empty">Loading the outlook…</p>`; }
@@ -935,9 +940,9 @@ function soSeasonality() {
   const verdict = sIC == null ? "" : sT != null ? (sT >= 2 ? `a small but consistent signal (rank agreement ${sIC.toFixed(3)}, how sure ${sT.toFixed(1)})` : sT <= -2 ? `consistently the wrong way (how sure ${sT.toFixed(1)})` : `not distinguishable from luck (rank agreement ${sIC.toFixed(3)}, how sure ${sT.toFixed(1)})`) : `rank agreement ${sIC.toFixed(3)} (how sure not yet computed)`;
   return `<section class="ix-sec"><header class="ix-h"><h2>Seasonal patterns</h2><p>How the market and each sector have done in each calendar month.${verdict ? ` As a predictor for single shares (the same weeks in each of the last 10 years), seasonality was ${verdict} on ${t21.start.slice(0, 4)}–${t21.end.slice(0, 4)}; it is one of the inputs to the share estimates above, not a forecast on its own.` : ""}</p></header>
     <h3 class="fc-h3">Nifty 50 by month, ${N[0].n} years</h3><div class="so-ss">${nrow}</div>
-    <p class="ix-fine">Average monthly return; below it, the share of years the month was positive. The next three months are outlined. ${nS.length ? `● marks a month that differs from the other months by more than luck (how sure 2 or more): ${nS.map((x) => x.m).join(", ")}. With 12 months tested, about 1 could do so by chance.` : "No month differs from the others by more than luck (how sure 2 or more); with " + N[0].n + " years per month the averages are history, not a rule."}</p>
+    <p class="ix-fine">Average monthly return; below it, the share of years the month was positive. The next three months are outlined. ${N.every((x) => x.t == null) ? "Whether any month stands out from luck is being recomputed." : nS.length ? `● marks a month that differs from the other months by more than luck (how sure 2 or more): ${nS.map((x) => x.m).join(", ")}. With 12 months tested, about 1 could do so by chance.` : "No month differs from the others by more than luck (how sure 2 or more); with " + N[0].n + " years per month the averages are history, not a rule."}</p>
     ${S.length ? `<h3 class="fc-h3">Sectors against the average sector, by month</h3><div class="fc-scroll"><table class="so-hmt"><thead><tr><th>Sector</th>${SO.months.map((m, i) => `<th class="${nx.includes(i) ? "nx" : ""}">${m}</th>`).join("")}</tr></thead><tbody>${S.map(([g, v]) => `<tr><td>${entG("sec", g)}</td>${v.map((x, i) => cell(g, x, i)).join("")}</tr>`).join("")}</tbody></table></div>
-    <p class="ix-fine">Equal-weighted shares in each sector: the month's return minus the average sector's return that month, averaged over the years, so green means the sector has tended to lead in that month. ${T ? `● marks the ${nCell} of ${cells} cells consistent across years beyond luck (how sure 3 or more; at that bar about ${Math.max(0, Math.round(cells * 0.0027))} would pass by chance).` : ""} Only shares listed today are included, and a month needs 5 years of data.</p>` : ""}</section>`;
+    <p class="ix-fine">Equal-weighted shares in each sector: the month's return minus the average sector's return that month, averaged over the years, so green means the sector has tended to lead in that month. ${T ? `● marks the ${nCell} of ${cells} cells consistent across years beyond luck (how sure 3 or more; at that bar ${cells * 0.0027 < 1 ? "fewer than 1" : "about " + Math.round(cells * 0.0027)} would pass by chance).` : ""} Only shares listed today are included, and a month needs 5 years of data.</p>` : ""}</section>`;
 }
 
 /* ----- entry point ----- */
@@ -982,7 +987,7 @@ function scrIns(sym, ex) {
   let body = "";
   if (tab === "read") {
     const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
-    const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inPct(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
+    const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inLvl(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
     const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
     body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
   } else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : `<p class="ix-empty">The outlook covers NSE shares. Look this company up by its NSE symbol.</p>`;

@@ -189,8 +189,10 @@
     "India Pakistan",
     "China Taiwan"
    ],
-   "kw": "\\b(war|conflict|missile|strikes?|attack|military|ceasefire|troops|tensions|invasion|drone)\\b",
-   "short": "Conflicts"
+   "kw": "\\b(conflict|strikes?|attacks?|tensions|clashes|hostilities)\\b",
+   "short": "Conflicts",
+   "need": "\\b(iran|israel|russia|ukraine|china|taiwan|pakistan|gaza|lebanon|syria|yemen|red sea|strait|hormuz|middle east|border|saudi|korea|nato|kashmir|afghanistan|sudan|venezuela)\\b",
+   "strong": "\\b(war|wars|missiles?|military|ceasefire|troops|invasion|drones?|air ?strikes?|army|navy|nuclear|houthis?|hezbollah|hamas|shelling|bombing|warships?)\\b"
   },
   {
    "id": "trade",
