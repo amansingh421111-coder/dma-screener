@@ -95,13 +95,28 @@ def t_listings():
         L = json.loads((d / "listings.json").read_text())
         assert L["n"]["ADANIPORTS"] == ["Adani Ports and Special Economic Zone Limited", "532921"], L["n"]["ADANIPORTS"]
         assert L["n"]["MBAPL"][1] == "541967" and L["dual"] == 2
-        assert screen.pos_yahoo({"symbol": "ADANIPORTS", "exchange": "BSE"}) == "532921.BO"
+        assert screen.pos_tickers({"symbol": "ADANIPORTS", "exchange": "BSE"}) == ["ADANIPORTS.BO", "532921.BO"]
         assert screen.pos_yahoo({"symbol": "ADANIPORTS", "exchange": "NSE"}) == "ADANIPORTS.NS"
-        bs = next(iter(L["b"])); assert screen.pos_yahoo({"symbol": bs, "exchange": "BSE"}) == L["b"][bs][1] + ".BO"
+        bs = next(iter(L["b"])); assert screen.pos_tickers({"symbol": bs, "exchange": "BSE"})[0] == L["b"][bs][1] + ".BO"
         assert screen.share_name("ADANIPORTS", "BSE") == "Adani Ports and Special Economic Zone Limited"
         m = (d / "listings.json").stat().st_mtime_ns; screen.write_listings(); assert (d / "listings.json").stat().st_mtime_ns == m   # unchanged: not rewritten
     finally:
         screen.ROOT = old_root; screen.LST.clear(); screen.BSE_ISIN.clear(); screen.BHAV.pop("BSE", None); screen.BHAV.pop("NSE", None)
+
+def t_position_quotes_bse():
+    """A BSE holding gets a price from whichever Yahoo ticker has it, and the quote carries its name and exchange."""
+    old_f, old_r, old_L = screen.fetch, screen.reconcile, dict(screen.LST)
+    idx = pd.bdate_range("2026-07-01", periods=60); df = pd.DataFrame(dict(Open=1750.0, High=1760.0, Low=1740.0, Close=np.linspace(1700, 1754, 60), Volume=1e5), index=idx)
+    try:
+        screen.LST.clear(); screen.LST.update({"n": {"ADANIPORTS": ["Adani Ports and Special Economic Zone Limited", "532921"]}, "b": {"XYZ": ["Xyz Ltd", "500001"]}})
+        for got in ({"532921.BO": df}, {"ADANIPORTS.BO": df}):
+            screen.fetch = lambda tickers, **k: {t: got[t] for t in tickers if t in got}; screen.reconcile = lambda *a, **k: None
+            q = screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44})
+            v = q["BSE:ADANIPORTS"]; assert v["price"] == 1754.0 and v["exchange"] == "BSE" and v["name"].startswith("Adani Ports"), v
+        screen.fetch = lambda tickers, **k: {}
+        assert screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44}) == {}
+    finally:
+        screen.fetch, screen.reconcile = old_f, old_r; screen.LST.clear(); screen.LST.update(old_L); screen.PXD.clear()
 
 if __name__ == "__main__":
     for k, f in list(globals().items()):

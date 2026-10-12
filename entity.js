@@ -38,10 +38,11 @@ function entG(kind, name, label) { return name ? `<button type="button" class="e
 
 /* ---------- data ---------- */
 async function entBseCode(sym) {
+  if (typeof loadListing === "function") { await loadListing(); const c = lsInfo(sym).code; if (c) return c; }   // listings.json knows the BSE code of shares on both exchanges
   if (EQ.bse === null) { EQ.bse = {}; try { const r = await fetch("/universe_bse.csv"); if (r.ok) (await r.text()).split("\n").slice(1).forEach((ln) => { const p = ln.split(","); if (p.length >= 4) EQ.bse[p[0].trim()] = p[p.length - 1].trim(); }); } catch (e) {} }
   return EQ.bse[sym] || null;
 }
-async function entTicker(e) { if (e.t === "index") return e.k; if (e.ex === "BSE") { const c = await entBseCode(e.sym); return (c || e.sym) + ".BO"; } return e.sym + ".NS"; }
+async function entTicker(e) { if (e.t === "index") return e.k; if (typeof lsTicker === "function") { await loadListing(); return lsTicker(e.sym, e.ex); } if (e.ex === "BSE") { const c = await entBseCode(e.sym); return (c || e.sym) + ".BO"; } return e.sym + ".NS"; }
 async function entLoad(e) {
   if (typeof INAMES !== "undefined" && INAMES === null && typeof loadFeed === "function" && !IV.feedBusy) loadFeed();
   if (typeof FUND !== "undefined" && FUND === null && typeof loadFund === "function") loadFund();
@@ -52,6 +53,7 @@ async function entLoad(e) {
   if (EQ.charts[t]) { entDraw(); return; }   // already fetched (for example by a share's Outlook tab): draw it now instead of leaving "Loading"
   if (EQ.busy[t]) return;
   EQ.busy[t] = true; entDraw();
+  if (e.t === "stock" && typeof lsChartLoad === "function") { await lsChartLoad(e.sym, e.ex); EQ.busy[t] = false; entDraw(); return; }   // tries each Yahoo ticker for BSE shares
   try { const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json(); EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; }
   catch (err) { EQ.charts[t] = { error: "Could not reach the price source." }; }
   EQ.busy[t] = false; entDraw();
@@ -108,35 +110,36 @@ function entStratToday(sym, ex) {
   return names.map(([s, v]) => `<li><b>${esc(s.name)}</b> ${v === "b" ? "signals a buy today" : "would still be holding (bought on an earlier signal)"}, score ${(s.stars || 0).toFixed(1)} of 5.</li>`).join("");
 }
 function entStock(e) {
-  const C = EQ.charts[e.tk], sym = e.sym, ex = e.ex, F = typeof FUND !== "undefined" && FUND && FUND.fund && ex === "NSE" ? FUND.fund[sym] : null;
+  const C = EQ.charts[e.tk], sym = e.sym, ex = e.ex, co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";   // company figures: same on both exchanges
+  const F = typeof FUND !== "undefined" && FUND && FUND.fund && co ? FUND.fund[sym] : null;
   const T = typeof FUND !== "undefined" && FUND && FUND.stocks && ex === "NSE" && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
   const nm = (typeof INAMES !== "undefined" && INAMES && INAMES[sym] && ex === "NSE") ? (Array.isArray(INAMES[sym]) ? INAMES[sym][0] : INAMES[sym]) : null;
   const sig = (typeof data !== "undefined" && data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === ex);
   const q = sig || (typeof data !== "undefined" && (data.quotes || {})[ex + ":" + sym]) || null;
-  const name = (F && F.name) || nm || (sig && sig.name) || (C && C.name) || "";
+  const name = (F && F.name) || nm || (sig && sig.name) || (typeof lsName === "function" && lsName(sym)) || (C && C.name) || "";
   const c = C && C.c, last = q && q.price != null ? q.price : c ? c[c.length - 1] : T ? T.p : null;
   const d1 = q && q.chg != null ? q.chg : c ? entRet(c, 1) : T ? T.d1 : null;
   const m44 = c && c.length >= 44 ? entSma(c, 44)[c.length - 1] : null, m200 = c && c.length >= 200 ? entSma(c, 200)[c.length - 1] : null;
   const ccy = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-  const hold = typeof openPos === "function" ? openPos().find((p) => p.symbol === sym && p.exchange === ex) : null, wl = typeof WL !== "undefined" ? WL.find((w) => w.symbol === sym && w.exchange === ex) : null;
-  const news = typeof inAllStories === "function" && ex === "NSE" ? inStockNews(sym).named : [];
+  const hold = typeof openPos === "function" ? openPos().find((p) => p.symbol === sym && p.exchange === ex) || openPos().find((p) => p.symbol === sym) : null, wl = typeof WL !== "undefined" ? WL.find((w) => w.symbol === sym && w.exchange === ex) : null;
+  const news = typeof inAllStories === "function" && co ? inStockNews(sym).named : [];
   const y = c ? c.slice(-252) : null, code = ex === "BSE" && EQ.bse ? EQ.bse[sym] : null;
-  const head = `<div class="eq-h"><div><h2>${esc(sym)} <span class="tag ex">${ex}</span></h2><p>${esc(name)}</p>${F && F.sec ? `<p class="eq-sec">${entG("sec", F.sec)}${F.ind ? ` <span aria-hidden="true">›</span> ${entG("ind", F.ind)}` : ""}</p>` : ""}</div>
-   <div class="eq-px"><b>${last != null ? ccy(last) : "–"}</b><span class="${inCl(d1)}">${d1 != null ? inPct(d1, 2) + " today" : ""}</span><small>${q && q.price != null ? "Screener price, about 15 minutes delayed in market hours" : C && C.dates ? "Close of " + entD(C.dates[C.dates.length - 1], true) : ""}</small></div></div>`;
+  const head = `<div class="eq-h"><div><h2>${esc(sym)} ${typeof lsSwitch === "function" ? lsSwitch(sym, ex, `openStock('${esc(sym)}','{ex}')`) : exTag(ex)}</h2><p>${esc(name)}</p>${F && F.sec ? `<p class="eq-sec">${entG("sec", F.sec)}${F.ind ? ` <span aria-hidden="true">›</span> ${entG("ind", F.ind)}` : ""}</p>` : ""}</div>
+   <div class="eq-px"><b>${last != null ? ccy(last) : "–"}</b><span class="${inCl(d1)}">${d1 != null ? inPct(d1, 2) + " today" : ""}</span><small>${ex} · ${q && q.price != null ? "screener price, checked every 15 minutes in market hours" : C && C.dates ? "close of " + entD(C.dates[C.dates.length - 1], true) : ""}</small></div></div>`;
   const kv = entKV([["1 month", inPct(c ? entRet(c, 21) : T && T.m1), inCl(c ? entRet(c, 21) : T && T.m1)], ["1 year", inPct(c ? entRet(c, 252) : T && T.y1), inCl(c ? entRet(c, 252) : T && T.y1)],
     ["vs 44-day avg", m44 ? inPct((last / m44 - 1) * 100) : T ? inPct(T.vs44) : "–", m44 ? inCl(last - m44) : ""], ["vs 200-day avg", m200 ? inPct((last / m200 - 1) * 100) : T ? inPct(T.vs200) : "–", m200 ? inCl(last - m200) : ""],
     ["52-week high", y ? ccy(Math.max(...y)) : "–"], ["52-week low", y ? ccy(Math.min(...y)) : "–"], T ? ["RSI (14)", inNum(T.rsi, 0)] : null,
     F ? ["Market cap", F.mcap ? "₹" + inNum(F.mcap / 1e7, 0) + " cr" : "–"] : null, F ? ["P/E", F.pe > 0 ? inNum(F.pe, 1) : "–"] : null, F ? ["ROE", F.roe != null ? inLvl(F.roe * 100) : "–"] : null, F ? ["Debt/equity", F.de != null ? inNum(F.de, 2) : "–"] : null, F ? ["Dividend yield", F.dy != null ? inLvl(F.dy * 100, 2) : "–"] : null]);
   const app = `<ul class="eq-app">${sig ? `<li><b>Screener:</b> ${sig.type === "buy" ? "in the buy zone" : sig.type === "sell" ? "just crossed below" : "approaching"} its 44-day average (${inPct(sig.pct, 2)})${sig.candle ? `, ${esc(sig.candle.replace("_", " "))} candle, ${"★".repeat(sig.score || 0)}${"☆".repeat(3 - (sig.score || 0))}` : ""}.</li>` : `<li>Not on today's screener list (it is not near its 44-day average, or did not pass the price and volume filters).</li>`}
-   ${entStratToday(sym, ex)}${ex === "NSE" && typeof coLine === "function" ? coLine(sym) : ""}${ex === "NSE" && typeof soLine === "function" ? soLine(sym) : ""}${hold ? `<li><b>You hold it.</b> ${typeof ledger === "function" ? ledger(hold).qty + " shares at an average of " + ccy(ledger(hold).avg) : ""}${hold.sl ? `, stop loss ${ccy(hold.sl)}` : ""}${hold.target ? `, target ${ccy(hold.target)}` : ""}.</li>` : ""}${wl ? `<li>On your watchlist${wl.note ? `: ${esc(wl.note)}` : ""}.</li>` : ""}</ul>`;
+   ${entStratToday(sym, ex)}${co && typeof coLine === "function" ? coLine(sym) : ""}${co && typeof soLine === "function" ? soLine(sym) : ""}${hold ? `<li><b>You hold it${hold.exchange !== ex ? " on " + hold.exchange : ""}.</b> ${typeof ledger === "function" ? ledger(hold).qty + " shares at an average of " + ccy(ledger(hold).avg) : ""}${(typeof lv === "function" ? lv(hold).sl : hold.sl) ? `, stop loss ${ccy(typeof lv === "function" ? lv(hold).sl : hold.sl)}${typeof lv === "function" && lv(hold).slAuto ? " (automatic)" : ""}` : ""}${(typeof lv === "function" ? lv(hold).tg : hold.target) ? `, target ${ccy(typeof lv === "function" ? lv(hold).tg : hold.target)}${typeof lv === "function" && lv(hold).tgAuto ? " (automatic)" : ""}` : ""}.</li>` : ""}${wl ? `<li>On your watchlist${wl.note ? `: ${esc(wl.note)}` : ""}.</li>` : ""}</ul>`;
   const links = entStockLinks(sym, ex, e.tk);
   return entStockBody(e, head, C, ccy, kv, app, news, links, last);
 }
 function entStockLinks(sym, ex, tk) {
-  const code = ex === "BSE" && EQ.bse ? EQ.bse[sym] : null, tvs = (ex === "BSE" ? "BSE:" : "NSE:") + sym;
-  if (ex === "BSE" && EQ.bse === null) entBseCode(sym).then(() => { if (typeof render === "function") render(); });
+  const li = typeof lsInfo === "function" ? lsInfo(sym) : {}, code = li.code || (ex === "BSE" && EQ.bse ? EQ.bse[sym] : null), tvs = (ex === "BSE" ? "BSE:" : "NSE:") + sym;
+  if (ex === "BSE" && EQ.bse === null && !li.code && !EQ.bseBusy) { EQ.bseBusy = 1; entBseCode(sym).then(() => { if (typeof render === "function") render(); }); }   // once: the BSE code list
   return entLinks([["TradingView chart", `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvs)}`, "Full interactive chart with indicators"],
-    ex === "NSE" ? ["NSE quote", `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(sym)}`, "Official price, announcements and shareholding on NSE"] : null,
+    ex === "NSE" || li.nse ? ["NSE quote", `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(sym)}`, "Official price, announcements and shareholding on NSE"] : null,
     code ? ["BSE quote", `https://www.bseindia.com/stock-share-price/x/${encodeURIComponent(sym.toLowerCase())}/${code}/`, "Official price and filings on BSE"] : null,
     ["Screener.in", `https://www.screener.in/company/${encodeURIComponent(ex === "BSE" && code ? code : sym)}/consolidated/`, "Ten years of financial statements, ratios and peers"],
     ["Google Finance", `https://www.google.com/finance/quote/${encodeURIComponent(ex === "BSE" && code ? code + ":BOM" : sym + ":NSE")}`, "Price and recent news"],
@@ -146,7 +149,7 @@ function entStockBody(e, head, C, ccy, kv, app, news, links, last) {
   const sym = e.sym, ex = e.ex, px = last != null ? last : 0;
   const acts = `<div class="eq-acts"><button class="btn sm pri" data-ex="${ex}" data-sym="${esc(sym)}" data-px="${px}" onclick="entClose();track(this)">＋ Add to My Positions</button><button class="btn sm" data-ex="${ex}" data-sym="${esc(sym)}" onclick="entClose();watchFrom(this)">Watch</button><button class="btn sm" onclick="entClose();go('ins');inPick('${esc(sym)}','${ex}')">Full analysis</button></div>`;
   return `${head}${entChart(C, ccy, 44, 200)}${kv}${acts}<section><h3>In this app</h3>${app}</section>
-   ${ex === "NSE" ? `<section><h3>Linked news</h3>${entNews(news, `entClose();go('ins');IV.stab='news';inPick('${esc(sym)}','NSE')`)}</section>` : ""}
+   ${(typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE") ? `<section><h3>Linked news</h3>${entNews(news, `entClose();go('ins');IV.stab='news';inPick('${esc(sym)}','${ex}')`)}</section>` : ""}
    <section><h3>More on other sites</h3>${links}</section>`;
 }
 function entIndex(e) {

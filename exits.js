@@ -99,12 +99,13 @@ function exLive(dates, o, h, l, c, entry, ep, rule, final) {
 }
 
 /* ---- price history for a position (shared cache with the quote panel) ---- */
-const exTk = (p) => p.symbol + (p.exchange === "BSE" ? ".BO" : ".NS");
+const exTk = (p) => (typeof lsTicker === "function" ? lsTicker(p.symbol, p.exchange) : p.symbol + (p.exchange === "BSE" ? ".BO" : ".NS"));
 const EXBUSY = {};
 function exPx(p) {
   if (typeof EQ === "undefined") return null; const t = exTk(p);
   if (EQ.charts[t]) return EQ.charts[t].c ? EQ.charts[t] : null;
-  if (!EXBUSY[t]) { EXBUSY[t] = 1; fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)).then((r) => r.json().then((j) => { EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; })).catch(() => { EQ.charts[t] = { error: "Could not reach the price source." }; }).finally(() => { render(); if (typeof renderModes === "function" && !$("pform").hidden) renderModes(); }); }
+  if (typeof lsChartLoad === "function") lsChartLoad(p.symbol, p.exchange);
+  else if (!EXBUSY[t]) { EXBUSY[t] = 1; fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)).then((r) => r.json().then((j) => { EQ.charts[t] = r.ok && j.c ? j : { error: j.error || "No price history." }; })).catch(() => { EQ.charts[t] = { error: "Could not reach the price source." }; }).finally(() => render()); }
   return null;
 }
 /* a price for a holding the screener has not priced yet (bought after the last check, or a BSE share between hourly checks) */

@@ -462,20 +462,25 @@ def share_name(sym, ex="NSE"):
     return v[0] if v else None
 
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
-def pos_yahoo(p):
-    if p.get("exchange") == "BSE": return (bse_code(p["symbol"]) or p["symbol"]) + ".BO"   # Yahoo knows every BSE share by its scrip code
-    return p["symbol"] + ".NS"
+def pos_tickers(p):
+    """Yahoo tickers to try, best first. BSE: a share also on NSE is usually found as SYMBOL.BO, a BSE-only share by its scrip code."""
+    s = p["symbol"]
+    if p.get("exchange") != "BSE": return [s + ".NS"]
+    code = bse_code(s); dual = s in (listing().get("n") or {})
+    t = [s + ".BO", code + ".BO"] if dual and code else [code + ".BO", s + ".BO"] if code else [s + ".BO"]
+    return list(dict.fromkeys(t))
+def pos_yahoo(p): return pos_tickers(p)[0]
 
 PXD = {}   # position key -> daily bars, kept for the automatic stop and target
 
 def position_quotes(pos, c):
     if not pos: return {}
-    data = fetch([pos_yahoo(p) for p in pos]); q = {}
-    miss = [p for p in pos if p.get("exchange") == "BSE" and pos_yahoo(p) not in data and pos_yahoo(p) != p["symbol"] + ".BO"]
-    if miss:   # scrip code unknown to Yahoo: try the BSE ticker name
-        alt = fetch([p["symbol"] + ".BO" for p in miss])
-        for p in miss:
-            if p["symbol"] + ".BO" in alt: data[pos_yahoo(p)] = alt[p["symbol"] + ".BO"]
+    raw = fetch(list(dict.fromkeys(t for p in pos for t in pos_tickers(p)))); q = {}; data = {}
+    for p in pos:   # the first ticker with prices wins
+        for t in pos_tickers(p):
+            d = raw.get(t)
+            if d is not None and d["Close"].dropna().shape[0] >= 2: data[pos_yahoo(p)] = d; break
+        else: log.warning("no prices for position %s", pos_key(p))
     reconcile(data, {pos_yahoo(p): (p.get("exchange", "NSE"), p["symbol"] if p.get("exchange") != "BSE" else (bse_code(p["symbol"]) or p["symbol"])) for p in pos})
     for p in pos:
         df = data.get(pos_yahoo(p))

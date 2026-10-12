@@ -299,19 +299,17 @@ function inDeepLine() {
 
 async function inPick(sym, ex) {
   sym = String(sym || "").trim().toUpperCase(); if (!sym) return;
+  if (typeof lsInfo === "function" && LISTING && Object.keys(LISTING.n || {}).length) {   // a company name typed instead of a symbol
+    const i = lsInfo(sym); if (!i.nse && !i.bse) { const R = lsSearch(sym, 1); if (R[0]) { sym = R[0].s; ex = ex || R[0].ex; } }
+    ex = lsEx(sym, ex);
+  }
   IV.sym = sym; IV.ex = ex === "BSE" ? "BSE" : "NSE"; IV.err = ""; IV.view = "stocks"; loadFund(); render();
   const key = IV.ex + ":" + sym, inF = FUND && FUND.stocks && IV.ex === "NSE" && FUND.stocks[sym];
   if (!inF && !IV.chart[key]) {
     IV.busy = true; render();
     try {
-      let t = sym + ".NS";
-      if (IV.ex === "BSE") {
-        if (!BSEU) { BSEU = {}; try { const r = await fetch("/universe_bse.csv"); if (r.ok) (await r.text()).split("\n").slice(1).forEach((ln) => { const p = ln.split(","); if (p.length >= 4) BSEU[p[0].trim()] = p[p.length - 1].trim(); }); } catch (e) {} }
-        t = (BSEU[sym] || sym) + ".BO";
-      }
-      let r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json();
-      if (!r.ok && IV.ex === "BSE" && BSEU[sym]) { r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(sym + ".BO")); j = await r.json(); }
-      if (!r.ok) throw new Error(j.error || "No price history.");
+      const j = typeof lsChartLoad === "function" ? await lsChartLoad(sym, IV.ex) || EQ.charts[lsTicker(sym, IV.ex)] : null;
+      if (!j || !j.c) throw new Error((j && j.error) || "No price history for " + sym + " on " + IV.ex + ".");
       IV.chart[key] = { name: j.name, t: inTech(j, INS && INS.nifty) };
     } catch (e) { IV.err = e.message; }
     IV.busy = false;
@@ -336,9 +334,9 @@ function inName(sym) {
 
 function inNewsBadge(sym, ex) {   // used in My Positions: how many live stories name this holding
   if (LIVE === null && !IV.feedBusy) { loadFeed(); return ""; }
-  if (ex === "BSE") return "";
+  if (ex === "BSE" && !(typeof lsCompany === "function" && lsCompany(sym, ex))) return "";
   const n = inStockNews(sym).named.length;
-  return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();IV.stab='news';go('ins');inPick('${esc(sym)}','NSE')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
+  return n ? `<button type="button" class="nw-badge" onclick="event.stopPropagation();IV.stab='news';go('ins');inPick('${esc(sym)}','${ex === "BSE" ? "BSE" : "NSE"}')" title="Open the news linked to ${esc(sym)}">${n} in the news</button>` : "";
 }
 
 
@@ -425,7 +423,7 @@ function inSubnav() {
   const V = [["overview", "Overview"], ["outlook", "Outlook"], ["news", "News"], ["markets", "Markets"], ["stocks", "Stocks"], ["method", "Method"]];
   const names = INAMES ? Object.keys(INAMES) : [];
   return `<div class="ix-nav"><div class="ix-tabs" role="tablist" aria-label="Insights sections">${V.map(([k, l]) => `<button role="tab" aria-selected="${IV.view === k}" onclick="inGo('${k}')">${l}</button>`).join("")}</div>
-  <form class="ix-find" onsubmit="inPick(this.elements.q.value,'NSE');this.elements.q.value='';return false"><input id="ix-q" name="q" list="ix-syms" placeholder="Find a stock, e.g. TCS" aria-label="Find a stock" autocapitalize="characters" autocomplete="off"><datalist id="ix-syms">${names.slice(0, 900).map((s) => `<option value="${esc(s)}">`).join("")}</datalist></form></div>`;
+  <div class="ix-find">${typeof lsBox === "function" ? lsBox("ix-q", (s, ex) => { const el = document.getElementById("ix-q"); if (el) el.value = ""; inPick(s, ex); }, "Find a share on NSE or BSE, e.g. TCS") : ""}</div></div>`;
 }
 function inGo(v) { IV.view = v; if (v === "stocks") loadFund(); render(); const e = $("vIns"); if (e && e.getBoundingClientRect().top < 0) window.scrollTo({ top: window.scrollY + e.getBoundingClientRect().top - 50 }); }
 function inTheme(t) { IV.theme = t; IV.who = ""; IV.linkF = ""; IV.shown = 30; inGo("news"); }
@@ -593,20 +591,21 @@ function inStocksView() {
   const hold = (typeof openPos === "function" ? openPos() : []).map((p) => [p.symbol, p.exchange]);
   const wl = (typeof WL !== "undefined" && Array.isArray(WL) ? WL : []).map((w) => [w.symbol, w.exchange]);
   const hot = LIVE ? Object.entries(inDirectCounts()).sort((a, b) => b[1].n - a[1].n).slice(0, 8).map(([s]) => [s, "NSE"]) : [];
-  const pick = (lbl, arr) => (arr.length ? `<div class="pk"><span>${lbl}</span>${arr.slice(0, 16).map(([s, e]) => `<button class="chip${IV.sym === s && IV.ex === (e || "NSE") ? " on" : ""}" onclick="inPick('${esc(s)}','${e || "NSE"}')">${esc(s)}${e === "BSE" ? " (BSE)" : ""}</button>`).join("")}</div>` : "");
-  const finder = `<section class="ix-card sk-find"><form onsubmit="inPick(this.elements.q.value,this.elements.ex.value);return false" class="sk-form"><input name="q" id="in-q" list="ix-syms" placeholder="Symbol, e.g. RELIANCE" autocapitalize="characters" autocomplete="off" aria-label="Symbol"><select name="ex" aria-label="Exchange"><option${IV.ex === "NSE" ? " selected" : ""}>NSE</option><option${IV.ex === "BSE" ? " selected" : ""}>BSE</option></select><button class="btn pri">Show</button></form>${pick("Your holdings", hold)}${pick("Watchlist", wl)}${pick("Most in the news", hot)}
+  const pick = (lbl, arr) => (arr.length ? `<div class="pk"><span>${lbl}</span>${arr.slice(0, 16).map(([s, e]) => `<button class="chip${IV.sym === s && IV.ex === (e || "NSE") ? " on" : ""}" onclick="inPick('${esc(s)}','${e || "NSE"}')">${esc(s)} <small class="chx${e === "BSE" ? " bse" : ""}">${e || "NSE"}</small></button>`).join("")}</div>` : "");
+  const finder = `<section class="ix-card sk-find"><div class="sk-form">${lsBox("in-q", (s, ex) => inPick(s, ex), "Symbol or company name, on NSE or BSE")}</div><p class="ix-fine" style="margin:6px 0 0">Shares listed on both exchanges appear twice, once for NSE and once for BSE: each shows that exchange's own price.</p>${pick("Your holdings", hold)}${pick("Watchlist", wl)}${pick("Most in the news", hot)}
   <p class="ix-fine" style="margin:8px 0 0">${esc((FUND && FUND.universe) || "")} have technical and financial numbers ready${FUND && FUND.fund_updated ? ` (financials refreshed ${new Date(FUND.fund_updated).toLocaleDateString("en-IN", { day: "numeric", month: "short" })})` : ""}. Any other NSE or BSE stock gets technical numbers fetched live.</p></section>`;
   if (!IV.sym) return finder;
   const strip = `<div class="pk-strip">${pick("Holdings", hold)}${pick("Watchlist", wl)}${pick("In the news", hot.slice(0, 6))}</div>`;
   const key = IV.ex + ":" + IV.sym, pre = IV.ex === "NSE" && FUND.stocks ? FUND.stocks[IV.sym] : null, live = IV.chart[key];
-  const t = pre ? pre.t : live ? live.t : null, f = IV.ex === "NSE" && FUND.fund ? FUND.fund[IV.sym] : null;
+  const both = typeof lsBoth === "function" && lsBoth(IV.sym), co = IV.ex === "NSE" || both;
+  const t = pre ? pre.t : live ? live.t : null, f = co && FUND.fund ? FUND.fund[IV.sym] : null;
   if (!t && IV.busy) return strip + `<div class="ix-empty">Fetching ${esc(IV.sym)}…</div>`;
   if (!t && !f) return finder + `<div class="ix-empty">${esc(IV.err || "No data for " + IV.sym + ".")}</div>`;
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = inStockReadings(t, f, FUND.sector_med, mpe, IV.sym), all = R.T.concat(R.F);
   const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
   const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
-  const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} <span class="tag ex">${IV.ex}</span></h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
-   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>Close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
+  const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} ${typeof lsSwitch === "function" ? lsSwitch(IV.sym, IV.ex, `inPick('${esc(IV.sym)}','{ex}')`) : exTag(IV.ex)}</h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
+   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>${IV.ex} price${both ? " (switch above for " + (IV.ex === "NSE" ? "BSE" : "NSE") + ")" : ""} · close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
    <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
   const tabs = [["summary", "Summary"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
@@ -619,7 +618,7 @@ function inStocksView() {
     const ln = inStockLinked().slice(0, 4);
     body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
   } else if (IV.stab === "company") body = coPanel(IV.sym, IV.ex);
-  else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : `<p class="ix-empty">The outlook covers NSE shares.</p>`;
+  else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : both ? `<p class="ix-fine">The outlook is worked out on NSE prices; the same company's BSE price moves with it.</p>${soPanel(IV.sym)}` : `<p class="ix-empty">The outlook covers shares listed on NSE; ${esc(IV.sym)} is listed on BSE only.</p>`;
   else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
   else if (IV.stab === "fin") {
     const q = f && f.q && f.q.length ? `<h3>Quarterly results</h3><div class="tw"><table class="mt"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div>` : "";
@@ -1134,7 +1133,8 @@ function coPeers(sym, f) {
 }
 function coPanel(sym, ex) {
   if (PROF === null) loadProf(); if (FUND === null) loadFund(); if (INS === null) loadIns(); if (SO === null) loadSO(); if (FC === null) loadFc();
-  const P = PROF && PROF.s ? PROF.s[sym] : null, f = ex === "NSE" && FUND && FUND.fund ? FUND.fund[sym] : null, t = ex === "NSE" && FUND && FUND.stocks && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
+  const co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";   // company figures are the same on both exchanges
+  const P = PROF && PROF.s ? PROF.s[sym] : null, f = co && FUND && FUND.fund ? FUND.fund[sym] : null, t = co && FUND && FUND.stocks && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
   if (PROF === null || FUND === null) return `<p class="ix-empty">Loading the company profile…</p>`;
   if (!P && !f) return `<p class="ix-empty">No company profile for this share yet: profiles cover the ${ixN(Object.keys((PROF && PROF.s) || {}).length)} NSE shares the app tracks closely. Screener.in and NSE (Links tab) have its full profile.</p>`;
   const sec = (f && f.sec) || (P && P.sec), ind = (f && f.ind) || (P && P.ind), SM = FUND.sector_med && sec ? FUND.sector_med[sec] : null;
@@ -1197,21 +1197,21 @@ const SCRT = {};   // open tab per stock
 async function scrTech(sym, ex) {   // technical numbers for a stock the daily update does not cover: fetched live once
   const key = ex + ":" + sym; if (IV.chart[key] || IV.chart[key] === 0) return; IV.chart[key] = 0;
   try {
-    let t = sym + ".NS";
-    if (ex === "BSE") { const c = typeof entBseCode === "function" ? await entBseCode(sym) : null; t = (c || sym) + ".BO"; }
-    const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json();
-    IV.chart[key] = r.ok && j.c ? { name: j.name, t: inTech(j, INS && INS.nifty) } : { err: j.error || "No price history." };
+    if (typeof loadListing === "function") await loadListing();
+    const j = await lsChartLoad(sym, ex) || EQ.charts[lsTicker(sym, ex)] || {};
+    IV.chart[key] = j.c ? { name: j.name, t: inTech(j, INS && INS.nifty) } : { err: j.error || "No price history." };
   } catch (e) { IV.chart[key] = { err: "Could not reach the price source." }; }
   render();
 }
 function scrTab(k, t) { SCRT[k] = t; render(); }
 function scrIns(sym, ex) {
   if (FUND === null) loadFund(); if (INS === null) loadIns(); if (LIVE === null && !IV.feedBusy) loadFeed();
-  const k = ex + ":" + sym, pre = ex === "NSE" && FUND && FUND.stocks ? FUND.stocks[sym] : null, f = ex === "NSE" && FUND && FUND.fund ? FUND.fund[sym] : null;
+  const co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";
+  const k = ex + ":" + sym, pre = ex === "NSE" && FUND && FUND.stocks ? FUND.stocks[sym] : null, f = co && FUND && FUND.fund ? FUND.fund[sym] : null;
   if (!pre && FUND) scrTech(sym, ex);
   const live = IV.chart[k], t = pre ? pre.t : live && live.t ? live.t : null;
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
-  const news = ex === "NSE" ? inStockNews(sym).named : [];
+  const news = co ? inStockNews(sym).named : [];
   const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
   const tabs = [["read", "Key readings"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
   const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");
@@ -1223,7 +1223,7 @@ function scrIns(sym, ex) {
     const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
     body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
   } else if (tab === "company") body = coPanel(sym, ex);
-  else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : `<p class="ix-empty">The outlook covers NSE shares. Look this company up by its NSE symbol.</p>`;
+  else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : co ? `<p class="ix-fine">The outlook is worked out on NSE prices; the same company's BSE price moves with it.</p>${soPanel(sym)}` : `<p class="ix-empty">The outlook covers shares listed on NSE; ${esc(sym)} is listed on BSE only.</p>`;
   else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
   else if (tab === "fin") body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${rl(R.F, "sf")}` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
   else if (tab === "news") body = news.length ? `<ol class="nsl sm">${news.slice(0, 8).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">${LIVE ? "No story in the live feed (last 7 days) names this stock." : "Loading the news feed…"}</p>`;
