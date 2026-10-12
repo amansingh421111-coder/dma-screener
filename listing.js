@@ -89,6 +89,7 @@ function lsKey(e, id) {
 /* ---- the other exchange's price, for shares on both ---- */
 /* daily history good enough for readings: the exchange's own, or NSE's for a share on both when Yahoo lacks its BSE history */
 function lsHist(sym, ex) {
+  if (typeof EQ === "undefined") return null;
   const C = EQ.charts[lsTicker(sym, ex)]; if (C && C.c && C.c.length >= 60) return { C, from: ex };
   if (ex === "BSE" && lsBoth(sym)) { const N = EQ.charts[sym + ".NS"]; if (N && N.c && N.c.length >= 60) return { C: N, from: "NSE" }; if (!N) lsChartLoad(sym, "NSE"); }
   return C && C.c && C.c.length ? { C, from: ex, thin: true } : null;
