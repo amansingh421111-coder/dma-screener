@@ -189,20 +189,51 @@ function exSet(id, sid) { const h = POS.find((x) => x.id === id); if (!h) return
 function exReset(id, f) { const h = POS.find((x) => x.id === id); if (!h) return; if (f === "sl") { h.slMode = "auto"; h.sl = null; } else { h.tgMode = "auto"; h.target = null; } savePos(); render(); }
 
 /* ---- Strategies page: the exit rules compared for one strategy ---- */
+const exPctRule = (rid) => { const r = exRules()[rid]; return !!r && (r.fam === "fix" || r.fam === "trail"); };
+function exTgWord(rid) { const r = exRules()[rid]; if (!r) return ""; return r.tp ? `target +${r.tp}%` : r.m ? `target ${r.m}× ATR` : "no fixed target"; }
+const exShort = (rid) => { const r = exRules()[rid]; return r ? `${exStopWord(rid)}, ${exTgWord(rid)}, ${r.hold} days max` : rid; };
+/* the rule My Positions uses for a strategy, in a few words */
+function exPosShort(sid) { const s = exStrat(sid); return s ? exShort(exPick(s).rule) : ""; }
+/* the two candidates on the current basis: the most profitable of all rules, and the most profitable with one % for every share */
+const exCands = (s) => ({ top: (exAll() ? s.chosen_vol_all : s.chosen_vol) || s.chosen, pct: (exAll() ? s.chosen_all : s.chosen) || s.chosen });
+const exModeSeg = () => `<div class="seg2 exm" role="group" aria-label="Which rule My Positions uses"><button type="button" aria-pressed="${exVol()}" onclick="exVolSet(1)">Most profitable rule</button><button type="button" aria-pressed="${!exVol()}" onclick="exVolSet(0)">Most profitable with the same % for every share</button></div>`;
+let EXCMP = false;
+/* top of the Strategies page: which stop and target each strategy gives your positions, and why */
+function exPosPanel() {
+  if (EXI === null) { loadExits(); return ""; }
+  if (!EXI.strategies) return "";
+  const open = typeof POS !== "undefined" && Array.isArray(POS) ? POS.filter((p) => { try { return ledger(p).qty > 0; } catch (e) { return false; } }) : [];
+  const cnt = {}; open.forEach((p) => { const sid = p.strategy && exStrat(p.strategy) ? p.strategy : exDefault(); cnt[sid] = (cnt[sid] || 0) + 1; });
+  const ids = [exDefault()].concat(Object.keys(cnt).filter((k) => k !== exDefault()));
+  const vol = exVol(), basis = exAll() ? "average over every year" : `weighted ${EXI.current_year} ×3, ${EXI.current_year - 1} ×2, ${EXI.current_year - 2} ×1`;
+  const cell = (c, on) => c ? `<td class="l${on ? " on" : ""}">${esc(exShort(c.rule))}<small>${exPc(c.score, 2)} a trade · ${exPctRule(c.rule) ? "same % for every share" : "distance differs by share"}</small></td>` : "<td>–</td>";
+  const rows = ids.map((sid) => { const s = exStrat(sid); if (!s) return ""; const c = exCands(s), same = c.top.rule === c.pct.rule;
+    return `<tr><td class="l"><b>${esc(s.name.replace(/ \(.*\)$/, ""))}</b>${sid === exDefault() ? "<small>Used when a position has no strategy set</small>" : ""}</td><td>${cnt[sid] || 0}</td>${cell(c.top, vol || same)}${same ? `<td class="l m">The same rule</td>` : cell(c.pct, !vol)}</tr>`; }).join("");
+  const s0 = exStrat(exDefault()), c0 = s0 ? exCands(s0) : null;
+  const gap = c0 && c0.top.rule !== c0.pct.rule ? ` For ${esc(s0.name.replace(/ \(.*\)$/, ""))} the most profitable rule made ${exPc(c0.top.score, 2)} a trade against ${exPc(c0.pct.score, 2)} for the best same-% rule, but its stop is a multiple of each share's own average daily move (ATR), so the stop sits at a different % for each share.` : "";
+  return `<div class="expp"><div class="expp-h"><div><h3>Stop loss and target on My Positions</h3>
+    <p>Each position gets the exit rule that made the most profit per trade for its strategy (${basis}), chosen again every weekday evening. ${vol ? "You are using the most profitable rule of all, so stops can sit at a different % for each share." : "You are using the most profitable rule that puts every share at the same % stop."}${gap}</p></div>${exModeSeg()}</div>
+    <div class="sx-w"><table class="sx2 ex-t expp-t"><thead><tr><th class="l">Strategy</th><th>Your open positions</th><th class="l">Most profitable rule</th><th class="l">Most profitable, same % for every share</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="m">The highlighted cell is what your positions use now. The −x% / +y% shown for each strategy below is its standard exit from the strategy test, not the automatic rule. A trailing stop is a % below the highest close since you bought, so its distance from today's price differs a little between shares that have moved differently.</p>
+    <details class="expp-d" ${EXCMP ? "open" : ""} ontoggle="EXCMP=this.open"><summary>Compare every exit rule for ${esc(s0 ? s0.name.replace(/ \(.*\)$/, "") : "Screener Buy")}</summary>${EXCMP ? exStratView(exDefault()) : ""}</details></div>`;
+}
 function exStratView(id) {
   if (EXI === null) { loadExits(); return ""; }
   const s = exStrat(id); if (!s) return "";
-  const R = exRules(), cy = EXI.current_year, top = s.table.slice(0, 8), libRow = s.table.find((r) => r[0] === s.library_rule);
+  const R = exRules(), cy = EXI.current_year, top = s.table.slice(0, 8), libRow = s.table.find((r) => r[0] === s.library_rule), use = exPick(s).rule;
+  const bestPct = s.table.find((r) => exPctRule(r[0]));
+  if (bestPct && !top.includes(bestPct)) top.push(bestPct);
   if (libRow && !top.includes(libRow)) top.push(libRow);
-  const row = (r, i) => { const ru = R[r[0]] || {}, on = r[0] === s.chosen.rule, lib = r[0] === s.library_rule;
-    return `<tr class="${on ? "ex-on" : ""}"><td>${s.table.indexOf(r) + 1}</td><td class="l">${esc((ru.label || r[0]).replace(/, sell after (\d+) trading days at the latest/, " · $1 days"))}${on ? ' <small class="exa">Used for positions</small>' : ""}${lib ? ' <small class="exa own">Standard exit</small>' : ""}</td>
-      <td><b>${exPc(r[1], 2)}</b></td><td>${exPc(r[2])}</td><td>${exPc(r[3])}</td><td>${exPc(r[4])}</td><td>${exPc(r[5])}</td><td>${r[6] ?? "–"}</td></tr>`; };
-  const w = s.walk, ty = s.trades_by_year || {};
+  const useRow = s.table.find((r) => r[0] === use); if (useRow && !top.includes(useRow)) top.push(useRow);
+  const row = (r) => { const ru = R[r[0]] || {}, on = r[0] === use, lib = r[0] === s.library_rule, i = s.table.indexOf(r);
+    return `<tr class="${on ? "ex-on" : ""}"><td>${i + 1}</td><td class="l">${esc((ru.label || r[0]).replace(/, sell after (\d+) trading days at the latest/, " · $1 days"))}${on ? ' <small class="exa">Used for positions</small>' : ""}${i === 0 ? ' <small class="exa own">Most profitable</small>' : ""}${r === bestPct && i !== 0 ? ' <small class="exa own">Most profitable, same %</small>' : ""}${lib ? ' <small class="exa own">Standard exit</small>' : ""}</td>
+      <td class="l m">${exPctRule(r[0]) ? "Same % for every share" : "Differs by share"}</td><td><b>${exPc(r[1], 2)}</b></td><td>${exPc(r[2])}</td><td>${exPc(r[3])}</td><td>${exPc(r[4])}</td><td>${exPc(r[5])}</td><td>${r[6] ?? "–"}</td></tr>`; };
+  const w = exVol() ? s.walk_vol || s.walk : s.walk, ty = s.trades_by_year || {};
   const wy = w && w.years ? Object.entries(w.years).slice(-6).map(([y, v]) => `<tr><td>${y}</td><td>${exPc(v[0], 2)}</td><td>${exPc(v[1], 2)}</td><td>${exPc(v[2], 2)}</td><td>${(v[3] || 0).toLocaleString("en-IN")}</td></tr>`).join("") : "";
-  return `<h4 class="sx-sub" style="margin-top:0">Which stop and target worked best this year</h4>
-    <p class="m" style="margin-bottom:6px">${(EXI.rules[s.kind] || []).length} exit rules replayed on the same ${esc(s.name)} trades: fixed percentages, volatility (ATR) levels, trailing stops and a 44-DMA stop. Score = average profit per trade after costs, weighted 3 for ${cy} so far (${(ty[cy] || 0).toLocaleString("en-IN")} finished trades), 2 for ${cy - 1} and 1 for ${cy - 2}. The top rule sets the automatic stop and target on My Positions.</p>
-    <div class="sx-w"><table class="sx2 ex-t" style="min-width:720px"><thead><tr><th>#</th><th class="l">Rule</th><th>Score</th><th>${cy} so far</th><th>${cy - 1}</th><th>${cy - 2}</th><th>All years</th><th>Days held</th></tr></thead><tbody>${top.map(row).join("")}</tbody></table></div>
+  return `<h4 class="sx-sub" style="margin-top:0">Which stop and target made the most this year</h4>
+    <p class="m" style="margin-bottom:6px">${(EXI.rules[s.kind] || []).length} exit rules replayed on the same ${esc(s.name)} trades: fixed percentages, volatility (ATR) levels, trailing stops and a 44-DMA stop. Score = average profit per trade after costs, weighted 3 for ${cy} so far (${(ty[cy] || 0).toLocaleString("en-IN")} finished trades), 2 for ${cy - 1} and 1 for ${cy - 2}${exAll() ? "; your positions choose on the average over every year instead" : ""}. Rules marked “Differs by share” set the stop from each share's own daily move.</p>
+    <div class="exb"><span class="sub">My Positions uses</span>${exModeSeg()}</div>
+    <div class="sx-w"><table class="sx2 ex-t" style="min-width:820px"><thead><tr><th>#</th><th class="l">Rule</th><th class="l">Stop distance</th><th>Score</th><th>${cy} so far</th><th>${cy - 1}</th><th>${cy - 2}</th><th>All years</th><th>Days held</th></tr></thead><tbody>${top.map(row).join("")}</tbody></table></div>
     ${w ? `<h4 class="sx-sub">Does choosing on recent years help? Month-by-month check</h4><p class="m" style="margin-bottom:6px">Each month from ${w.start}, the rule was chosen with only the trades finished by then (same weighting), then used on that month's new trades. Compared with the standard exit and with the rule that was best over all earlier years. ${w.t_vs_library != null ? `Against the standard exit: better in ${w.months_better} of ${w.months} months, how sure t ${w.t_vs_library.toFixed(1)}${Math.abs(w.t_vs_library) < 2 ? " (within normal luck)" : ""}.` : ""} ${w.distinct_picks} different rules were picked over time.</p>
-    <div class="sx-w"><table class="sx2" style="min-width:0"><thead><tr><th>Year</th><th>Chosen on recent years</th><th>Standard exit</th><th>Best over all earlier years</th><th>Trades</th></tr></thead><tbody>${wy}<tr class="ex-on"><td>All from ${w.start}</td><td><b>${exPc(w.avg.adaptive, 2)}</b></td><td>${exPc(w.avg.library, 2)}</td><td>${exPc(w.avg.longrun, 2)}</td><td>${w.n.toLocaleString("en-IN")}</td></tr></tbody></table></div>` : ""}
-    <h4 class="sx-sub">Fixed stop and target grid (expanded test)</h4>`;
+    <div class="sx-w"><table class="sx2" style="min-width:0"><thead><tr><th>Year</th><th>Chosen on recent years</th><th>Standard exit</th><th>Best over all earlier years</th><th>Trades</th></tr></thead><tbody>${wy}<tr class="ex-on"><td>All from ${w.start}</td><td><b>${exPc(w.avg.adaptive, 2)}</b></td><td>${exPc(w.avg.library, 2)}</td><td>${exPc(w.avg.longrun, 2)}</td><td>${w.n.toLocaleString("en-IN")}</td></tr></tbody></table></div>` : ""}`;
 }

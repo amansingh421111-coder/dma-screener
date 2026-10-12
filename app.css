@@ -863,3 +863,13 @@ input:disabled{background:var(--sunken);color:var(--mute)}
 .hs2{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px}.hs2 .tag{margin:0;font-size:11px}
 @media(min-width:761px){#psort.hide-wide{display:none}}
 .ht tr.hgrn td{background:var(--sunken);padding-top:0;white-space:normal;position:static}.ht tr.hgrn small.hgr{max-width:none;margin:0}
+/* Strategies page: the automatic stop/target your positions use */
+.expp{border:1px solid var(--line);border-radius:10px;background:var(--card,var(--bg));padding:14px 16px;margin:0 0 14px}
+.expp-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px 16px;margin-bottom:8px}
+.expp-h h3{margin:0 0 3px;font-size:16px}.expp-h p{margin:0;color:var(--ink-2);font-size:13.5px;max-width:760px}
+.expp-t td small,.sx td small.sx-pp{display:block;color:var(--mute);font-size:11.5px;font-weight:400;white-space:normal}
+.expp-t td.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.expp-t td.m,.ex-t td.m{color:var(--mute)}
+.expp .m{font-size:12.5px;color:var(--mute);margin:8px 0 0}
+.expp-d{margin-top:10px}.expp-d>summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--accent);padding:4px 0}
+.expp-d[open]>summary{margin-bottom:8px}
