@@ -1,0 +1,27 @@
+name: exit-rules
+# Which stop loss and target worked best for each strategy this year and in recent years (exits.py).
+# Every weekday evening after the close, and whenever the test changes. Positions use the chosen rule automatically.
+on:
+  schedule:
+    - cron: "0 15 * * 1-5"      # 20:30 IST
+  push:
+    branches: [main]
+    paths: [exits.py, exitrules.py, .github/workflows/exits.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: exits, cancel-in-progress: false }
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip, cache-dependency-path: deps.txt }
+      - run: pip install -r deps.txt
+      - name: Run
+        run: python exits.py
+      - name: Save
+        if: always()
+        run: bash save.sh
