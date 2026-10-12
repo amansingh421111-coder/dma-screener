@@ -297,6 +297,8 @@ function inDeepLine() {
   const D = DEEPI; try { const h = D.rows[D.head_index].r[1]; const n = h.nse.te, b = h.bse.te; return ` In this app's deep test (later period, stop −8% / target +20%), this rule beat random entries by ${inPct(n.edge * 100, 2)} per trade on NSE stocks and ${inPct(b.edge * 100, 2)} on BSE-only stocks.`; } catch (e) { return ""; }
 }
 
+/* the Nifty series is needed for "vs Nifty" readings worked out from live prices: wait briefly for insights.json */
+async function inNifty() { if (INS === null) loadIns(); for (let k = 0; k < 40 && !(INS && INS.nifty); k++) await new Promise((r) => setTimeout(r, 100)); }
 async function inPick(sym, ex) {
   sym = String(sym || "").trim().toUpperCase(); if (!sym) return;
   if (typeof lsInfo === "function" && LISTING && Object.keys(LISTING.n || {}).length) {   // a company name typed instead of a symbol
@@ -308,6 +310,7 @@ async function inPick(sym, ex) {
   if (!inF && !IV.chart[key]) {
     IV.busy = true; render();
     try {
+      await inNifty();
       let j = typeof lsChartLoad === "function" ? await lsChartLoad(sym, IV.ex) || EQ.charts[lsTicker(sym, IV.ex)] : null, from = IV.ex;
       if (IV.ex === "BSE" && lsBoth(sym) && (!j || !j.c || j.c.length < 60)) {   // Yahoo has no BSE history for many shares on both: readings from NSE, price from BSE
         const own = j && j.c && j.c.length ? j : null, n = await lsChartLoad(sym, "NSE");
@@ -1206,6 +1209,7 @@ async function scrTech(sym, ex) {   // technical numbers for a stock the daily u
   const key = ex + ":" + sym; if (IV.chart[key] || IV.chart[key] === 0) return; IV.chart[key] = 0;
   try {
     if (typeof loadListing === "function") await loadListing();
+    await inNifty();
     let j = await lsChartLoad(sym, ex) || EQ.charts[lsTicker(sym, ex)] || {}, hist = ex;
     if (ex === "BSE" && lsBoth(sym) && (!j.c || j.c.length < 60)) { const n = await lsChartLoad(sym, "NSE"); if (n && n.c && n.c.length >= 60) { const own = j.c && j.c.length ? j : null; j = n; hist = "NSE";
       const tt = inTech(n, INS && INS.nifty); if (own) { tt.p = own.c[own.c.length - 1]; tt.date = own.dates[own.dates.length - 1]; } IV.chart[key] = { name: n.name, t: tt, hist }; render(); return; } }
