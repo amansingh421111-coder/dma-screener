@@ -1,6 +1,6 @@
 """Quick self-checks for the parts that must not break. Run: python test_core.py"""
 import numpy as np, pandas as pd
-import datetime as dt, sys
+import datetime as dt, json, sys
 import screen, session, watchdog, brief
 
 def t_slots():
@@ -82,6 +82,26 @@ def t_auto_levels():
         _, ch = screen.update_auto([u], True); assert not ch, ch   # announced once
     finally:
         screen.redis = old; screen.EXITS.clear(); screen.PXD.clear()
+
+def t_listings():
+    """Shares on both exchanges get their BSE code; BSE positions use it for prices; names come from the exchange lists."""
+    import tempfile, shutil, pathlib
+    d = pathlib.Path(tempfile.mkdtemp()); old_root = screen.ROOT
+    for f in ("universe_nse.csv", "universe_bse.csv"): shutil.copy(old_root / f, d / f)
+    try:
+        screen.ROOT = d; screen.LST.clear(); screen.BHAV.setdefault("NSE", ("2026-10-12", {})); screen.BHAV["BSE"] = ("2026-10-12", {})
+        screen.BSE_ISIN.clear(); screen.BSE_ISIN.update({"INE742F01042": "532921", "INE900L01028": "541967"})
+        screen.write_listings()
+        L = json.loads((d / "listings.json").read_text())
+        assert L["n"]["ADANIPORTS"] == ["Adani Ports and Special Economic Zone Limited", "532921"], L["n"]["ADANIPORTS"]
+        assert L["n"]["MBAPL"][1] == "541967" and L["dual"] == 2
+        assert screen.pos_yahoo({"symbol": "ADANIPORTS", "exchange": "BSE"}) == "532921.BO"
+        assert screen.pos_yahoo({"symbol": "ADANIPORTS", "exchange": "NSE"}) == "ADANIPORTS.NS"
+        bs = next(iter(L["b"])); assert screen.pos_yahoo({"symbol": bs, "exchange": "BSE"}) == L["b"][bs][1] + ".BO"
+        assert screen.share_name("ADANIPORTS", "BSE") == "Adani Ports and Special Economic Zone Limited"
+        m = (d / "listings.json").stat().st_mtime_ns; screen.write_listings(); assert (d / "listings.json").stat().st_mtime_ns == m   # unchanged: not rewritten
+    finally:
+        screen.ROOT = old_root; screen.LST.clear(); screen.BSE_ISIN.clear(); screen.BHAV.pop("BSE", None); screen.BHAV.pop("NSE", None)
 
 if __name__ == "__main__":
     for k, f in list(globals().items()):

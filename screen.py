@@ -430,15 +430,53 @@ def send_telegram(chat, text):
             CLOUD["send"] = {"ok": False, "status": None, "error": str(e)[:120]}
     return False
 
+# ---- which exchange lists what: NSE shares (with their BSE scrip code when also listed on BSE) and BSE-only shares ----
+LST = {}
+
+def write_listings():
+    """listings.json for the website and the alerts: n = NSE shares {symbol: [name, BSE code or ""]}, b = BSE-only {symbol: [name, code]}.
+    The BSE code of a share listed on both comes from the official BSE file (matched by ISIN). Written only when it changes."""
+    load_bhav()
+    try:
+        nse = pd.read_csv(ROOT / "universe_nse.csv", dtype=str).fillna("")
+        bse = pd.read_csv(ROOT / "universe_bse.csv", dtype=str).fillna("") if (ROOT / "universe_bse.csv").exists() else pd.DataFrame(columns=["symbol", "name", "code"])
+    except Exception as e: log.warning("listings: %s", e); return
+    old = read_json("listings.json", {})
+    n = {r["symbol"]: [r["name"], BSE_ISIN.get(r["isin"], "") or (old.get("n", {}).get(r["symbol"], ["", ""])[1] if not BSE_ISIN else "")] for r in nse.to_dict("records") if r["symbol"]}
+    b = {r["symbol"]: [r["name"], str(r["code"])] for r in bse.to_dict("records") if r["symbol"] and r["symbol"] not in n}
+    if n == old.get("n") and b == old.get("b"): LST.update(old); return
+    out = dict(updated=dt.datetime.now(dt.timezone.utc).isoformat(), bse_file=str(BHAV["BSE"][0]) if "BSE" in BHAV else old.get("bse_file"),
+               dual=sum(1 for v in n.values() if v[1]), n=n, b=b)
+    (ROOT / "listings.json").write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False)); LST.clear(); LST.update(out)
+
+def listing():
+    if not LST: LST.update(read_json("listings.json", {}))
+    return LST
+
+def bse_code(sym):
+    L = listing(); v = (L.get("n") or {}).get(sym) or (L.get("b") or {}).get(sym)
+    return v[1] if v and v[1] else None
+
+def share_name(sym, ex="NSE"):
+    L = listing(); v = (L.get("n") or {}).get(sym) if ex == "NSE" else ((L.get("b") or {}).get(sym) or (L.get("n") or {}).get(sym))
+    return v[0] if v else None
+
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
-def pos_yahoo(p): return p["symbol"] + (".BO" if p.get("exchange") == "BSE" else ".NS")
+def pos_yahoo(p):
+    if p.get("exchange") == "BSE": return (bse_code(p["symbol"]) or p["symbol"]) + ".BO"   # Yahoo knows every BSE share by its scrip code
+    return p["symbol"] + ".NS"
 
 PXD = {}   # position key -> daily bars, kept for the automatic stop and target
 
 def position_quotes(pos, c):
     if not pos: return {}
     data = fetch([pos_yahoo(p) for p in pos]); q = {}
-    reconcile(data, {pos_yahoo(p): (p.get("exchange", "NSE"), p["symbol"]) for p in pos})
+    miss = [p for p in pos if p.get("exchange") == "BSE" and pos_yahoo(p) not in data and pos_yahoo(p) != p["symbol"] + ".BO"]
+    if miss:   # scrip code unknown to Yahoo: try the BSE ticker name
+        alt = fetch([p["symbol"] + ".BO" for p in miss])
+        for p in miss:
+            if p["symbol"] + ".BO" in alt: data[pos_yahoo(p)] = alt[p["symbol"] + ".BO"]
+    reconcile(data, {pos_yahoo(p): (p.get("exchange", "NSE"), p["symbol"] if p.get("exchange") != "BSE" else (bse_code(p["symbol"]) or p["symbol"])) for p in pos})
     for p in pos:
         df = data.get(pos_yahoo(p))
         if df is None: continue
@@ -449,7 +487,9 @@ def position_quotes(pos, c):
         px = float(close.iloc[-1])
         q[pos_key(p)] = dict(price=round(px, 2), ma=None if pd.isna(m) else round(float(m), 2),
                              pct=None if pd.isna(m) else round((px / float(m) - 1) * 100, 2),
-                             chg=round((px / float(close.iloc[-2]) - 1) * 100, 2))
+                             chg=round((px / float(close.iloc[-2]) - 1) * 100, 2), exchange=p.get("exchange", "NSE"),
+                             name=share_name(p["symbol"], p.get("exchange", "NSE")), date=str(close.index[-1].date()),
+                             at=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"))
     return q
 
 # ---- automatic stop loss and target (rule chosen per strategy by exits.py) ----
@@ -676,8 +716,11 @@ def main():
         demo = [dict(symbol="RELIANCE", exchange="NSE", price=2910.5, ma=2875.2, pct=1.2, volume=1, type="buy", mcap=1960000)]
         sys.exit(0 if notify(format_msg(demo, "🧪 TEST alert", 5)) else 1)
     if a.levels:   # counts only: holdings never go into the public run log
+        write_listings()
         users = cloud_users(); allpos = {pos_key(p): p for u in users for p in u["positions"]}
-        position_quotes(list(allpos.values()), c)
+        q = position_quotes(list(allpos.values()), c)
+        sj = read_json("signals.json", {})
+        if sj and q: sj.setdefault("quotes", {}).update(q); (ROOT / "signals.json").write_text(json.dumps(sj, indent=1))
         auto, _ = update_auto(users, not in_market_hours(now))
         n = sum(len(u["positions"]) for u in users); got = sum(len(v) for v in auto.values())
         ex = sum(1 for v in auto.values() for x in v.values() if x.get("exit"))
@@ -744,6 +787,8 @@ def main():
         if s["exchange"] == "NSE" and s["symbol"] in HL52: s["hi52"], s["lo52"] = HL52[s["symbol"]]; s["from_hi"] = round((s["price"] / s["hi52"] - 1) * 100, 1)
     if not scan_bse:
         sigs += [s for s in old.get("signals", []) if s.get("exchange") == "BSE"]
+    try: write_listings()
+    except Exception as e: log.warning("listings not updated: %s", e)
     pos, users = load_positions(), cloud_users()
     allpos = {pos_key(p): p for p in pos + [p for u in users for p in u["positions"]] if is_open(p)}
     for u in users:
