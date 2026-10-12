@@ -40853,5 +40853,46 @@
    "mcap_cat": null
   }
  ],
- "quotes": {}
+ "quotes": {
+  "NSE:PERSISTENT": {
+   "price": 5787.0,
+   "ma": 5524.51,
+   "pct": 4.75,
+   "chg": 0.29,
+   "exchange": "NSE",
+   "name": "Persistent Systems Limited",
+   "date": "2026-10-12",
+   "at": "2026-10-12T18:46:24+00:00"
+  },
+  "NSE:CUB": {
+   "price": 231.17,
+   "ma": 224.81,
+   "pct": 2.83,
+   "chg": -0.11,
+   "exchange": "NSE",
+   "name": "City Union Bank Limited",
+   "date": "2026-10-12",
+   "at": "2026-10-12T18:46:24+00:00"
+  },
+  "NSE:KARURVYSYA": {
+   "price": 342.3,
+   "ma": 334.81,
+   "pct": 2.24,
+   "chg": 0.71,
+   "exchange": "NSE",
+   "name": "Karur Vysya Bank Limited",
+   "date": "2026-10-12",
+   "at": "2026-10-12T18:46:24+00:00"
+  },
+  "NSE:MBAPL": {
+   "price": 166.49,
+   "ma": 164.48,
+   "pct": 1.22,
+   "chg": 0.71,
+   "exchange": "NSE",
+   "name": "Madhya Bharat Agro Products Limited",
+   "date": "2026-10-12",
+   "at": "2026-10-12T18:46:24+00:00"
+  }
+ }
 }
