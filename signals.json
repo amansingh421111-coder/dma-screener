@@ -40860,9 +40860,11 @@
    "pct": 4.75,
    "chg": 0.29,
    "exchange": "NSE",
+   "price_from": "NSE",
+   "hist": "NSE",
    "name": "Persistent Systems Limited",
    "date": "2026-10-12",
-   "at": "2026-10-12T19:40:38+00:00"
+   "at": "2026-10-12T21:53:14+00:00"
   },
   "NSE:CUB": {
    "price": 231.17,
@@ -40870,9 +40872,11 @@
    "pct": 2.83,
    "chg": -0.11,
    "exchange": "NSE",
+   "price_from": "NSE",
+   "hist": "NSE",
    "name": "City Union Bank Limited",
    "date": "2026-10-12",
-   "at": "2026-10-12T19:40:38+00:00"
+   "at": "2026-10-12T21:53:14+00:00"
   },
   "NSE:KARURVYSYA": {
    "price": 342.3,
@@ -40880,9 +40884,11 @@
    "pct": 2.24,
    "chg": 0.71,
    "exchange": "NSE",
+   "price_from": "NSE",
+   "hist": "NSE",
    "name": "Karur Vysya Bank Limited",
    "date": "2026-10-12",
-   "at": "2026-10-12T19:40:38+00:00"
+   "at": "2026-10-12T21:53:14+00:00"
   },
   "NSE:MBAPL": {
    "price": 166.49,
@@ -40890,9 +40896,11 @@
    "pct": 1.22,
    "chg": 0.71,
    "exchange": "NSE",
+   "price_from": "NSE",
+   "hist": "NSE",
    "name": "Madhya Bharat Agro Products Limited",
    "date": "2026-10-12",
-   "at": "2026-10-12T19:40:38+00:00"
+   "at": "2026-10-12T21:53:14+00:00"
   },
   "BSE:ADANIPORTS": {
    "price": 1752.1,
@@ -40900,9 +40908,11 @@
    "pct": 1.61,
    "chg": -0.45,
    "exchange": "BSE",
+   "price_from": "BSE",
+   "hist": "BSE",
    "name": "Adani Ports and Special Economic Zone Limited",
    "date": "2026-10-12",
-   "at": "2026-10-12T19:40:38+00:00"
+   "at": "2026-10-12T21:53:14+00:00"
   }
  }
 }
