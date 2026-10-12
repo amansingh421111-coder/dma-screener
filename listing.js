@@ -16,10 +16,10 @@ const lsBoth = (sym) => { const i = lsInfo(sym); return i.nse && i.bse; };
 /* the exchange to open when none is given: NSE when listed there */
 const lsEx = (sym, ex) => { const i = lsInfo(sym); return ex === "BSE" && i.bse ? "BSE" : ex === "NSE" && i.nse ? "NSE" : i.nse ? "NSE" : i.bse ? "BSE" : ex || "NSE"; };
 const lsName = (sym) => lsInfo(sym).name;
-/* Yahoo tickers to try, best first: a BSE share also on NSE is usually SYMBOL.BO, a BSE-only share its scrip code */
+/* Yahoo tickers to try, best first: SYMBOL.BO, then the scrip code for BSE-only shares */
 function lsTickers(sym, ex) {
   if (ex !== "BSE") return [sym + ".NS"];
-  const i = lsInfo(sym); return [...new Set(i.nse && i.code ? [sym + ".BO", i.code + ".BO"] : i.code ? [i.code + ".BO", sym + ".BO"] : [sym + ".BO"])];
+  const i = lsInfo(sym); return [...new Set(i.code && !i.nse ? [sym + ".BO", i.code + ".BO"] : [sym + ".BO"])];   // Yahoo does not know shares on both exchanges by their BSE code
 }
 const lsTicker = (sym, ex) => lsTickers(sym, ex)[0];
 /* daily prices for a share on one exchange, trying each ticker; cached in EQ.charts under the first ticker */

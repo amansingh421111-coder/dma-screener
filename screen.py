@@ -471,11 +471,11 @@ def share_name(sym, ex="NSE"):
 
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
 def pos_tickers(p):
-    """Yahoo tickers to try, best first. BSE: a share also on NSE is usually found as SYMBOL.BO, a BSE-only share by its scrip code."""
+    """Yahoo tickers to try, best first: SYMBOL.BO, then the scrip code for BSE-only shares."""
     s = p["symbol"]
     if p.get("exchange") != "BSE": return [s + ".NS"]
     code = bse_code(s); dual = s in (listing().get("n") or {})
-    t = [s + ".BO", code + ".BO"] if dual and code else [code + ".BO", s + ".BO"] if code else [s + ".BO"]
+    t = [s + ".BO", code + ".BO"] if code and not dual else [s + ".BO"]   # Yahoo does not know shares on both exchanges by their BSE code
     return list(dict.fromkeys(t))
 def pos_yahoo(p): return pos_tickers(p)[0]
 
