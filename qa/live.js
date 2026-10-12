@@ -7,6 +7,11 @@ const URL = "https://screenedstocks.vercel.app/";
   fs.mkdirSync("shots", { recursive: true });
   await new Promise((r) => setTimeout(r, 150000));   // let the deploy of the same push finish first
   const b = await chromium.launch();
+  const probe = [];   // the price feed itself: last days per ticker
+  for (const t of ["RELIANCE.NS", "RELIANCE.BO", "500325.BO", "ADANIPORTS.NS", "ADANIPORTS.BO", "532921.BO"]) {
+    try { const r = await fetch(URL + "api/dma?a=chart&t=" + t), j = await r.json(); probe.push(`${t} ${r.status} ${j.c ? j.dates.slice(-3).join(",") + " " + j.c.slice(-3).join(",") + " asof " + j.asof : j.error}`); }
+    catch (e) { probe.push(`${t} fetch failed ${e.message}`); }
+  }
   const report = [], errs = [];
   for (const [w, scheme] of [[1000, "light"], [390, "dark"]]) {
     const ctx = await b.newContext({ viewport: { width: w, height: 900 }, colorScheme: scheme, serviceWorkers: "block" });
@@ -73,7 +78,7 @@ const URL = "https://screenedstocks.vercel.app/";
     await p.screenshot({ path: "shots/quote_bse_1280.png" });
     await ctx.close();
   }
-  fs.writeFileSync("shots/report.txt", report.concat(["errors:"], errs.slice(0, 40)).join("\n"));
+  fs.writeFileSync("shots/report.txt", probe.concat(report).concat(["errors:"], errs.slice(0, 40)).join("\n"));
   for (const l of report) console.log("::notice::" + l.slice(0, 900));
   console.log("::notice::errors " + errs.length + ": " + errs.slice(0, 8).join(" | ").slice(0, 900));
   await b.close();
