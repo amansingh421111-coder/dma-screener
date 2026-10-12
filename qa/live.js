@@ -64,6 +64,15 @@ const URL = process.env.LIVE_URL || "https://screenedstocks.vercel.app/";
     await p.goto(URL + "#positions", { waitUntil: "load" }); await p.waitForTimeout(15000);
     const rows = await p.evaluate(() => [...document.querySelectorAll("tr.hrow")].map((r) => r.innerText.replace(/\s+/g, " ").slice(0, 220)));
     report.push("pos rows " + JSON.stringify(rows));
+    report.push("pos table " + JSON.stringify(await p.evaluate(() => {   // every visible column sorts correctly both ways, totals add up
+      const bad = [], rowsOf = () => POS.map((p) => ({ p, c: calc(p) })).filter((x) => x.c.open), cols = HC.filter((c) => c[4] && hOn(c)).map((c) => c[0]);
+      for (const k of cols) for (const d of [-1, 1]) { HS.k = k; HS.d = d; render(); const f = HC.find((c) => c[0] === k)[4], R = rowsOf();
+        const vs = [...document.querySelectorAll(".ht tbody tr.hrow")].map((tr) => f(R.find((r) => r.p.symbol === tr.querySelector("td.hs b").textContent)));
+        for (let i = 1; i < vs.length; i++) { const a = vs[i - 1], b = vs[i]; if (a == null ? b != null : b != null && (typeof a === "string" ? a.localeCompare(b) * d > 0 : (a - b) * d > 0)) { bad.push(k + d); break; } } }
+      HS.k = "attention"; render(); const R = rowsOf(), tot = document.querySelector(".ht tr.tot").innerText;
+      return { cols: [...document.querySelectorAll(".ht thead th")].map((t) => t.innerText.trim()).filter(Boolean), badSorts: bad, totalsOk: tot.includes(inr(R.reduce((a, r) => a + r.c.value, 0))) };
+    })));
+    await p.evaluate(() => hGroup("strategy")); await p.waitForTimeout(800); await p.screenshot({ path: "shots/pos_group_1280.png" }); await p.evaluate(() => hGroup("none"));
     await p.screenshot({ path: "shots/pos_1280.png" });
     await p.evaluate(() => toggleH("t0")); await p.waitForTimeout(6000);
     report.push("pos ADANIPORTS details " + JSON.stringify(await p.evaluate(() => ({ other: (document.body.innerText.match(/Same share on NSE\s*\n?\s*[^\n]*/) || [""])[0], panel: ((document.querySelector(".exw") || {}).innerText || "").slice(0, 300) }))));

@@ -85,7 +85,7 @@ tr.dt td:first-child{position:static}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px 12px;margin:12px 0}.facts b{display:block;color:var(--ink);font-weight:600}
 .dtl a{color:var(--accent);font-weight:600;text-decoration:none;margin-right:14px}
 .empty{text-align:center;color:var(--mute);padding:36px 12px}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
 .sc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}.sc span{font-size:12.5px;color:var(--mute)}.sc b{display:block;font-size:21px;line-height:1.2}.sc small{font-size:12px;color:var(--mute)}
 .fm{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .fm h3{margin:0 0 10px;font-size:16px}
@@ -448,12 +448,13 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-13.5</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-13.6</span></footer>
 
 </main>
 <script src="listing.js"></script>
 <script src="insights.js"></script>
 <script src="exits.js"></script>
+<script src="holdings.js"></script>
 <script src="entity.js"></script>
 <script src="cdl.js"></script>
 <script>
@@ -830,8 +831,11 @@ $("pimp").addEventListener("change",async e=>{try{const d=JSON.parse(await e.tar
   const sig=t=>[t.type,t.date,t.qty,t.price].join("|"),have=new Set(cur.txns.map(sig));n.txns.forEach(t=>{if(!have.has(sig(t)))cur.txns.push(Object.assign({},t,{id:uidn()}))})});
  normalize();savePos();render()}catch(x){alert("That file is not a valid positions export.")}e.target.value=""});
 const SORTS_P=[["attention","Needs attention first"],["best","Best return first"],["worst","Worst return first"],["value","Largest first"],["recent","Most recent first"],["sym","A to Z"]];
-$("psort").innerHTML=SORTS_P.map(([k,t])=>`<option value="${k}">${t}</option>`).join("");
-$("psort").addEventListener("change",e=>{PSORT=e.target.value;render()});
+/* holdings: the same orders as the column headers */
+const SORTS_H=[["attention","Needs attention first"],["pl:-1","Biggest gain first"],["pl:1","Biggest loss first"],["ret:-1","Best return first"],["ret:1","Worst return first"],["val:-1","Largest first"],["day:-1","Best today"],["day:1","Worst today"],["stop:1","Closest to stop"],["risk:-1","Most at risk"],["held:1","Most recent first"],["strat:1","By strategy"],["share:1","A to Z"]];
+function fillPsort(){const open=PVIEW==="open",L=open?SORTS_H:SORTS_P,cur=open?(HS.k==="attention"?"attention":HS.k+":"+HS.d):PSORT;
+ $("psort").innerHTML=L.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")+(open&&!L.some(x=>x[0]===cur)?`<option value="${cur}">Sorted by column</option>`:"");$("psort").value=cur}
+$("psort").addEventListener("change",e=>{const v=e.target.value;if(PVIEW==="open"){const[k,d]=v.split(":");HS.k=k;HS.d=+d||-1;hSave()}else PSORT=v;render()});
 function sortRows(rows,closed){const ret=c=>closed?c.realPct:c.unrealPct;
  const by={attention:(a,b)=>closed?(b.c.L.last||"").localeCompare(a.c.L.last||""):((b.c.st?b.c.st[2]:0)-(a.c.st?a.c.st[2]:0)||(a.c.unrealPct??0)-(b.c.unrealPct??0)),
  best:(a,b)=>(ret(b.c)??-1e9)-(ret(a.c)??-1e9),worst:(a,b)=>(ret(a.c)??1e9)-(ret(b.c)??1e9),value:(a,b)=>(closed?b.c.L.soldVal-a.c.L.soldVal:b.c.value-a.c.value),
@@ -868,7 +872,7 @@ function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%
 function openCard(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1):"0",L=c.L;
  return `<article class="pc"><div class="ph"><div>${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}${exTag(p.exchange)}<span class="tag ${st[1]}">${st[0]}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}${pName(p,c.q)?`<div class="sub">${esc(pName(p,c.q))}</div>`:""}</div>
  <div style="text-align:right"><b>${c.px!=null?inr(c.px):"–"}</b>${c.px!=null?`<div class="sub">${pxSrc(p,c.q)}</div>`:""}${c.unreal!=null?`<div class="${pcl(c.unreal)}" style="font-weight:600">${mny(c.unreal)} (${sg(+c.unrealPct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
- <div class="fcs"><div><span>Quantity</span><b>${L.qty}</b></div><div><span>Avg cost</span><b>${inr(L.avg)}</b></div><div><span>Invested</span><b>${inr(c.invested)}</b></div><div><span>Value</span><b>${inr(c.value)}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Holding</span><b>${held(c.days)}</b></div></div>
+ <div class="fcs"><div><span>Quantity</span><b>${L.qty}</b></div><div><span>Avg cost</span><b>${inr(L.avg)}</b></div><div><span>Invested</span><b>${inr(c.invested)}</b></div><div><span>Current value</span><b>${inr(c.value)}</b></div><div><span>Today</span><b class="${c.day!=null?pcl(c.day):""}">${c.day!=null?mny(c.day):"–"}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Strategy</span><b>${esc(hStratName(hSid(p)))}</b></div><div><span>Risk to stop</span><b>${hRisk({p,c})!=null?inr(hRisk({p,c})):"–"}</b></div><div><span>Holding</span><b>${held(c.days)}</b></div></div>
  ${pbar(withLv(p),L.avg,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${(()=>{const v=lv(p);return (c.px!=null&&v.sl?`<span>${((c.px/v.sl-1)*100).toFixed(1)}% above ${v.slAuto?"auto ":""}stop</span>`:"")+(c.px!=null&&v.tg?`<span>${((v.tg/c.px-1)*100).toFixed(1)}% to ${v.tgAuto?"auto ":""}target</span>`:"")})()}</div>
  <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c)+(c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""):""}</article>`}
 function closedRow(p,c){const L=c.L;
@@ -884,31 +888,30 @@ function renderPos(){
  $("who").textContent=ME;renderTg();
  $("pmig").hidden=!MIG.length;$("pmig").innerHTML=MIG.length?`<b>Your positions were reorganised: one holding per share.</b><ul>${MIG.map(n=>`<li>${esc(n)}</li>`).join("")}</ul><button class="btn sm" onclick="dismissMig()">Got it</button>`:"";
  const all=POS.map(p=>({p,c:calc(p)})),oc=all.filter(x=>x.c.open),cc=all.filter(x=>!x.c.open);
- let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;oc.forEach(({p,c})=>{const sl=lv(p).sl;if(sl)riskAmt+=Math.max(0,c.L.qty*(c.L.avg-sl));else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
+ let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;let atStop=0,fromNow=0;oc.forEach(({p,c})=>{const sl=lv(p).sl;if(sl){riskAmt+=Math.max(0,c.L.qty*(c.L.avg-sl));atStop+=c.L.qty*(sl-c.L.avg);if(c.px!=null)fromNow+=c.L.qty*Math.max(0,c.px-sl)}else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
  all.forEach(({c})=>{re+=c.L.real});const un=val-inv,unp=inv?un/inv*100:0,sells=all.filter(x=>x.c.L.sold>0).length;
- $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}</small>${dayBase?`<small>Today <span class="${pcl(day)}">${mny(day)}</span></small>`:""}</div>
+ $("psum").innerHTML=`<div class="sc"><span>Invested</span><b>${inr(inv)}</b><small>What you paid for the shares you hold</small></div>
+ <div class="sc"><span>Current value</span><b>${inr(val)}</b><small>${dayBase?`Today <span class="${pcl(day)}">${mny(day)} (${sg(+(day/dayBase*100).toFixed(2))}%)</span>`:"At latest prices"}</small></div>
  <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
  <div class="sc"><span>Realised P&amp;L</span><b class="${pcl(re)}">${sells?mny(re):"₹0"}</b><small>${sells?"From "+sells+" holding"+(sells>1?"s":"")+" with sales":"No sales yet"}</small></div>
- <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" with a price"}</small></div>
- <div class="sc"><span>At risk if all stops hit</span><b>${nostop===oc.length&&oc.length?"–":inr(riskAmt)}</b><small>${val&&riskAmt?(riskAmt/val*100).toFixed(1)+"% of value":""}${nostop?(riskAmt?" · ":"")+nostop+" without a stop":""}</small></div>`;
+ <div class="sc" title="Sum over holdings of quantity x (stop - average cost): what you would book against your cost if every stop were hit"><span>If every stop is hit</span><b class="${nostop===oc.length?"":pcl(atStop)}">${nostop===oc.length&&oc.length?"–":mny(atStop)}</b><small>${val&&fromNow?`${mny(-fromNow)} from today's value (${(fromNow/val*100).toFixed(1)}%)`:""}${nostop?(fromNow?" · ":"")+nostop+" without a stop":""}</small></div>
+ <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" of "+oc.length+" priced"}</small></div>`;
  $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button><button aria-pressed="${PVIEW==="watch"}" onclick="PVIEW='watch';render()">Watchlist (${WL.length})</button><button aria-pressed="${PVIEW==="size"}" onclick="PVIEW='size';render()">Position size</button><button aria-pressed="${PVIEW==="reports"}" onclick="PVIEW='reports';render()">Reports</button>`;
  $("szcard").hidden=PVIEW!=="size";$("psort").hidden=PVIEW!=="open"&&PVIEW!=="closed";$("setcard").hidden=PVIEW!=="reports";if(PVIEW!=="watch")$("wform").hidden=true;$("wbar").hidden=PVIEW!=="watch";fillSettings();
- $("psort").value=PSORT;
+ fillPsort();$("psort").classList.toggle("hide-wide",PVIEW==="open");
  let out="";
  if(PVIEW==="watch"){out=renderWatch()}
  else if(PVIEW==="reports"){out=renderReports()}
  else if(PVIEW==="size"){out=""}
  else if(PVIEW==="open"){const rows=sortRows(oc,false);
   if(!rows.length)out=`<div class="empty">No holdings yet.<br>Add your first purchase with ＋ Add position, or tap Track on any stock in the Screener.<br>Buying the same share again adds to the same holding and updates its average cost.</div>`;
-  else out=`<div class="ptable"><div class="tw"><table class="pt"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th>LTP</th><th class="cx">Day</th><th class="cx">Invested</th><th>Value</th><th>P&amp;L</th><th>P&amp;L %</th><th class="cx">Weight</th><th>Stop loss</th><th>Target</th><th class="cx">vs ${data.ma_period}-DMA</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>openRow(p,c,val)).join("")}
-  <tr class="tot"><td>Total</td><td></td><td></td><td></td><td class="cx">${dayBase?`<span class="${pcl(day)}">${mny(day)}</span>`:""}</td><td class="cx">${inr(inv)}</td><td>${inr(val)}</td><td><span class="${pcl(un)}">${mny(un)}</span></td><td>${pcs(unp)}</td><td class="cx">100%</td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div>
-  <div class="pcards">${rows.map(({p,c})=>openCard(p,c,val)).join("")}</div>`}
+  else out=hTools()+hTable(rows,{inv,val,pl:un,day,dayBase,risk:fromNow})+`<div class="pcards">${hSorted(rows).map(({p,c})=>openCard(p,c,val)).join("")}</div>`}
  else{const rows=sortRows(cc,true);let rt=0,rc=0;rows.forEach(({c})=>{rt+=c.L.real;rc+=c.L.soldCost});
   if(!rows.length)out=`<div class="empty">No closed holdings yet.<br>When you sell every share of a holding, it moves here with its realised profit or loss.</div>`;
   else out=`<div class="ptable"><div class="tw"><table class="pt" style="min-width:900px"><thead><tr><th>Symbol</th><th>Bought</th><th>Avg buy</th><th>Avg sell</th><th>Realised P&amp;L</th><th>Return</th><th>First buy</th><th>Last sale</th><th>Held</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>closedRow(p,c)).join("")}
   <tr class="tot"><td>Total</td><td></td><td></td><td></td><td><span class="${pcl(rt)}">${mny(rt)}</span></td><td>${rc?pcs(rt/rc*100):""}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div>
   <div class="pcards">${rows.map(({p,c})=>closedCard(p,c)).join("")}</div>`}
- $("plist").innerHTML=out;
+ $("plist").innerHTML=out;if(PVIEW==="open"&&typeof hFit==="function")hFit();
  const open=oc.map(x=>x.p),unq=open.filter(p=>!quote(p)).length,al=open.some(p=>p.alertMa||p.alertSl||p.alertTg);
  let n="";if(unq&&CLOUD.ok)n+=`${unq} holding${unq>1?"s have":" has"} no price yet: it is being fetched from the exchange price feed and also comes with the next 15-minute check in market hours. `;
  if(al&&CLOUD.ok&&!CLOUD.connected)n+=`<b>Alerts are on, but Telegram is not connected.</b> Tap Connect Telegram above. `;
