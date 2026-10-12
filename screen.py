@@ -668,12 +668,21 @@ def main():
     ap.add_argument("--force", action="store_true", help="ignore market-hours gate, scan BSE too")
     ap.add_argument("--summary", action="store_true", help="send full end-of-day summary")
     ap.add_argument("--test-alert", action="store_true", help="send a sample alert and exit")
+    ap.add_argument("--levels", action="store_true", help="only work out and store the automatic stop / target (no alerts, no scan)")
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     c = load_cfg(); now = dt.datetime.now(IST)
     if a.test_alert:
         demo = [dict(symbol="RELIANCE", exchange="NSE", price=2910.5, ma=2875.2, pct=1.2, volume=1, type="buy", mcap=1960000)]
         sys.exit(0 if notify(format_msg(demo, "🧪 TEST alert", 5)) else 1)
+    if a.levels:   # counts only: holdings never go into the public run log
+        users = cloud_users(); allpos = {pos_key(p): p for u in users for p in u["positions"]}
+        position_quotes(list(allpos.values()), c)
+        auto, _ = update_auto(users, not in_market_hours(now))
+        n = sum(len(u["positions"]) for u in users); got = sum(len(v) for v in auto.values())
+        ex = sum(1 for v in auto.values() for x in v.values() if x.get("exit"))
+        print(f"::notice::automatic levels: {got} of {n} open positions for {len(users)} users ({ex} with a rule exit); rules from exits.json of {load_exits().get('_date')}")
+        return
     if not (a.force or a.summary or in_market_hours(now)):
         log.info("Outside market hours, skipping"); return
     old = read_json("signals.json", {})

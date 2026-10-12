@@ -8,7 +8,7 @@ on:
       mode:
         description: "What to run"
         type: choice
-        options: [run, test-alert, backtest, brief-morning, brief-evening]
+        options: [run, levels, test-alert, backtest, brief-morning, brief-evening]
         default: run
       top: { description: "Backtest: number of stocks", default: "100" }
       years: { description: "Backtest: years of history", default: "5" }
@@ -39,6 +39,9 @@ jobs:
       - name: Screener (manual run)
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'run'
         run: python screen.py --force
+      - name: Automatic stop / target only (no alerts)
+        if: inputs.mode == 'levels'
+        run: python screen.py --levels
       - name: Test alert
         if: inputs.mode == 'test-alert'
         run: python screen.py --test-alert
