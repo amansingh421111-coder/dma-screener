@@ -29,6 +29,12 @@ const URL = "https://screenedstocks.vercel.app/";
         tiles: document.querySelectorAll(".co-tiles .ov-tile").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
       report.push(`${w} company ${sym} ${JSON.stringify(info)}`);
     }
+    await p.goto(URL + "#strategies", { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
+    await p.evaluate("SVIEW='list';STAB={dma44_zone:'exits'};sxTog('dma44_zone')"); await p.waitForTimeout(3000);
+    await p.evaluate("render()"); await p.waitForTimeout(800);
+    await p.evaluate(() => { const e = [...document.querySelectorAll("h4.sx-sub")].find((x) => x.offsetParent && /Which stop/.test(x.textContent)); if (e) e.scrollIntoView(); });
+    await p.screenshot({ path: `shots/exits_${w}.png` });
+    report.push(`${w} exits ${JSON.stringify(await p.evaluate(() => ({ loaded: typeof EXI !== "undefined" && !!(EXI && EXI.strategies), n: EXI && EXI.strategies ? EXI.strategies.length : 0, date: EXI && EXI.price_date, all: !!(EXI && EXI.strategies && EXI.strategies[0] && EXI.strategies[0].chosen_all), rows: document.querySelectorAll(".ex-t tbody tr").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth })))}`);
     await p.evaluate("openStock('INFY','NSE')"); await p.waitForTimeout(5000);
     const q = await p.$(".eq-p"); if (q) await q.screenshot({ path: `shots/quote_${w}.png` });
     await p.evaluate("entClose && entClose()").catch(() => {});
