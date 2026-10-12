@@ -11,6 +11,7 @@ A repeat signal in the same stock within 10 trading days is ignored. Only trades
 
 Choice of rule (as of the latest price date): average profit per trade after costs, in the current year (weight 3),
 last year (weight 2) and the year before (weight 1). A year with fewer than 20 trades is left out.
+Also recorded: the rule with the best average over every year (chosen_all), which a user can pick instead.
 Walk-forward check: the same choice made month by month with only the data available at that time, then used on the next
 month's trades, compared with the strategy's fixed library exit and with the rule that was best over all earlier years.
 Writes exits.json.
@@ -132,6 +133,7 @@ def summarise(st, acc, months, lib_id, price_year):
         sc = allv[:, 1] / allv[:, 0]; fallback = "Too few recent trades: all years from 2016 used, equally"
     order = np.argsort(-sc); best = int(order[0]); li = ids.index(lib_id) if lib_id in ids else None
     tot = acc.sum(1)
+    sca = tot[:, 1] / np.maximum(tot[:, 0], 1); ba = int(np.argmax(sca))   # alternative: best over every year, all trades counted equally
     def row(i):
         return dict(rule=ids[i], score=round(float(sc[i]), 5), years={str(y): stat(byyear[y][i]) for y in (price_year, price_year - 1, price_year - 2) if y in byyear and byyear[y][i, 0] > 0},
                     all=stat(tot[i]))
@@ -169,6 +171,8 @@ def summarise(st, acc, months, lib_id, price_year):
                     distinct_picks=len(set(picks)), last_pick=picks[-1] if picks else None)
     return dict(id=st["id"], name=st["name"], kind=kind, rule_text=st.get("rule"), library_rule=lib_id,
                 chosen=dict(rule=ids[best], label=X.label(R[best]), score=round(float(sc[best]), 5), parts=parts, fallback=fallback),
+                chosen_all=dict(rule=ids[ba], label=X.label(R[ba]), score=round(float(sca[ba]), 5), n=int(tot[ba, 0]), days=round(float(tot[ba, 4] / max(tot[ba, 0], 1)), 1),
+                                recent_score=round(float(sc[ba]), 5), years={str(y): stat(byyear[y][ba]) for y in (price_year, price_year - 1, price_year - 2) if y in byyear and byyear[y][ba, 0] > 0}),
                 ranking=[row(int(i)) for i in order[:6]], library=row(li) if li is not None else None,
                 table=[[ids[i], round(float(sc[i]), 5)] + [None if byyear.get(y) is None or byyear[y][i, 0] < 1 else round(float(byyear[y][i, 1] / byyear[y][i, 0]), 5) for y in (price_year, price_year - 1, price_year - 2)] +
                        [round(float(tot[i, 1] / tot[i, 0]), 5) if tot[i, 0] else None, round(float(tot[i, 4] / tot[i, 0]), 1) if tot[i, 0] else None] for i in order],

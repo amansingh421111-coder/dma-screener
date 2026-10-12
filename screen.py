@@ -383,17 +383,19 @@ def redis(cmd):
 CLOUD = {"redis": False, "users": 0, "connected": 0, "error": None, "token_set": bool(os.getenv("TELEGRAM_TOKEN")), "send": None}
 
 def cloud_users():
-    """Everyone who connected Telegram on the website: [{uid, chat, positions}]."""
+    """Everyone with open positions or Telegram connected on the website: [{uid, chat (None if not connected), positions, watchlist}]."""
     CLOUD["redis"] = bool(os.getenv("UPSTASH_URL") and os.getenv("UPSTASH_TOKEN"))
     try:
         uids = redis(["SMEMBERS", "users"]) or []
         out = []
         for uid in uids:
             chat, raw = redis(["GET", f"chat:{uid}"]), redis(["GET", f"pos:{uid}"])
-            if not chat or not raw: continue
+            if not raw: continue
             full = json.loads(raw); full = full if isinstance(full, dict) else {"positions": full}; d = full.get("positions") or []
-            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol") and is_open(p)], watchlist=[w for w in (full.get("watchlist") or []) if w.get("symbol")]))
-        CLOUD["users"] = len(uids); CLOUD["connected"] = len(out)
+            if not chat and not any(p.get("symbol") and is_open(p) for p in d): continue
+            out.append(dict(uid=uid, chat=chat, positions=[p for p in d if p.get("symbol") and is_open(p)], watchlist=[w for w in (full.get("watchlist") or []) if w.get("symbol")],
+                            settings=full.get("settings") if isinstance(full.get("settings"), dict) else {}))
+        CLOUD["users"] = len(uids); CLOUD["connected"] = sum(1 for u in out if u["chat"])
         return out
     except Exception as e:
         CLOUD["error"] = str(e)[:150]
@@ -431,6 +433,8 @@ def send_telegram(chat, text):
 def pos_key(p): return f"{p.get('exchange', 'NSE')}:{p['symbol']}"
 def pos_yahoo(p): return p["symbol"] + (".BO" if p.get("exchange") == "BSE" else ".NS")
 
+PXD = {}   # position key -> daily bars, kept for the automatic stop and target
+
 def position_quotes(pos, c):
     if not pos: return {}
     data = fetch([pos_yahoo(p) for p in pos]); q = {}
@@ -438,6 +442,7 @@ def position_quotes(pos, c):
     for p in pos:
         df = data.get(pos_yahoo(p))
         if df is None: continue
+        PXD[pos_key(p)] = df
         close = df["Close"].dropna()
         if len(close) < 2: continue
         m = moving_avg(close, c["ma_type"], c["ma_period"]).iloc[-1]
@@ -445,6 +450,94 @@ def position_quotes(pos, c):
         q[pos_key(p)] = dict(price=round(px, 2), ma=None if pd.isna(m) else round(float(m), 2),
                              pct=None if pd.isna(m) else round((px / float(m) - 1) * 100, 2),
                              chg=round((px / float(close.iloc[-2]) - 1) * 100, 2))
+    return q
+
+# ---- automatic stop loss and target (rule chosen per strategy by exits.py) ----
+EXITS = {}
+
+def load_exits():
+    """Strategy id -> chosen exit rule, from exits.json. Falls back to the screener rule's library exit (-8% / +20%, 40 days)."""
+    import exitrules as X
+    if EXITS: return EXITS
+    ex = read_json("exits.json", {})
+    rules = {r["id"]: r for k in ("swing", "short") for r in (ex.get("rules") or {}).get(k, [])}
+    EXITS["_default"] = ex.get("default") or "screener"; EXITS["_date"] = ex.get("price_date"); EXITS["_rules"] = rules
+    for st in ex.get("strategies") or []:
+        r = rules.get(st["chosen"]["rule"]); ca = st.get("chosen_all") or {}; ra = rules.get(ca.get("rule")) or r
+        if r: EXITS[st["id"]] = dict(rule=r, name=st["name"], score=st["chosen"]["score"], label=st["chosen"]["label"],
+                                     rule_all=ra, score_all=ca.get("score"), label_all=ca.get("label") or st["chosen"]["label"])
+    if "screener" not in EXITS:
+        r = X.grid("swing")[[x["id"] for x in X.grid("swing")].index(X.library_rule("swing", 8, 20))]
+        EXITS["screener"] = dict(rule=r, name="Screener Buy (first day 0–5% above the 44-DMA)", score=None, label=X.label(r))
+    return EXITS
+
+def pos_entry(p):
+    """(date the current holding was opened, average cost). The holding opens when the share count goes from 0 to above 0."""
+    t = sorted([x for x in p.get("txns") or [] if x.get("date")], key=lambda x: x["date"])
+    if not t: return p.get("date"), p.get("avg") or p.get("buy")
+    q, start = 0, None
+    for x in t:
+        if x.get("type") == "buy":
+            if q <= 0: start = x["date"]
+            q += x.get("qty") or 0
+        else: q -= x.get("qty") or 0
+    return start, p.get("avg")
+
+def auto_levels(p, final, basis_all=False):
+    """Automatic levels for one open position, or None when its price history is missing.
+    basis_all: use the rule that was best over every year instead of the one best this year and the two before (a user setting)."""
+    import exitrules as X
+    E = load_exits(); sid = p.get("strategy") if p.get("strategy") in E else E["_default"]
+    if sid not in E: sid = "screener"
+    df = PXD.get(pos_key(p)); start, avg = pos_entry(p)
+    if df is None or not start or not avg: return None
+    df = df.dropna(subset=["Close"])
+    if getattr(df.index, "tz", None) is not None: df.index = df.index.tz_localize(None)
+    ch = E[sid]
+    if basis_all and ch.get("rule_all"): ch = dict(ch, rule=ch["rule_all"], score=ch.get("score_all"), label=ch.get("label_all"))
+    L = X.live_levels(list(df.index.strftime("%Y-%m-%d")), df["Open"].to_numpy(float), df["High"].to_numpy(float), df["Low"].to_numpy(float),
+                      df["Close"].to_numpy(float), start, float(avg), ch["rule"], final=final)
+    if not L: return None
+    return dict(L, strategy=sid, strategy_name=ch["name"], rule=ch["rule"]["id"], rule_label=ch["label"], rule_score=ch["score"],
+                entry_date=start, entry_price=round(float(avg), 2), exits_date=E.get("_date"), basis="all" if basis_all else "recent")
+
+def update_auto(users, final):
+    """Work out the automatic levels for every open position, keep the stop from ever moving down, store them per user
+    (auto:<uid>, read by the website) and return {uid: {key: levels}} plus the changes worth a message."""
+    out, changes = {}, {}
+    for u in users:
+        prev = {}
+        try: prev = json.loads(redis(["GET", f"auto:{u['uid']}"]) or "{}").get("items") or {}
+        except Exception: prev = {}
+        items = {}
+        for p in u["positions"]:
+            k = pos_key(p)
+            try: a = auto_levels(p, final, bool((u.get("settings") or {}).get("exitAll")))
+            except Exception as e: log.warning("auto levels %s: %s", k, e); a = None
+            if not a: continue
+            o = prev.get(k) or {}
+            same = o.get("entry_date") == a["entry_date"] and o.get("entry_price") == a["entry_price"] and o.get("strategy") == a["strategy"]
+            if same and o.get("sl") and a["sl"] < o["sl"] and not a.get("exit"):
+                a["sl"] = o["sl"]; a["kept"] = True   # stops only move up: an earlier, higher stop stays
+            nt = (o.get("notified") or {}) if same else {}
+            moved = [(lbl, nt.get(f), a.get(f)) for lbl, f in (("stop", "sl"), ("target", "target"))
+                     if nt.get(f) and a.get(f) and abs(a[f] / nt[f] - 1) >= 0.005] if same and nt and not a.get("exit") else []
+            if moved: changes.setdefault(u["uid"], []).append((p, a, moved))
+            a["notified"] = dict(sl=a["sl"], target=a.get("target")) if (moved or not nt) else nt
+            items[k] = a
+        out[u["uid"]] = items
+        try: redis(["SET", f"auto:{u['uid']}", json.dumps(dict(updated=dt.datetime.now(dt.timezone.utc).isoformat(), final=final, items=items))])
+        except Exception as e: log.warning("could not store automatic levels: %s", e)
+    return out, changes
+
+def effective(p, a):
+    """The levels alerts use: your own number when you set that field yourself, otherwise the automatic one."""
+    man_sl = p.get("slMode") == "manual" or (p.get("slMode") is None and p.get("sl"))
+    man_tg = p.get("tgMode") == "manual" or (p.get("tgMode") is None and p.get("target"))
+    q = dict(p)
+    q["sl"], q["sl_auto"] = (p.get("sl"), False) if man_sl else ((a or {}).get("sl"), bool(a))
+    q["target"], q["tg_auto"] = (p.get("target"), False) if man_tg else ((a or {}).get("target"), bool(a))
+    q["_auto"] = a
     return q
 
 def xcheck(nse_items):
@@ -490,8 +583,9 @@ def watch_events(wl, quotes, c):
         if w.get("below") and px <= w["below"]: ev.append((k + ":w4", f"👁 WATCH: {s} fell to ₹{px} (your level ₹{w['below']} or lower)"))
     return ev
 
-def position_events(pos, quotes, c):
-    """One alert set per distinct position. Two positions in the same stock (different buy price / stop) are both checked."""
+def position_events(pos, quotes, c, auto=None):
+    """One alert set per distinct position. Two positions in the same stock (different buy price / stop) are both checked.
+    auto: {position key: automatic levels}; a field you set yourself overrides the automatic one."""
     ev = []; seen = set()
     for p in pos:
         if not is_open(p): continue
@@ -500,17 +594,35 @@ def position_events(pos, quotes, c):
         seen.add(ident)
         q = quotes.get(pos_key(p))
         if not q: continue
+        a = (auto or {}).get(pos_key(p)); e = effective(p, a)
         px, s = q["price"], p["symbol"]
         k = f"{pos_key(p)}#{ident}"
         avg, qn = p.get("avg"), p.get("qty")
         pl = f" · avg ₹{avg:g}, P&L {'+' if px >= avg else '−'}₹{abs(px - avg) * qn:,.0f} ({(px / avg - 1) * 100:+.1f}%)" if avg and qn else ""
-        if p.get("alertSl") and p.get("sl") and px <= p["sl"]:
-            ev.append((k + ":sl", f"🛑 STOP LOSS hit: {s} ₹{px} (stop ₹{p['sl']}){pl}"))
-        if p.get("alertTg") and p.get("target") and px >= p["target"]:
-            ev.append((k + ":tg", f"🎯 TARGET reached: {s} ₹{px} (target ₹{p['target']}){pl}"))
+        rule = f"\n   Rule for {a['strategy_name']}: {a['rule_label']}" if a else ""
+        x = (a or {}).get("exit")
+        if x and ((x["why"] == "stop" and e["sl_auto"] and p.get("alertSl")) or (x["why"] == "target" and e["tg_auto"] and p.get("alertTg")) or (x["why"] == "time" and (e["sl_auto"] or e["tg_auto"]))):
+            d = dt.date.fromisoformat(x["date"]).strftime("%d %b")
+            msg = {"stop": f"🛑 STOP LOSS hit (automatic): {s} ₹{px} · the stop ₹{x['price']:g} was reached on {d}{pl}",
+                   "target": f"🎯 TARGET reached (automatic): {s} ₹{px} · the target ₹{x['price']:g} was reached on {d}{pl}",
+                   "time": f"⏱ TIME LIMIT: {s} ₹{px} · held {a['days_held']} trading days, the rule sells at the close on {d}{pl}"}[x["why"]]
+            ev.append((k + ":ax", msg + rule))
+        else:
+            if p.get("alertSl") and e.get("sl") and px <= e["sl"]:
+                ev.append((k + (":asl" if e["sl_auto"] else ":sl"), f"🛑 STOP LOSS hit: {s} ₹{px} ({'automatic ' if e['sl_auto'] else ''}stop ₹{e['sl']:g}){pl}" + (rule if e["sl_auto"] else "")))
+            if p.get("alertTg") and e.get("target") and px >= e["target"]:
+                ev.append((k + (":atg" if e["tg_auto"] else ":tg"), f"🎯 TARGET reached: {s} ₹{px} ({'automatic ' if e['tg_auto'] else ''}target ₹{e['target']:g}){pl}" + (rule if e["tg_auto"] else "")))
         if p.get("alertMa") and q["pct"] is not None:
             if q["pct"] < 0: ev.append((k + ":below", f"⚠️ {s} closed below its {c['ma_period']}-DMA ({q['pct']:+}%)"))
             elif q["pct"] <= c["near_pct"]: ev.append((k + ":near", f"👀 {s} is approaching its {c['ma_period']}-DMA from above ({q['pct']:+}%)"))
+    return ev
+
+def level_events(changes):
+    """Messages for automatic levels that moved (a trailing stop rising, or a new rule chosen for the strategy)."""
+    ev = []
+    for p, a, moved in changes or []:
+        parts = ", ".join(f"{lbl} ₹{old:g} → ₹{new:g}" for lbl, old, new in moved)
+        ev.append((f"{pos_key(p)}#{p.get('id') or ''}:lv:{a['sl']}:{a.get('target')}", f"🔁 {p['symbol']}: automatic {parts}\n   Rule for {a['strategy_name']}: {a['rule_label']}"))
     return ev
 
 # ---- alerts ----
@@ -628,6 +740,8 @@ def main():
     for u in users:
         for w in u.get("watchlist", []): allpos.setdefault(pos_key(w), w)
     quotes = position_quotes(list(allpos.values()), c)
+    final = a.summary or now.time() >= dt.time(15, 30)
+    auto, changes = update_auto(users, final) if users else ({}, {})
     official = bool(BHAV.get("NSE") and str(BHAV["NSE"][0]) == str(latest))
     health = dict(run_at=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=str(latest), source="official" if official else "intraday",
                   scanned=len(data), skipped=len(items) - len(todo), checked=RECON["checked"], corrected=RECON["mismatch"] + RECON["added"], xcheck=xcheck(nse))
@@ -659,7 +773,8 @@ def main():
         w = ", ".join(f"{x['symbol']} NSE {x['nse']} vs BSE {x['bse']}" for x in xc["worst"][:3])
         if notify(f"⚠️ Data check: {xc['mismatch']} of {xc['pairs']} dual-listed stocks have NSE and BSE closes that differ by more than 0.5% ({w}). Treat prices with care until it clears."): st["xwarn"] = 1
     for u in users:
-        uev = [e for e in position_events(u["positions"], quotes, c) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
+        if not u["chat"]: continue
+        uev = [e for e in position_events(u["positions"], quotes, c, auto.get(u["uid"])) + level_events(changes.get(u["uid"])) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
         if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in uev)) + "\n\nResearch alert only, not financial advice."):
             st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
     if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()

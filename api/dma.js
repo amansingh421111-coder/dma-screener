@@ -377,8 +377,10 @@ module.exports = async (req, res) => {
 
     if (a === "positions") {
       if (req.method === "GET") {
-        const raw = await redis(["GET", "pos:" + uid]);
-        return send(res, raw ? JSON.parse(raw) : { positions: [], ts: 0 });
+        const [raw, au] = await Promise.all([redis(["GET", "pos:" + uid]), redis(["GET", "auto:" + uid])]);
+        const doc = raw ? JSON.parse(raw) : { positions: [], ts: 0 };
+        try { doc.auto = au ? JSON.parse(au) : null; } catch (e) { doc.auto = null; }   // automatic stop / target worked out by the screener
+        return send(res, doc);
       }
       const list = body.positions;
       if (!Array.isArray(list) || list.length > 300) return send(res, { error: "Invalid positions." }, 400);
@@ -411,7 +413,9 @@ module.exports = async (req, res) => {
           if (txns.length && DATE.test(String(p.sellDate || "")) && +p.sellPrice > 0) txns.push({ id: id16(p.id) + "s", type: "sell", date: String(p.sellDate), qty: txns[0].qty, price: +p.sellPrice });
         }
         if (!txns.length) continue;
+        const mode = (x) => (x === "manual" ? "manual" : x === "auto" ? "auto" : null);
         const h = { id: id16(p.id), symbol, exchange, sl: num(p.sl), target: num(p.target), thesis: String(p.thesis || "").slice(0, 120),
+          strategy: String(p.strategy || "").replace(/[^a-z0-9_]/gi, "").slice(0, 30), slMode: mode(p.slMode), tgMode: mode(p.tgMode),
           alertMa: p.alertMa !== false, alertSl: p.alertSl !== false, alertTg: p.alertTg !== false, txns };
         const k = exchange + ":" + symbol, prev = byKey.get(k);
         if (!prev) byKey.set(k, h);
@@ -436,7 +440,7 @@ module.exports = async (req, res) => {
         }
       }
       if (body.settings && typeof body.settings === "object") {
-        const keys = ["capital", "riskPct", "brokeragePct", "brokerageFlat", "sttPct", "exchPct", "sebiPct", "stampPct", "gstPct", "dpFlat", "stcgPct", "ltcgPct", "ltcgExempt"];
+        const keys = ["exitAll", "capital", "riskPct", "brokeragePct", "brokerageFlat", "sttPct", "exchPct", "sebiPct", "stampPct", "gstPct", "dpFlat", "stcgPct", "ltcgPct", "ltcgExempt"];
         settings = {};
         for (const k of keys) { const v = +body.settings[k]; if (isFinite(v) && v >= 0 && v <= 1e12) settings[k] = v; }
       }

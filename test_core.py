@@ -1,4 +1,5 @@
 """Quick self-checks for the parts that must not break. Run: python test_core.py"""
+import numpy as np, pandas as pd
 import datetime as dt, sys
 import screen, session, watchdog, brief
 
@@ -31,6 +32,56 @@ def t_brief():
     sj = {"ma_period": 44, "signals": [], "quotes": {"NSE:X": {"price": 90, "pct": -1, "chg": -1}}}
     m = brief.build("morning", [{"symbol": "X", "exchange": "NSE", "qty": 10, "avg": 100, "sl": 95}], sj, dt.datetime(2026, 10, 12, 8, 45))
     assert "BREACHED" in m and "Morning brief" in m and "not financial advice" in m
+
+def t_auto_levels():
+    """Automatic stop/target: chosen rule applied from the buy date, stop never moves down, your own number overrides, alerts follow."""
+    import exitrules as X
+    store = {}
+    def fake(cmd):
+        if cmd[0] == "GET": return store.get(cmd[1])
+        if cmd[0] == "SET": store[cmd[1]] = cmd[2]; return "OK"
+    old = screen.redis; screen.redis = fake
+    try:
+        screen.EXITS.clear(); screen.EXITS.update({"_default": "screener", "_date": "2026-10-09", "_rules": {},
+            "screener": dict(rule=dict(fam="trail", t=10, hold=40, id="trail-t10-h40"), name="Screener Buy", score=0.01, label="Trailing stop 10%",
+                             rule_all=dict(fam="fix", sp=8, tp=20, hold=40, id="fix-sp8-tp20-h40"), score_all=0.02, label_all="Stop -8%, target +20%")})
+        idx = pd.bdate_range("2026-06-01", periods=40)
+        c = np.r_[np.linspace(100, 130, 30), np.linspace(129, 120, 10)]
+        df = pd.DataFrame(dict(Open=c, High=c * 1.005, Low=c * 0.995, Close=c, Volume=1e6), index=idx)
+        p = dict(id="p1", symbol="AAA", exchange="NSE", qty=10, avg=100.0, alertSl=True, alertTg=True, alertMa=False,
+                 txns=[dict(type="buy", date="2026-06-20", qty=10, price=100.0)])
+        screen.PXD["NSE:AAA"] = df
+        u = dict(uid="u1", chat="1", positions=[p], watchlist=[])
+        auto, ch = screen.update_auto([u], True)
+        a = auto["u1"]["NSE:AAA"]
+        assert a["entry_date"] == "2026-06-22" or a["entry_date"] == "2026-06-20", a
+        assert abs(a["sl"] - 130 * 0.9) < 0.6 and a["target"] is None and a["exit"] is None and a["basis"] == "recent", a
+        ua = dict(u, uid="u2", settings={"exitAll": 1}); aa = screen.update_auto([ua], True)[0]["u2"]["NSE:AAA"]
+        assert aa["rule"] == "fix-sp8-tp20-h40" and aa["basis"] == "all" and aa["target"] == 120.0, aa
+        # price falls: the trailing stop does not come down; at 116 the stop (117) is hit
+        df2 = pd.concat([df, pd.DataFrame(dict(Open=[118.0], High=[118.5], Low=[116.0], Close=[116.5], Volume=[1e6]), index=[idx[-1] + pd.tseries.offsets.BDay()])])
+        screen.PXD["NSE:AAA"] = df2
+        auto2, _ = screen.update_auto([u], True)
+        b = auto2["u1"]["NSE:AAA"]
+        assert b["exit"] and b["exit"]["why"] == "stop", b
+        ev = screen.position_events([p], {"NSE:AAA": {"price": 116.5, "pct": 1}}, {"ma_period": 44, "near_pct": 2}, auto2["u1"])
+        assert any(k.endswith(":ax") and "STOP LOSS hit (automatic)" in m for k, m in ev), ev
+        # your own stop wins over the automatic one
+        pm = dict(p, sl=110.0, slMode="manual")
+        e = screen.effective(pm, b)
+        assert e["sl"] == 110.0 and not e["sl_auto"]
+        ev = screen.position_events([pm], {"NSE:AAA": {"price": 109, "pct": 1}}, {"ma_period": 44, "near_pct": 2}, auto2["u1"])
+        assert any(k.endswith(":sl") and "stop ₹110" in m for k, m in ev), ev
+        # a stop that moved by 0.5% or more is announced once
+        screen.PXD["NSE:AAA"] = df.iloc[:25]
+        store.clear(); screen.update_auto([u], True)
+        screen.PXD["NSE:AAA"] = df
+        _, ch = screen.update_auto([u], True)
+        assert ch["u1"][0][2][0][0] == "stop" and ch["u1"][0][2][0][2] > ch["u1"][0][2][0][1], ch
+        lv = screen.level_events(ch["u1"]); assert "automatic stop" in lv[0][1], lv
+        _, ch = screen.update_auto([u], True); assert not ch, ch   # announced once
+    finally:
+        screen.redis = old; screen.EXITS.clear(); screen.PXD.clear()
 
 if __name__ == "__main__":
     for k, f in list(globals().items()):

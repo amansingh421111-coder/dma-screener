@@ -84,10 +84,11 @@ def sma(c, n=44):
     return out
 
 
-def simulate(O, H, L, C, D, a, rule, upto=None):
+def simulate(O, H, L, C, D, a, rule, upto=None, final=True):
     """Vectorised over N trades. O, H, L, C: (N, W) day by day from the entry day, divided by the entry price.
     D: (N, W) the 44-DMA of the PREVIOUS day, divided by the entry price. a: (N,) ATR on the day before entry / entry price.
     upto: number of days available (live positions); None = full windows.
+    final: the last available bar is a finished day (after the close). During market hours its close is not used to move the stop.
     Returns ret (gross, as a fraction), k (exit day index or -1 if still open), why (0 stop, 1 target, 2 time, -1 open),
     stop (N,) the stop level for the NEXT day, tgt (N,)."""
     N, W = O.shape; hold = rule["hold"]; f = rule["fam"]; last = min(hold, W if upto is None else upto)
@@ -115,7 +116,7 @@ def simulate(O, H, L, C, D, a, rule, upto=None):
         for m_, px, w in ((gs, o, 0), (gt, o, 1), (ls, stop, 0), (ht, tgt, 1), (tm, c, 2)):
             if m_.any(): ret[m_] = px[m_] - 1; kx[m_] = k; why[m_] = w; alive &= ~m_
         if not alive.any(): break
-    if upto is not None and alive.any() and last > 0:   # live: tomorrow's stop includes today's close
+    if upto is not None and final and alive.any() and last > 0:   # live, after the close: tomorrow's stop includes today's close
         mx = np.fmax(mx, C[:, last - 1])
         if f == "chand": stop = np.where(alive, np.maximum(stop, mx - rule["k"] * a), stop)
         elif f == "trail": stop = np.where(alive, np.maximum(stop, mx * (1 - rule["t"] / 100.0)), stop)
@@ -123,9 +124,10 @@ def simulate(O, H, L, C, D, a, rule, upto=None):
     return ret, kx, why, stop, tgt
 
 
-def live_levels(dates, o, h, l, c, entry_date, entry_price, rule):
+def live_levels(dates, o, h, l, c, entry_date, entry_price, rule, final=True):
     """Levels for one open position from its daily bars (oldest first). entry_date 'YYYY-MM-DD', entry_price = your average cost.
-    Returns dict(sl, target, until_days_left, exit) where exit is None or dict(date, price, why)."""
+    final: False during market hours (the last bar is still forming).
+    Returns dict(sl, target, days_held, days_left, exit, atr) where exit is None or dict(date, price, why)."""
     o, h, l, c = (np.asarray(x, float) for x in (o, h, l, c)); n = len(c)
     if n < 15 or not entry_price or entry_price <= 0: return None
     A = atr14(h, l, c); M = sma(c, 44)
@@ -144,7 +146,7 @@ def live_levels(dates, o, h, l, c, entry_date, entry_price, rule):
     O, H_, L_, C_ = (np.array([x[ei:n] / ep]) for x in (o, h, l, c))
     D = np.array([dprev / ep])
     # a missing bar (NaN) never triggers anything: every comparison with NaN is false
-    ret, kx, why, stop, tgt = simulate(O, H_, L_, C_, D, np.array([a]), rule, upto=W)
+    ret, kx, why, stop, tgt = simulate(O, H_, L_, C_, D, np.array([a]), rule, upto=W, final=final)
     out = dict(sl=round(float(stop[0]) * ep, 2), target=None if not np.isfinite(tgt[0]) else round(float(tgt[0]) * ep, 2),
                days_held=int(W), days_left=max(0, rule["hold"] - int(W)), exit=None, atr=round(float(A[s]), 2))
     if kx[0] >= 0:

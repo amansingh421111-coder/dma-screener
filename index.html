@@ -426,12 +426,13 @@ table.sx th{vertical-align:bottom}
 <div><label for="ppx">Price per share (₹)</label><input id="ppx" type="number" inputmode="decimal" placeholder="2500"></div>
 </div><div class="pprev" id="pprev" aria-live="polite"></div></div>
 <div id="sec-journal"><div class="fh">Journal (optional)</div><div class="fg"><div><label for="pnote">Why this trade?</label><input id="pnote" maxlength="200" placeholder="e.g. 44-DMA bounce, volume 2x"></div><div><label for="prule">Followed my rule?</label><select id="prule"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div></div></div>
-<div id="sec-risk"><div class="fh">Risk levels (for the whole holding)</div>
+<div id="sec-risk"><div class="fh">Stop loss and target (for the whole holding)</div>
 <div class="fg">
-<div><label for="psl">Stop loss (₹)</label><input id="psl" type="number" inputmode="decimal" placeholder="2350"><div class="qf" id="slq"></div></div>
-<div><label for="ptg">Target (₹)</label><input id="ptg" type="number" inputmode="decimal" placeholder="2900"><div class="qf" id="tgq"></div></div>
+<div><label for="pstrat">Strategy you used</label><select id="pstrat" onchange="renderModes()"></select></div>
+<div><label for="psl">Stop loss (₹)</label><div class="seg2 exm" id="slm"></div><input id="psl" type="number" inputmode="decimal" placeholder="2350"><div class="qf" id="slq"></div></div>
+<div><label for="ptg">Target (₹)</label><div class="seg2 exm" id="tgm"></div><input id="ptg" type="number" inputmode="decimal" placeholder="2900"><div class="qf" id="tgq"></div></div>
 <div><label for="pth">Note</label><input id="pth" placeholder="44-DMA bullish cross" maxlength="120"></div>
-</div></div>
+</div><p class="sub" id="pauto" style="margin-top:6px"></p></div>
 <div id="sec-alerts"><div class="fh">Alerts</div>
 <div class="ck"><input type="checkbox" id="a1" checked><label for="a1">Alert if it falls below or nears the 44-DMA</label></div>
 <div class="ck"><input type="checkbox" id="a2" checked><label for="a2">Alert at stop loss</label></div>
@@ -447,10 +448,11 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-12.5</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-12.6</span></footer>
 
 </main>
 <script src="insights.js"></script>
+<script src="exits.js"></script>
 <script src="entity.js"></script>
 <script src="cdl.js"></script>
 <script>
@@ -613,7 +615,7 @@ async function initAuth(){
  catch(e){ME=null;if(e.code===401)CLOUD.ok=true;else{CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}}
  render()}
 async function initSync(){
- try{const s=await api("positions",null,"GET");CLOUD.ok=true;
+ try{const s=await api("positions",null,"GET");CLOUD.ok=true;AUTO=s.auto||null;
   if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;WL=Array.isArray(s.watchlist)?s.watchlist:[];SET=s.settings&&typeof s.settings==="object"?s.settings:{};wr("dma_watch",JSON.stringify(WL));wr("dma_settings",JSON.stringify(SET));const ch=normalize();wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS));if(ch)savePos()}
   else if(TS>s.ts||(!s.ts&&POS.length)){if(!TS)stamp();await push()}
   CLOUD.connected=(await api("status",null,"GET")).connected}
@@ -705,9 +707,10 @@ function normalize(){const m=migrate(POS);POS=m.list;POS.forEach(h=>{h.exchange=
  if(m.notes.length){const seenN=new Set(rd("dma_migseen")?JSON.parse(rd("dma_migseen")):[]);const fresh=[...new Set(m.notes)].filter(n=>!seenN.has(n)&&!MIG.includes(n));if(fresh.length){MIG=MIG.concat(fresh);wr("dma_mignotes",JSON.stringify(MIG))}}return m.changed}
 function dismissMig(){let seenN=[];try{seenN=JSON.parse(rd("dma_migseen")||"[]")}catch(e){}wr("dma_migseen",JSON.stringify([...new Set(seenN.concat(MIG))].slice(-50)));MIG=[];wr("dma_mignotes","[]");render()}
 let PVIEW="open",PSORT="attention";const EXP=new Set();
-function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||(data.quotes||{})[p.exchange+":"+p.symbol]||null}
-function status(p,q){if(!q)return["No price yet","",0];const px=q.price,n=data.near_pct||2;
- if(p.sl&&px<=p.sl)return["Stop loss hit","sell",4];if(p.target&&px>=p.target)return["Target reached","buy",3];
+function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||(data.quotes||{})[p.exchange+":"+p.symbol]||(p.txns&&typeof exQuote==="function"?exQuote(p):null)}
+function status(p,q){if(!q)return["No price yet","",0];const px=q.price,n=data.near_pct||2,v=typeof lv==="function"&&p.txns?lv(p):{sl:p.sl,tg:p.target,slAuto:false,tgAuto:false},x=v.A&&v.A.exit;
+ if(x&&((x.why==="stop"&&v.slAuto)||(x.why==="target"&&v.tgAuto)||(x.why==="time"&&(v.slAuto||v.tgAuto))))return[x.why==="stop"?"Stop loss hit":x.why==="target"?"Target reached":"Time limit reached",x.why==="target"?"buy":"sell",x.why==="target"?3:4];
+ if(v.sl&&px<=v.sl)return["Stop loss hit","sell",4];if(v.tg&&px>=v.tg)return["Target reached","buy",3];
  if(q.pct!=null&&q.pct<0)return["Below "+data.ma_period+"-DMA","sell",2];if(q.pct!=null&&q.pct<=n)return["Near "+data.ma_period+"-DMA","near",1];return["On track","buy",0]}
 const dd=(a,b)=>{if(!a)return null;const n=Math.round((new Date((b||todayStr())+"T00:00:00")-new Date(a+"T00:00:00"))/864e5);return isNaN(n)||n<0?null:n};
 const held=n=>n==null?"–":n<1?"Today":n===1?"1 day":n<60?n+" days":n<730?Math.round(n/30.4)+" months":(n/365).toFixed(1)+" years";
@@ -748,12 +751,28 @@ function openForm(mode,ctx){
  show("sec-id",mode==="new");show("sec-trade",mode!=="levels");show("sec-journal",mode!=="levels");show("sec-risk",mode==="new"||mode==="levels");show("sec-alerts",mode==="new"||mode==="levels");
  $("ptype").hidden=mode==="new"||mode==="levels";
  const q=h?quote(h):null,L=h?ledger(h):null;
- if(mode==="new"){const d=ctx||{};set("psym",d.symbol);set("pex",d.exchange==="BSE"?"BSE":"NSE");setDate("pdate",todayStr());set("pqty",d.qty);set("ppx",d.price);set("psl",d.sl);set("ptg",d.target);set("pth",d.thesis);$("a1").checked=$("a2").checked=$("a3").checked=true}
- else if(mode==="levels"){set("psl",h.sl);set("ptg",h.target);set("pth",h.thesis);$("a1").checked=h.alertMa!==false;$("a2").checked=h.alertSl!==false;$("a3").checked=h.alertTg!==false}
+ if(mode==="new"){const d=ctx||{};set("psym",d.symbol);set("pex",d.exchange==="BSE"?"BSE":"NSE");setDate("pdate",todayStr());set("pqty",d.qty);set("ppx",d.price);set("psl",d.sl);set("ptg",d.target);set("pth",d.thesis);$("a1").checked=$("a2").checked=$("a3").checked=true;
+  FORM.slMode=d.sl?"manual":"auto";FORM.tgMode=d.target?"manual":"auto";$("pstrat").value="";FORM.strategy=d.strategy||""}
+ else if(mode==="levels"){set("psl",h.sl);set("ptg",h.target);set("pth",h.thesis);$("a1").checked=h.alertMa!==false;$("a2").checked=h.alertSl!==false;$("a3").checked=h.alertTg!==false;
+  FORM.slMode=isManSl(h)?"manual":"auto";FORM.tgMode=isManTg(h)?"manual":"auto";$("pstrat").value="";FORM.strategy=h.strategy||""}
  else if(mode==="edit"){setDate("pdate",t.date);set("pqty",t.qty);set("ppx",t.price)}
  else{setDate("pdate",todayStr());set("pqty",mode==="sell"?L.qty:"");set("ppx",q?q.price:"")}
  set("pnote",mode==="edit"?t.note:"");set("prule",mode==="edit"?t.rule:"");$("pmsg").textContent="";renderType();quickFill();$("pform").hidden=false;$("pbk").hidden=false;document.body.style.overflow="hidden";$("pform").scrollTop=0;previewForm();
  setTimeout(()=>{try{$(mode==="levels"?"psl":mode==="new"?"psym":"pqty").focus({preventScroll:true})}catch(e){}},60)}
+/* automatic or your own, per field; the automatic levels come from the strategy test (exits.js) */
+function renderModes(){if(FORM.mode!=="new"&&FORM.mode!=="levels")return;
+ const seg=(id,f)=>$(id).innerHTML=`<button type="button" aria-pressed="${FORM[f]==="auto"}" onclick="FORM.${f}='auto';renderModes()">Automatic</button><button type="button" aria-pressed="${FORM[f]==="manual"}" onclick="FORM.${f}='manual';renderModes();$('${f==="slMode"?"psl":"ptg"}').focus()">My own</button>`;
+ seg("slm","slMode");seg("tgm","tgMode");
+ const sel=$("pstrat"),cur=sel.value||FORM.strategy||(typeof exDefault==="function"?exDefault():"screener");
+ sel.innerHTML=(EXI&&EXI.strategies&&EXI.strategies.length?EXI.strategies:[{id:"screener",name:"Screener Buy (first day 0–5% above the 44-DMA)"}]).map(x=>`<option value="${esc(x.id)}" ${x.id===cur?"selected":""}>${esc(x.name)}</option>`).join("");
+ FORM.strategy=sel.value;
+ let A=null;
+ if(FORM.mode==="levels"){const h=POS.find(x=>x.id===FORM.hid);if(h)A=exAuto(Object.assign({},h,{strategy:FORM.strategy}))}
+ else{const sym=$("psym").value.trim().toUpperCase(),px=num("ppx"),q=num("pqty"),d=parseD($("pdate").value);
+  if(sym&&px&&d){const h0=POS.find(x=>keyOf(x)===keyOf({exchange:$("pex").value,symbol:sym}));A=exAuto({symbol:sym,exchange:$("pex").value,strategy:FORM.strategy,txns:(h0?h0.txns:[]).concat([{type:"buy",date:d,qty:q||1,price:px}])})}}
+ for(const[f,id,qf,k]of[["slMode","psl","slq","sl"],["tgMode","ptg","tgq","target"]]){const auto=FORM[f]==="auto",el=$(id);el.disabled=auto;$(qf).style.display=auto?"none":"";
+  if(auto){el.value="";el.placeholder=A&&A[k]?String(A[k]):A&&A.pending?"Working out…":k==="target"&&A&&!A.pending?"None (trailing stop)":"Set automatically"}else el.placeholder=k==="sl"?"2350":"2900"}
+ $("pauto").innerHTML=A?`<b>Automatic rule</b> for ${esc(A.strategy_name)}: ${esc(A.rule_label||"")}. It is the stop/target rule with the best average profit per trade this year and the two before, and the levels update after every price check; Telegram alerts follow them. Choose “My own” to type a level instead.`:`Automatic levels appear once the symbol, price and date are filled in.`}
 function closeForm(){$("pform").hidden=true;$("pbk").hidden=true;document.body.style.overflow="";FORM.hid=FORM.tid=null}
 addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("pform").hidden)closeForm()});
 function quickFill(){const mk=(id,t,arr,sign)=>$(id).innerHTML=arr.map(x=>`<button type="button" class="chip" onclick="fillPct('${t}',${sign*x})">${sign<0?"−":"+"}${x}%</button>`).join("");mk("slq","psl",[5,8,10],-1);mk("tgq","ptg",[10,15,20],1)}
@@ -764,19 +783,21 @@ function trialTxns(){ // existing ledger with this form's transaction applied
  const t={id:FORM.tid||"new",type:FORM.mode==="new"?"buy":FORM.type,date:d,qty:Math.floor(q),price:px};
  let h=null;if(FORM.mode==="new"){const sym=$("psym").value.trim().toUpperCase();h=POS.find(x=>keyOf(x)===keyOf({exchange:$("pex").value,symbol:sym}))}else h=POS.find(x=>x.id===FORM.hid);
  let tx=h?h.txns.slice():[];if(FORM.mode==="edit")tx=tx.map(x=>x.id===FORM.tid?t:x);else tx.push(t);return{h,tx,t}}
-function previewForm(){const el=$("pprev");el.textContent="";if(FORM.mode==="levels")return;
+function previewForm(){const el=$("pprev");el.textContent="";try{renderModes()}catch(e){}if(FORM.mode==="levels")return;
  const r=trialTxns();if(!r)return;const L=ledger({txns:r.tx});
  if(L.bad){el.innerHTML=`<span class="neg">You can't sell more than you hold on that date.</span>`;return}
  const row=L.rows.find(x=>x.x===r.t);
  if(r.t.type==="buy"){const f=cfg(),h0=FORM.mode==="new"?null:POS.find(x=>x.id===FORM.hid),sl0=FORM.mode==="new"?num("psl"):(h0||{}).sl;
   el.innerHTML=`Cost of this buy <b>${inr(r.t.qty*r.t.price)}</b> (charges about ${inr(charges(r.t))}) · New average cost <b>${inr(L.avg)}</b> on <b>${L.qty}</b> shares`+(f.capital&&sl0&&sl0<r.t.price?` · Risk-based size at ${f.riskPct}%: up to <b>${Math.floor(f.capital*f.riskPct/100/(r.t.price-sl0))}</b> shares`:"")}
  else el.innerHTML=`Proceeds <b>${inr(r.t.qty*r.t.price)}</b> (charges about ${inr(charges(r.t))}) · Realised P&amp;L <b class="${pcl(row.r)}">${mny(row.r)}</b> (${sg(+(row.r/(r.t.qty*row.avg)*100).toFixed(2))}%) · <b>${L.qty}</b> shares left`}
-["psym","pex","pqty","ppx","psl"].forEach(i=>$(i).addEventListener("input",previewForm));
-function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,price:px,sl:+(px*.92).toFixed(2),target:+(px*1.15).toFixed(2),thesis:"From screener"};go("pos");if(!ME){PENDING=draft;return}openForm("new",draft)}
+["psym","pex","pqty","ppx","psl","pdate"].forEach(i=>$(i).addEventListener("input",previewForm));
+function track(btn){const px=+btn.dataset.px;const draft={symbol:btn.dataset.sym,exchange:btn.dataset.ex,price:px,thesis:"From screener"};go("pos");if(!ME){PENDING=draft;return}openForm("new",draft)}
 function savePosition(){const m=t=>{$("pmsg").textContent=t};
- const mode=FORM.mode,sl=num("psl"),tg=num("ptg"),th=$("pth").value.trim();
- const alerts={alertMa:$("a1").checked,alertSl:$("a2").checked,alertTg:$("a3").checked};
- if(mode==="levels"){const h=POS.find(x=>x.id===FORM.hid);if(!h)return closeForm();Object.assign(h,{sl,target:tg,thesis:th},alerts);savePos();closeForm();render();return}
+ const mode=FORM.mode,th=$("pth").value.trim(),manS=FORM.slMode==="manual",manT=FORM.tgMode==="manual",sl=manS?num("psl"):null,tg=manT?num("ptg"):null;
+ const alerts={alertMa:$("a1").checked,alertSl:$("a2").checked,alertTg:$("a3").checked},strat=$("pstrat").value===exDefault()?"":$("pstrat").value;
+ const lvl={sl,target:tg,slMode:FORM.slMode,tgMode:FORM.tgMode,strategy:strat};
+ if(mode==="new"||mode==="levels"){if(manS&&!sl)return m("Type your stop loss, or choose Automatic.");if(manT&&!tg)return m("Type your target, or choose Automatic.")}
+ if(mode==="levels"){const h=POS.find(x=>x.id===FORM.hid);if(!h)return closeForm();Object.assign(h,lvl,{thesis:th},alerts);savePos();closeForm();render();return}
  const d=parseD($("pdate").value),q=num("pqty"),px=num("ppx"),note=$("pnote").value.trim().slice(0,200),rule=$("prule").value;
  if(d===null||d==="")return m("Enter the date as DD/MM/YYYY, for example 09/10/2026.");
  if(d>todayStr())return m("The date cannot be in the future.");
@@ -787,8 +808,8 @@ function savePosition(){const m=t=>{$("pmsg").textContent=t};
  const r=trialTxns();if(!r)return m("Check the date, quantity and price.");
  if(ledger({txns:r.tx}).bad)return m("You can't sell more shares than you hold on that date.");
  if(mode==="new"){
-  if(!h){h={id:uidn(),symbol:sym,exchange:$("pex").value==="BSE"?"BSE":"NSE",sl,target:tg,thesis:th,txns:[]};Object.assign(h,alerts);POS.push(h)}
-  else{if(sl)h.sl=sl;if(tg)h.target=tg;if(th&&!h.thesis)h.thesis=th}
+  if(!h){h=Object.assign({id:uidn(),symbol:sym,exchange:$("pex").value==="BSE"?"BSE":"NSE",thesis:th,txns:[]},lvl);Object.assign(h,alerts);POS.push(h)}
+  else{if(manS){h.sl=sl;h.slMode="manual"}if(manT){h.target=tg;h.tgMode="manual"}if(strat)h.strategy=strat;if(th&&!h.thesis)h.thesis=th}
   h.txns.push(Object.assign(r.t,{id:uidn(),note,rule}))}
  else if(mode==="edit"){h.txns=r.tx;const e=h.txns.find(x=>x.id===FORM.tid);if(e)Object.assign(e,{type:r.t.type,date:d,qty:Math.floor(q),price:px,note,rule})}
  else h.txns.push(Object.assign(r.t,{id:uidn(),note,rule}));
@@ -816,7 +837,7 @@ function sortRows(rows,closed){const ret=c=>closed?c.realPct:c.unrealPct;
  recent:(a,b)=>((closed?b.c.L.last:b.c.L.since)||"").localeCompare((closed?a.c.L.last:a.c.L.since)||""),sym:(a,b)=>a.p.symbol.localeCompare(b.p.symbol)};
  return rows.sort(by[PSORT]||by.attention)}
 function pbar(p,avg,px){const lo=p.sl||avg*.9,hi=p.target||avg*1.2,at=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo||1)*100));
- return `<div class="pb"><i style="left:${at(avg)}%" title="Average cost"></i>${px!=null?`<em style="left:${at(px)}%"></em>`:""}</div><div class="gl"><span>Stop ${p.sl?inr(p.sl):"not set"}</span><span>Avg cost ${inr(avg)}</span><span>Target ${p.target?inr(p.target):"not set"}</span></div>`}
+ return `<div class="pb"><i style="left:${at(avg)}%" title="Average cost"></i>${px!=null?`<em style="left:${at(px)}%"></em>`:""}</div><div class="gl"><span>${p._slAuto?"Auto stop":"Stop"} ${p.sl?inr(p.sl):"not set"}</span><span>Avg cost ${inr(avg)}</span><span>${p.target?(p._tgAuto?"Auto target ":"Target ")+inr(p.target):p._trail?"No fixed target":"Target not set"}</span></div>`}
 const tvLink=p=>`<a class="btn sm" target="_blank" rel="noopener noreferrer" href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent(p.exchange+":"+p.symbol)}">Chart ↗</a>`;
 const acts=(p,c)=>c.open?`<button class="btn sm pri" onclick="openForm('buy','${p.id}')">Buy</button><button class="btn sm" onclick="openForm('sell','${p.id}')">Sell</button><button class="btn sm" onclick="toggleH('${p.id}')">${EXP.has(p.id)?"Hide":"Details"}</button>`
  :`<button class="btn sm pri" onclick="openForm('buy','${p.id}')">Buy again</button><button class="btn sm" onclick="toggleH('${p.id}')">${EXP.has(p.id)?"Hide":"Details"}</button>`;
@@ -825,23 +846,23 @@ function pdetail(p,c){const L=c.L,N=ledgerNet(p),rowOf=new Map(L.rows.map(r=>[r.
  const tx=p.txns.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).map(t=>{const r=rowOf.get(t.id)||{};
   return `<tr><td>${fdate(t.date)}</td><td><span class="tag ${t.type}" style="margin:0">${t.type==="buy"?"Buy":"Sell"}</span></td><td>${t.qty}</td><td>${inr(t.price)}</td><td>${inr(t.qty*t.price)}</td><td>${t.type==="buy"?"":(r.ok===false?"–":`<span class="${pcl(r.r)}">${mny(r.r)}</span>`)}</td><td class="why">${t.rule?`<span class="tag ${t.rule==="yes"?"buy":"sell"}" style="margin:0">${t.rule==="yes"?"Followed rule":"Broke rule"}</span> `:""}${t.note?esc(t.note):""}</td>
   <td class="ac"><button class="btn sm" onclick="openForm('edit',{hid:'${p.id}',tid:'${t.id}'})">Edit</button><button class="btn sm danger" onclick="delTxn('${p.id}','${t.id}')" aria-label="Delete transaction">✕</button></td></tr>`}).join("");
- return `<div class="hd"><div class="hl"><div class="stg">${L.qty?st("Strategy view",stratChip(p.exchange+":"+p.symbol,true,p,c.px)):""}${st("Quantity",L.qty||"0")}${st("Average cost",L.qty?inr(L.avg):"–")}${st("Invested",L.qty?inr(c.invested):"–")}${st("Break-even",L.qty?inr(L.avg):"–")}
+ return `<div class="hd"><div class="hl"><div class="stg">${L.qty?st("Strategy view",stratChip(p.exchange+":"+p.symbol,true,withLv(p),c.px)):""}${st("Quantity",L.qty||"0")}${st("Average cost",L.qty?inr(L.avg):"–")}${st("Invested",L.qty?inr(c.invested):"–")}${st("Break-even",L.qty?inr(L.avg):"–")}
   ${st("Unrealised P&amp;L",c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`)}${st("Realised P&amp;L",L.sold?`<span class="${pcl(L.real)}">${mny(L.real)}</span>`:"–")}
   ${st("First bought",fdate(L.first))}${st(c.open?"Holding for":"Held for",held(c.days))}${st("Avg cost after charges",L.qty?inr(N.avg):"–")}${st("Realised after charges",L.sold?`<span class="${pcl(N.real)}">${mny(N.real)}</span>`:"–")}</div>
-  ${c.open?pbar(p,L.avg,c.px):""}<div class="sub" style="margin-top:8px">${p.thesis?esc(p.thesis)+" · ":""}Average cost = total paid for the shares you still hold ÷ quantity. Sales don't change it. Brokerage and taxes are not included.</div>
+  ${c.open?pbar(withLv(p),L.avg,c.px):""}<div class="sub" style="margin-top:8px">${p.thesis?esc(p.thesis)+" · ":""}Average cost = total paid for the shares you still hold ÷ quantity. Sales don't change it. Brokerage and taxes are not included.</div>
   <div class="act"><button class="btn sm" onclick="openForm('levels','${p.id}')">Stop loss, target &amp; alerts</button>${tvLink(p)}<button class="btn sm danger" onclick="delHolding('${p.id}')">Delete holding</button></div></div>
-  <div class="hr"><div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
+  <div class="hr">${c.open?exPanel(p,c):""}<div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
 function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%":"–",nm=q&&q.name?`<small>${esc(q.name)}</small>`:"",L=c.L;
  let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer">${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b>":"–"}</td>
  <td class="cx">${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td class="cx">${inr(c.invested)}</td><td>${inr(c.value)}</td><td>${c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`}</td><td>${pcs(c.unrealPct)}</td><td class="cx">${w}</td>
- <td>${p.sl?inr(p.sl)+(c.px!=null?`<small>${((c.px/p.sl-1)*100).toFixed(1)}% away</small>`:""):"–"}</td><td>${p.target?inr(p.target)+(c.px!=null?`<small>${((p.target/c.px-1)*100).toFixed(1)}% to go</small>`:""):"–"}</td>
+ ${(()=>{const v=lv(p),tag=a=>`<small class="exa${a?"":" own"}">${a?"Auto":"Yours"}</small>`;return `<td>${v.sl?inr(v.sl)+tag(v.slAuto)+(c.px!=null?`<small>${((c.px/v.sl-1)*100).toFixed(1)}% away</small>`:""):v.A&&v.A.pending?"<small>Working out…</small>":"–"}</td><td>${v.tg?inr(v.tg)+tag(v.tgAuto)+(c.px!=null?`<small>${((v.tg/c.px-1)*100).toFixed(1)}% to go</small>`:""):v.A&&!v.A.pending&&v.tgAuto?"<small>None: trailing stop</small>":"–"}</td>`})()}
  <td class="cx">${q&&q.pct!=null?pcs(q.pct):"–"}</td><td><span class="tag ${st[1]}" style="margin:0">${st[0]}</span></td><td class="ac">${acts(p,c)}</td></tr>`;
  if(EXP.has(p.id))h+=`<tr class="exp"><td colspan="15">${pdetail(p,c)}${c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""}</td></tr>`;return h}
 function openCard(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1):"0",L=c.L;
  return `<article class="pc"><div class="ph"><div>${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span><span class="tag ${st[1]}">${st[0]}</span>${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}</div>
  <div style="text-align:right"><b>${c.px!=null?inr(c.px):"–"}</b>${c.unreal!=null?`<div class="${pcl(c.unreal)}" style="font-weight:600">${mny(c.unreal)} (${sg(+c.unrealPct.toFixed(2))}%)</div>`:`<div class="sub">Awaiting price</div>`}</div></div>
  <div class="fcs"><div><span>Quantity</span><b>${L.qty}</b></div><div><span>Avg cost</span><b>${inr(L.avg)}</b></div><div><span>Invested</span><b>${inr(c.invested)}</b></div><div><span>Value</span><b>${inr(c.value)}</b></div><div><span>Weight</span><b>${w}%</b></div><div><span>Holding</span><b>${held(c.days)}</b></div></div>
- ${pbar(p,L.avg,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${c.px!=null&&p.sl?`<span>${((c.px/p.sl-1)*100).toFixed(1)}% above stop</span>`:""}${c.px!=null&&p.target?`<span>${((p.target/c.px-1)*100).toFixed(1)}% to target</span>`:""}</div>
+ ${pbar(withLv(p),L.avg,c.px)}<div class="pills">${q&&q.pct!=null?`<span class="c" style="--c:${q.pct<0?"var(--sell)":"var(--buy)"};--cb:${q.pct<0?"var(--sell-bg)":"var(--buy-bg)"}">${sg(q.pct)}% vs ${data.ma_period}-DMA</span>`:""}${(()=>{const v=lv(p);return (c.px!=null&&v.sl?`<span>${((c.px/v.sl-1)*100).toFixed(1)}% above ${v.slAuto?"auto ":""}stop</span>`:"")+(c.px!=null&&v.tg?`<span>${((v.tg/c.px-1)*100).toFixed(1)}% to ${v.tgAuto?"auto ":""}target</span>`:"")})()}</div>
  <div class="act">${acts(p,c)}</div>${EXP.has(p.id)?pdetail(p,c)+(c.open&&typeof scrIns==="function"?scrIns(p.symbol,p.exchange):""):""}</article>`}
 function closedRow(p,c){const L=c.L;
  let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer">${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}<span class="tag ex">${p.exchange}</span></td><td>${L.bought}</td><td>${inr(L.boughtCost/L.bought)}</td><td>${L.sold?inr(L.soldVal/L.sold):"–"}</td><td>${L.sold?`<span class="${pcl(L.real)}">${mny(L.real)}</span>`:"–"}</td><td>${pcs(c.realPct)}</td><td>${fdate(L.first)}</td><td>${fdate(L.last)}</td><td>${held(c.days)}</td><td class="ac">${acts(p,c)}</td></tr>`;
@@ -856,7 +877,7 @@ function renderPos(){
  $("who").textContent=ME;renderTg();
  $("pmig").hidden=!MIG.length;$("pmig").innerHTML=MIG.length?`<b>Your positions were reorganised: one holding per share.</b><ul>${MIG.map(n=>`<li>${esc(n)}</li>`).join("")}</ul><button class="btn sm" onclick="dismissMig()">Got it</button>`:"";
  const all=POS.map(p=>({p,c:calc(p)})),oc=all.filter(x=>x.c.open),cc=all.filter(x=>!x.c.open);
- let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;oc.forEach(({p,c})=>{if(p.sl)riskAmt+=Math.max(0,c.L.qty*(c.L.avg-p.sl));else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
+ let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;oc.forEach(({p,c})=>{const sl=lv(p).sl;if(sl)riskAmt+=Math.max(0,c.L.qty*(c.L.avg-sl));else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
  all.forEach(({c})=>{re+=c.L.real});const un=val-inv,unp=inv?un/inv*100:0,sells=all.filter(x=>x.c.L.sold>0).length;
  $("psum").innerHTML=`<div class="sc"><span>Current value</span><b>${inr(val)}</b><small>Invested ${inr(inv)}</small>${dayBase?`<small>Today <span class="${pcl(day)}">${mny(day)}</span></small>`:""}</div>
  <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
@@ -913,7 +934,7 @@ function buildSettings(){$("setgrid").innerHTML=FEE_LABELS.map(([k,l])=>`<div><l
 function fillSettings(){const f=cfg();FEE_LABELS.forEach(([k])=>{const e=$("s-"+k);if(e&&document.activeElement!==e)e.value=f[k]||f[k]===0?+f[k]:""});
  szFill()}
 function saveSettings(){FEE_LABELS.forEach(([k])=>{const v=parseFloat($("s-"+k).value);if(isFinite(v)&&v>=0)SET[k]=v;else delete SET[k]});savePos();szFill(true);fillSettings();render()}
-function resetSettings(){if(confirm("Reset all fee, tax and risk settings to the defaults?")){SET={};savePos();szFill(true);fillSettings();render()}}
+function resetSettings(){if(confirm("Reset all fee, tax and risk settings to the defaults?")){SET=SET.exitAll?{exitAll:SET.exitAll}:{};savePos();szFill(true);fillSettings();render()}}
 const SZ={auto:{en:true}};
 function szTouch(k){SZ.auto[k]=false}
 function szFill(force){const f=cfg(),set=(id,v)=>{const e=$(id);if(e&&(force||(!e.value&&document.activeElement!==e)))e.value=v||v===0?v:""};
@@ -1023,10 +1044,28 @@ const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,d
 function csvLine(l){const o=[];let c="",q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===","&&!q){o.push(c);c=""}else c+=ch}o.push(c);return o}
 async function loadUni(){if(UNI)return UNI;UNI={NSE:[],BSE:[]};for(const e of["NSE","BSE"]){try{const r=await fetch("/universe_"+e.toLowerCase()+".csv");if(!r.ok)continue;(await r.text()).split(/\r?\n/).slice(1).forEach(l=>{if(!l)return;const c=csvLine(l);if(c[0])UNI[e].push({s:c[0],n:c[1]||"",k:nameKey(c[1]||"")})})}catch(x){}}return UNI}
 const nameKey=s=>String(s).toLowerCase().replace(/&/g," and ").replace(/\b(limited|ltd|the|inc|corporation|corp|co|company)\b\.?/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-function findSym(raw,ex,U){const out=[];if(!raw)return out;const up=raw.trim().toUpperCase().replace(/[^A-Z0-9&\-]/g,"");const list=(U&&U[ex])||[];
- if(up&&list.some(x=>x.s===up))out.push({s:up,n:(list.find(x=>x.s===up)||{}).n,sc:1});
- const k=nameKey(raw);if(k){const kt=new Set(k.split(" "));list.forEach(x=>{if(!x.k||out.some(o=>o.s===x.s))return;let sc=0;if(x.k===k)sc=.98;else if(x.k.startsWith(k+" ")||k.startsWith(x.k+" "))sc=.85;else{const xt=new Set(x.k.split(" "));let i=0;kt.forEach(t=>{if(xt.has(t))i++});sc=i/(kt.size+xt.size-i)*.8}if(sc>=.4)out.push({s:x.s,n:x.n,sc})})}
- return out.sort((a,b)=>b.sc-a.sc).slice(0,5)}
+/* Find the stock for a name read from a screenshot. Brokers show short names ("Adani Ports & SEZ"), the exchange lists show
+   full ones ("Adani Ports and Special Economic Zone Limited"), and reading text from a picture can drop or swap a letter.
+   Searches both exchange lists: a company listed on both is only in the NSE list. */
+const SYM_STOP=new Set(["and","of","the","ltd","limited"]);
+function symLev1(a,b){if(Math.abs(a.length-b.length)>1)return false;let i=0,j=0,e=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue}if(++e>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++}}return e+(a.length-i)+(b.length-j)<=1}
+function symScore(k,x){const kt=k.split(" ").filter(t=>t&&!SYM_STOP.has(t)),xt=x.split(" ").filter(t=>t&&!SYM_STOP.has(t));if(!kt.length||!xt.length)return 0;
+ const used=new Set();let hit=0,firstOk=false;
+ kt.forEach((t,ti)=>{let ok=false;
+  for(let j=0;j<xt.length&&!ok;j++){if(used.has(j))continue;const u=xt[j];
+   if(u===t||(t.length>=3&&u.startsWith(t))||(u.length>=3&&t.startsWith(u))||(t.length>=5&&u.length>=5&&symLev1(t,u))){used.add(j);ok=true;if(ti===0&&j===0)firstOk=true}}
+  /* an abbreviation: "sez" = special economic zone */
+  if(!ok&&t.length>=2&&t.length<=5)for(let j=0;j+t.length<=xt.length&&!ok;j++){const run=xt.slice(j,j+t.length);if(run.map(w=>w[0]).join("")===t&&run.every((w,q)=>!used.has(j+q))){run.forEach((w,q)=>used.add(j+q));ok=true;if(ti===0&&j===0)firstOk=true}}
+  if(ok)hit++});
+ const sc=.7*hit/kt.length+.3*used.size/xt.length;return firstOk?sc:sc*.6}
+function findSym(raw,ex,U){const out=[];if(!raw)return out;const names=Array.isArray(raw)?raw.filter(Boolean):[raw];if(!names.length)return out;
+ const lists=[["NSE",(U&&U.NSE)||[]],["BSE",(U&&U.BSE)||[]]];const add=(x,e,sc)=>{const o=out.find(v=>v.s===x.s);if(o){if(sc>o.sc){o.sc=sc;o.ex=e}}else out.push({s:x.s,n:x.n,ex:e,sc})};
+ for(const nm of names){const up=nm.trim().toUpperCase(),toks=up.split(/[^A-Z0-9&\-]+/).filter(Boolean);
+  for(const[e,list]of lists){const alpha=toks.filter(t=>/[A-Z]{2}/.test(t));for(const t of [up.replace(/[^A-Z0-9&\-]/g,""),...(alpha.length===1?alpha:[])]){if(t.length<2)continue;const x=list.find(v=>v.s===t);if(x)add(x,e,1)}}
+  const k=nameKey(nm);if(!k)continue;
+  for(const[e,list]of lists)list.forEach(x=>{if(!x.k)return;const sc=x.k===k?.98:symScore(k,x.k);if(sc>=.45)add(x,e,sc)})}
+ /* the exchange the order was on first when the same company appears twice */
+ return out.sort((a,b)=>b.sc-a.sc||(a.ex===ex?-1:b.ex===ex?1:0)).slice(0,5)}
 /* Pull the fields out of the text of one order screen. Built for the Groww "Order Details" page; other layouts fill what they can and leave the rest for you. */
 function scrParse(text){const T=String(text||"").replace(/\r/g,""),L=T.split("\n").map(s=>s.trim()).filter(Boolean),r={side:"",ex:"",price:null,date:"",qty:null,name:"",warn:[]};
  let m=/\b(buy|sell)\b[,\s]*(delivery|intraday|margin|mtf|cnc)?/i.exec(T);if(m)r.side=m[1].toLowerCase();
@@ -1036,7 +1075,10 @@ function scrParse(text){const T=String(text||"").replace(/\r/g,""),L=T.split("\n
  const dre=/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?,?\s+(\d{4})/ig;let ds=[],x;while(x=dre.exec(T))ds.push({i:x.index,v:`${x[3]}-${pad2(MON[x[2].toLowerCase()])}-${pad2(+x[1])}`});
  const ei=T.search(/Order\s*Executed/i);const after=ei>=0?ds.find(d=>d.i>ei):null;const pl=T.search(/Order\s*Placed/i);const placed=pl>=0?ds.find(d=>d.i>pl):null;
  const pick=after||placed||ds[ds.length-1];if(pick)r.date=pick.v;
- const oi=L.findIndex(l=>/^order\s*type/i.test(l));if(oi>0){let nm=L[oi-1].replace(/[>›»)\]|]+\s*$/,"").trim();const q=/^(\d[\d,]*)\s*(qty|av|ov)?\s*$/i.exec(nm);if(q&&oi>1){r.qty=parseInt(q[1].replace(/,/g,""),10);nm=L[oi-2].replace(/[>›»)\]|]+\s*$/,"").trim()}r.name=nm;
+ const oi=L.findIndex(l=>/^order\s*type/i.test(l));r.names=[];if(oi>0){const di=L.findIndex(l=>/order\s*details/i.test(l)),cl=x=>x.replace(/[>›»)\]|]+\s*$/,"").replace(/^[<‹«(\[|]+\s*/,"").trim(),isQ=x=>/^(\d[\d,]*)\s*(qty|av|ov|ty)?\s*$/i.test(x);
+  const blk=L.slice(di>=0&&di<oi?di+1:Math.max(0,oi-3),oi).map(cl).filter(x=>x&&!isQ(x)&&/[A-Za-z]{2}/.test(x));if(blk.length)r.names.push(blk.join(" "),...blk);
+  const ql=L.slice(di>=0&&di<oi?di+1:Math.max(0,oi-3),oi).map(cl).find(isQ);if(ql&&r.qty==null)r.qty=parseInt(ql.replace(/[^\d]/g,""),10);
+  let nm=L[oi-1].replace(/[>›»)\]|]+\s*$/,"").trim();const q=/^(\d[\d,]*)\s*(qty|av|ov)?\s*$/i.exec(nm);if(q&&oi>1){r.qty=parseInt(q[1].replace(/,/g,""),10);nm=L[oi-2].replace(/[>›»)\]|]+\s*$/,"").trim()}r.name=nm;
   if(r.qty==null&&oi>1){const q2=/^(\d[\d,]*)\s*(qty|av|ov|ty)?\b/i.exec(L[oi-2]);if(q2)r.qty=parseInt(q2[1].replace(/,/g,""),10)}}
  const qm=/(\d[\d,]*)\s*Qty\b/i.exec(T);if(qm&&r.qty==null)r.qty=parseInt(qm[1].replace(/,/g,""),10);
  if(/(rejected|cancel+ed|pending|open)\b/i.test((/Order\s*status[^\n]*/i.exec(T)||[""])[0]))r.warn.push("This order is not marked successful.");
@@ -1084,14 +1126,16 @@ async function scrStart(files){if(!files||!files.length||SCR.busy)return;if(!ME)
   const row={file:files[i].name,side:"",ex:"NSE",sym:"",cands:[],qty:"",price:"",date:"",use:true,warn:[],name:""};
   try{const r=await scrRead(files[i]);row.side=r.side;row.ex=r.ex||"NSE";row.qty=r.qty==null?"":r.qty;row.price=r.price==null?"":r.price;row.name=r.name;row.warn=r.warn;
    if(r.date){const[y,m,d]=r.date.split("-");row.date=`${d}/${m}/${y}`}
-   row.cands=findSym(r.name,row.ex,U);row.sym=row.cands[0]&&row.cands[0].sc>=.6?row.cands[0].s:(/^[A-Z0-9&\-]{2,15}$/.test(r.name||"")?r.name:"");
+   row.names=[r.name,...(r.names||[])].filter(Boolean);row.cands=findSym(row.names,row.ex,U);const top=row.cands[0];
+   if(top&&top.sc>=.7&&(!row.cands[1]||top.sc-row.cands[1].sc>=.08||top.sc>=.98)){row.sym=top.s;if(top.ex!==row.ex){if(top.ex==="NSE")row.warn.push(`Bought on ${row.ex}; ${top.s} is listed on both exchanges, so it is tracked with NSE prices (the screener, alerts and automatic stop use NSE data). Switch the exchange back if you prefer.`);row.ex=top.ex}}
+   else row.sym=/^[A-Z0-9&\-]{2,15}$/.test(r.name||"")?r.name:"";
    if(!r.side&&!r.price&&!r.name)row.warn.push("Could not recognise an order screen in this picture.")}
   catch(e){row.warn.push("Could not read this picture: "+(e.message||e))}
   SCR.rows.push(row)}
  SCR.rows.forEach(r=>{if(r.sym&&r.qty&&r.price&&r.date&&r.side&&scrDup(r)){r.use=false;r.warn.push("Already in your positions.")}});
  try{if(OCRW){await OCRW.terminate();OCRW=null}}catch(e){}
  SCR.busy=false;SCR.msg="";scrDraw()}
-function scrSet(i,k,v){const r=SCR.rows[i];if(!r)return;r[k]=k==="use"?!!v:v;if(k==="ex"||k==="sym"){if(k==="ex"&&UNI)r.cands=findSym(r.name,r.ex,UNI)}if(k!=="sym"&&k!=="qty"&&k!=="price"&&k!=="date")scrDraw()}
+function scrSet(i,k,v){const r=SCR.rows[i];if(!r)return;r[k]=k==="use"?!!v:v;if(k==="ex"||k==="sym"){if(k==="ex"&&UNI)r.cands=findSym(r.names||r.name,r.ex,UNI)}if(k!=="sym"&&k!=="qty"&&k!=="price"&&k!=="date")scrDraw()}
 function scrDraw(){const el=$("scrcard");if(!SCR.rows.length&&!SCR.busy){el.hidden=true;return}el.hidden=false;
  const rows=SCR.rows.map((r,i)=>`<div class="pc" style="margin-top:10px"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" ${r.use?"checked":""} onchange="scrSet(${i},'use',this.checked)"><b>${esc(r.name||"Unrecognised")}</b><span class="sub">${esc(r.file)}</span></label>
   <div class="fg" style="margin-top:8px">
@@ -1101,7 +1145,7 @@ function scrDraw(){const el=$("scrcard");if(!SCR.rows.length&&!SCR.busy){el.hidd
    <div><label>Shares</label><input inputmode="numeric" value="${esc(r.qty)}" oninput="scrSet(${i},'qty',this.value.replace(/\\D/g,''))"></div>
    <div><label>Price per share</label><input inputmode="decimal" value="${esc(r.price)}" oninput="scrSet(${i},'price',this.value.replace(/[^\\d.]/g,''))"></div>
    <div><label>Date (DD/MM/YYYY)</label><input value="${esc(r.date)}" oninput="scrSet(${i},'date',this.value.trim())"></div></div>
-  ${r.cands.length>1?`<div class="sub" style="margin-top:6px">Other matches for “${esc(r.name)}”: ${r.cands.slice(0,4).map(c=>`<a href="#" onclick="scrSet(${i},'sym','${esc(c.s)}');scrDraw();return false">${esc(c.s)}</a>`).join(", ")}</div>`:""}
+  ${r.cands.length>1?`<div class="sub" style="margin-top:6px">Other matches for “${esc(r.name)}”: ${r.cands.slice(0,4).map(c=>`<a href="#" onclick="scrSet(${i},'sym','${esc(c.s)}');SCR.rows[${i}].ex='${c.ex||"NSE"}';scrDraw();return false">${esc(c.s)}${c.ex&&c.ex!==r.ex?" ("+c.ex+")":""}</a>`).join(", ")}</div>`:""}
   ${r.warn.map(w=>`<div class="sub" style="color:var(--warn,#b45309);margin-top:4px">${esc(w)}</div>`).join("")}</div>`).join("");
  el.innerHTML=`<h3>Trades read from screenshots</h3><div class="sub">${esc(SCR.msg)||"Check every row against your screenshot before adding. Reading text from a picture is not always exact, especially the share count. Nothing is saved until you press Add."}</div>${rows}
   ${SCR.busy?"":`<div class="act" style="margin-top:12px"><button class="btn pri" onclick="scrCommit()">Add ${SCR.rows.filter(r=>r.use).length} to my positions</button><button class="btn" onclick="SCR.rows=[];scrDraw()">Cancel</button></div><div class="msg" id="scrmsg" role="alert"></div>`}`}
@@ -1112,7 +1156,7 @@ function scrCommit(){const m=t=>{$("scrmsg").textContent=t},use=SCR.rows.map((r,
   if(!q||q<=0||Math.floor(q)!==q)return m(`Row ${n}: enter a whole number of shares.`);if(!px||px<=0)return m(`Row ${n}: enter the price per share.`);
   add.push({sym,ex:r.ex==="BSE"?"BSE":"NSE",t:{id:uidn(),type:r.side,date:d,qty:q,price:px,note:"From screenshot",rule:""}})}
  const snap=JSON.stringify(POS),touched=new Set();
- for(const a of add){let h=POS.find(x=>keyOf(x)===keyOf({exchange:a.ex,symbol:a.sym}));if(!h){h={id:uidn(),symbol:a.sym,exchange:a.ex,sl:null,target:null,thesis:"",alertMa:true,alertSl:true,alertTg:true,txns:[]};POS.push(h)}h.txns.push(a.t);touched.add(h)}
+ for(const a of add){let h=POS.find(x=>keyOf(x)===keyOf({exchange:a.ex,symbol:a.sym}));if(!h){h={id:uidn(),symbol:a.sym,exchange:a.ex,sl:null,target:null,slMode:"auto",tgMode:"auto",strategy:"",thesis:"",alertMa:true,alertSl:true,alertTg:true,txns:[]};POS.push(h)}h.txns.push(a.t);touched.add(h)}
  for(const h of touched)if(ledger(h).bad){POS=JSON.parse(snap);return m(`${h.symbol}: a sale is larger than the shares you held on that date. Add the earlier buy first (you can read its screenshot together with this one).`)}
  const last=[...touched][0];if(last){PVIEW=ledger(last).qty>0?"open":"closed";EXP.add(last.id)}SCR.rows=[];savePos();scrDraw();render()}
 
@@ -1135,8 +1179,8 @@ const sxLv=(s,c)=>{const p=s.params||{};return{stop:+(c*(1-p.stop/100)).toFixed(
 function stratBuys(key){sxMerge();if(!STRAT||!STRAT.states)return null;const str=STRAT.states[key];if(!str)return null;const sym=key.split(":")[1],out=[];
  (STRAT.strategies||[]).forEach((sx,i)=>{if(str[i]==="b"&&sx.stars>=SMIN()){const t=((sx.today||{}).buy||[]).find(x=>x.s===sym),lv=t?sxLv(sx,t.c):{};out.push({name:sx.name,stars:sx.stars,stop:t?lv.stop:null,target:t?lv.target:null,sp:sx.params.stop,tp:sx.params.target})}});return out}
 function stratLabel(key,pos,px){const buys=stratBuys(key);const ls=buys&&buys.length?"Strategies signalling today: "+buys.map(b=>`${b.name} (${b.stars}★: stop ${b.stop?inr(b.stop):"-"+b.sp+"%"}, target ${b.target?inr(b.target):"+"+b.tp+"%"})`).join("; "):"";
- if(pos){const sl=+pos.sl||0,tg=+pos.target||0;if(px!=null&&sl&&px<=sl)return{l:"Sell",c:"sell",why:"Price is at or below your stop loss of "+inr(sl)};if(px!=null&&tg&&px>=tg)return{l:"Sell",c:"sell",why:"Price has reached your target of "+inr(tg)+": book the profit"};
-  return{l:"Hold",c:"ex",why:(sl||tg?"Between your stop "+(sl?inr(sl):"(not set)")+" and target "+(tg?inr(tg):"(not set)"):"Set a stop loss and target in Stop loss, target & alerts")+(ls?". "+ls:"")}}
+ if(pos){const sl=+pos.sl||0,tg=+pos.target||0,x=pos._exit;if(x)return{l:"Sell",c:"sell",why:x.why==="time"?"The automatic rule's time limit has been reached":"The automatic "+(x.why==="stop"?"stop loss":"target")+" of "+inr(x.price)+" was reached on "+fdate(x.date)};if(px!=null&&sl&&px<=sl)return{l:"Sell",c:"sell",why:"Price is at or below the stop loss of "+inr(sl)};if(px!=null&&tg&&px>=tg)return{l:"Sell",c:"sell",why:"Price has reached the target of "+inr(tg)};
+  return{l:"Hold",c:"ex",why:(sl||tg?"Between the stop "+(sl?inr(sl):"(not set)")+" and "+(tg?"target "+inr(tg):"no fixed target"):"Stop loss and target are being worked out")+(ls?". "+ls:"")}}
  if(!STRAT||!STRAT.states)return null;if(buys===null)return null;return buys.length?{l:"Buy",c:"buy",why:ls}:{l:"Wait",c:"ex",why:"No strategy with a score of "+SMIN()+" or more is signalling"}}
 function stratChip(key,full,pos,px){const r=stratLabel(key,pos,px);if(!r)return "";const t=`<span class="tag ${r.c}" title="${esc(r.why)}">${r.l}</span>`;return full?t+`<span class="sub" style="display:block;margin-top:2px">${esc(r.why)}</span>`:t}
 const pc1=v=>v==null?"–":(v*100).toFixed(1)+"%";
@@ -1284,7 +1328,7 @@ function sxDetail(s){const t=s.test||{},pm=s.params,td=s.today||{},src=s.source,
  <h4 class="sx-sub">Does it depend on the market? (later period)</h4><p class="m" style="margin-bottom:6px">The same trades split by whether the Nifty 50 was above or below its 200-day average when the signal appeared. ${ii("mood")}</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Nifty 50 when the signal appeared</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Profit factor</th><th>Worst trade</th><th>Better than random</th></tr></thead><tbody>${mood("Above its 200-day average"+(up===true?" (today)":""),so.test_up)}${mood("Below its 200-day average"+(up===false?" (today)":""),so.test_down)}</tbody></table></div>
  ${so.trail&&so.trail.test?(()=>{const T=so.trail.test,F=so.test;return `<h4 class="sx-sub">Same entries with a trailing stop instead of a fixed target (later period) ${ii("trail")}</h4><p class="m" style="margin-bottom:6px">The stop starts ${so.trail.trail}% below the buy price and then follows the highest price reached, so it only moves up. There is no target; the trade ends when the price falls ${so.trail.trail}% from its peak or after ${so.params.max_hold} trading days. The width was picked on the earlier period.</p><div class="sx-w"><table class="sx2" style="min-width:560px"><thead><tr><th>Exit rule</th><th>Trades</th><th>Win rate</th><th>Avg profit / trade</th><th>Better than random</th><th>Worst trade</th></tr></thead><tbody><tr><td>Fixed stop −${so.params.stop}% and target +${so.params.target}% (used above)</td><td>${F.n.toLocaleString("en-IN")}</td><td>${pu(F.win_rate)}</td><td class="${sxc(F.avg_ret)}">${pp(F.avg_ret)}</td><td class="${sxc(F.edge)}">${pp(F.edge)} (t ${F.t==null?"–":F.t})</td><td>${pu(F.worst)}</td></tr><tr><td>Trailing stop ${so.trail.trail}% below the peak</td><td>${T.n.toLocaleString("en-IN")}</td><td>${pu(T.win_rate)}</td><td class="${sxc(T.avg_ret)}">${pp(T.avg_ret)}</td><td class="${sxc(T.edge)}">${T.edge==null?"–":pp(T.edge)+" (t "+(T.t==null?"–":T.t)+")"}</td><td>${pu(T.worst)}</td></tr></tbody></table></div>`})():""}${sxFurther(so)}`;
  else if(tab==="years")body=sxXYears(s);
- else if(tab==="exits")body=sxXExits(s);
+ else if(tab==="exits")body=(typeof exStratView==="function"?exStratView(s.id):"")+sxXExits(s);
  else if(tab==="deep")body=sxAudit()+sxDeep();
  else if(tab==="live")body=sxLive(s);
  else body=`<p class="sx-plain"><b>In plain words:</b> ${sxPlain(s)}</p><div class="sx-tiles">${tile("Better than same-day control",pp(t.edge,2),sxc(t.edge),"edge")}${tile("How sure (monthly t)",t.t??"–","","t")}${tile("Average profit per trade",pp(t.avg_ret),sxc(t.avg_ret),"avg")}${tile("Same-day control made",t.baseline!=null?pp(t.baseline):"–","","random")}${tile("Win rate",pu(t.win_rate),"","win")}${tile("Profit factor",pf2(t.profit_factor),"","pf")}${tile(s.x?"Trades from "+SX.split_year:"Trades tested",t.n!=null?t.n.toLocaleString("en-IN"):"–","","trades")}${s.x?tile("Trades, all years",s.x.all.n.toLocaleString("en-IN"),"","trades"):""}</div>
@@ -1417,7 +1461,7 @@ function render(){
  $("health").innerHTML=data.health?healthLine(data.health):"";renderShell(stale);
  $("nav").innerHTML=`<button class="seg" aria-pressed="${view_==="screen"}" onclick="go('screen')">Screener</button><button class="seg" aria-pressed="${view_==="pos"}" onclick="go('pos')">My Positions${ME?`<span class="badge">${openPos().length}</span>`:""}</button><button class="seg" aria-pressed="${view_==="strat"}" onclick="go('strat')">Strategies</button><button class="seg" aria-pressed="${view_==="ins"}" onclick="go('ins')">Insights</button>`;
  $("vScreen").hidden=view_!=="screen";$("vPos").hidden=view_!=="pos";$("vStrat").hidden=view_!=="strat";$("vIns").hidden=view_!=="ins";
- if(view_==="screen")renderScreen();else if(view_==="pos")renderPos();else if(view_==="ins")renderIns();else renderStrat();if(typeof entDraw==="function")entDraw();fitCheck()}
+ if(view_==="screen")renderScreen();else if(view_==="pos"){if(EXI===null)loadExits();renderPos()}else if(view_==="ins")renderIns();else renderStrat();if(typeof entDraw==="function")entDraw();fitCheck()}
 ["q","pmin","pmax","dmin","dmax","rmin","rmax","vmin","vx","trend","hi","since","mcmin","mcmax"].forEach(i=>$(i).addEventListener("input",()=>{shown=50;render()}));
 $("sort").addEventListener("change",e=>{const[k,d]=e.target.value.split("|");sortKey=k;sortDir=+d;render()});
 addEventListener("hashchange",route);matchMedia("(max-width:760px)").addEventListener("change",render);

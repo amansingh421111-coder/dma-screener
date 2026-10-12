@@ -1,7 +1,7 @@
 """Morning and evening briefs on Telegram, built from the last screener run and each user's holdings.
 Usage: python brief.py morning|evening"""
 import datetime as dt, json, sys
-from screen import IST, ROOT, cloud_users, send_telegram, notify, read_json, pos_key
+from screen import IST, ROOT, cloud_users, send_telegram, notify, read_json, pos_key, redis, effective
 
 def inr(v): return f"₹{v:,.0f}"
 def sg(v): return f"{'+' if v >= 0 else '−'}{abs(v):.1f}%"
@@ -27,11 +27,11 @@ def holdings_lines(pos, sj, c_ma):
         if chg is not None: parts.append(f"{sg(chg)} today")
         parts.append(f"P&L {sg((px / avg - 1) * 100)}")
         if sl:
-            d = (px / sl - 1) * 100; parts.append(f"🛑 stop ₹{sl:g} BREACHED" if d <= 0 else f"stop ₹{sl:g} ({d:.1f}% away)")
+            d = (px / sl - 1) * 100; parts.append(f"🛑 {'auto ' if p.get('sl_auto') else ''}stop ₹{sl:g} BREACHED" if d <= 0 else f"{'auto ' if p.get('sl_auto') else ''}stop ₹{sl:g} ({d:.1f}% away)")
             if sl < avg: risk += qty * (avg - sl)
             if 0 < d <= 3: parts.append("⚠️ close to stop")
             if d <= 3: flagged += 1
-        if p.get("target"): parts.append(f"target ₹{p['target']:g} ({(p['target'] / px - 1) * 100:.1f}% to go)")
+        if p.get("target"): parts.append(f"{'auto ' if p.get('tg_auto') else ''}target ₹{p['target']:g} ({(p['target'] / px - 1) * 100:.1f}% to go)")
         if q.get("pct") is not None and q["pct"] < 0: parts.append(f"below {c_ma}-DMA ({q['pct']:+}%)"); flagged += 1
         lines.append(" · ".join(parts))
     return lines, dict(val=val, inv=inv, day=day, risk=risk, flagged=flagged)
@@ -65,7 +65,11 @@ def main():
     if not sj: print("no signals.json"); return
     sent = 0
     for u in cloud_users():
-        if send_telegram(u["chat"], build(kind, u["positions"], sj, now)): sent += 1
+        if not u["chat"]: continue
+        try: auto = json.loads(redis(["GET", f"auto:{u['uid']}"]) or "{}").get("items") or {}
+        except Exception: auto = {}
+        pos = [effective(p, auto.get(pos_key(p))) for p in u["positions"]]   # automatic stop / target unless you set your own
+        if send_telegram(u["chat"], build(kind, pos, sj, now)): sent += 1
     print("briefs sent:", sent)
 
 if __name__ == "__main__":
