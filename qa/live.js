@@ -40,6 +40,37 @@ const URL = "https://screenedstocks.vercel.app/";
     await p.evaluate("entClose && entClose()").catch(() => {});
     await ctx.close();
   }
+  // My Positions with made-up test holdings (never anyone's real data): sign-in and saving are simulated, prices and pages are live
+  {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: "block" });
+    const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(`pos: ${e.message}`));
+    const sj = await (await fetch(URL + "signals.json")).json().catch(() => ({}));
+    const bseOnly = ((sj.signals || []).find((x) => x.exchange === "BSE") || {}).symbol || null;
+    const T = [["ADANIPORTS", "BSE", 3, 1700], ["MBAPL", "NSE", 5, 160], ["RELIANCE", "NSE", 2, 1200]].concat(bseOnly ? [[bseOnly, "BSE", 1, 100]] : []);
+    const pos = T.map(([s, e, q, px], i) => ({ id: "t" + i, symbol: s, exchange: e, sl: null, target: null, slMode: "auto", tgMode: "auto", alertMa: true, alertSl: true, alertTg: true, txns: [{ id: "x" + i, type: "buy", date: "2026-10-01", qty: q, price: px }] }));
+    await p.route("**/api/dma*", (r) => { const a = new (require("url").URL)(r.request().url()).searchParams.get("a"), j = (o) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o) });
+      if (a === "me") return j({ username: "test" }); if (a === "status") return j({ connected: false });
+      if (a === "positions") return j(r.request().method() === "GET" ? { positions: pos, ts: Date.now() + 1e9, watchlist: [], settings: {}, auto: null } : { saved: true });
+      return r.continue(); });
+    await p.goto(URL + "#positions", { waitUntil: "networkidle" }); await p.waitForTimeout(12000);
+    const rows = await p.evaluate(() => [...document.querySelectorAll("tr.hrow")].map((r) => r.innerText.replace(/\s+/g, " ").slice(0, 220)));
+    report.push("pos rows " + JSON.stringify(rows));
+    await p.screenshot({ path: "shots/pos_1280.png" });
+    await p.evaluate(() => toggleH("t0")); await p.waitForTimeout(6000);
+    report.push("pos ADANIPORTS details " + JSON.stringify(await p.evaluate(() => ({ other: (document.body.innerText.match(/Same share on NSE\s*\n?\s*[^\n]*/) || [""])[0], panel: ((document.querySelector(".exw") || {}).innerText || "").slice(0, 300) }))));
+    await p.screenshot({ path: "shots/pos_detail_1280.png", fullPage: true });
+    await p.evaluate(() => { go("ins"); }); await p.waitForTimeout(3000); await p.evaluate(() => inPick("ADANIPORTS", "BSE")); await p.waitForTimeout(8000);
+    report.push("ins ADANIPORTS BSE " + JSON.stringify(await p.evaluate(() => [IV.ex, ((document.querySelector(".sk-head") || {}).innerText || "").replace(/\s+/g, " ").slice(0, 260)])));
+    await p.screenshot({ path: "shots/ins_bse_1280.png" });
+    await p.fill("#ix-q", "adani ports"); await p.waitForTimeout(800);
+    report.push("search " + JSON.stringify(await p.evaluate(() => [...document.querySelectorAll("#ix-q-l .lso")].map((x) => x.innerText.replace(/\s+/g, " ")).slice(0, 4))));
+    await p.screenshot({ path: "shots/search_1280.png" });
+    await p.keyboard.press("Escape");
+    await p.evaluate(() => openStock("ADANIPORTS", "BSE")); await p.waitForTimeout(6000);
+    report.push("quote panel " + JSON.stringify(await p.evaluate(() => ((document.querySelector(".eq-h") || {}).innerText || "").replace(/\s+/g, " ").slice(0, 200))));
+    await p.screenshot({ path: "shots/quote_bse_1280.png" });
+    await ctx.close();
+  }
   fs.writeFileSync("shots/report.txt", report.concat(["errors:"], errs.slice(0, 40)).join("\n"));
   for (const l of report) console.log("::notice::" + l.slice(0, 900));
   console.log("::notice::errors " + errs.length + ": " + errs.slice(0, 8).join(" | ").slice(0, 900));

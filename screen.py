@@ -476,6 +476,10 @@ PXD = {}   # position key -> daily bars, kept for the automatic stop and target
 def position_quotes(pos, c):
     if not pos: return {}
     raw = fetch(list(dict.fromkeys(t for p in pos for t in pos_tickers(p)))); q = {}; data = {}
+    has = lambda t: raw.get(t) is not None and raw[t]["Close"].dropna().shape[0] >= 2
+    again = [t for p in pos if not any(has(t) for t in pos_tickers(p)) for t in pos_tickers(p)]
+    if again:   # Yahoo sometimes drops a ticker from a batch: ask once more for the ones still missing
+        time.sleep(2); raw.update({k: v for k, v in fetch(again, batch=10).items() if v is not None})
     for p in pos:   # the first ticker with prices wins
         for t in pos_tickers(p):
             d = raw.get(t)

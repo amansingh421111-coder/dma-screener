@@ -113,6 +113,11 @@ def t_position_quotes_bse():
             screen.fetch = lambda tickers, **k: {t: got[t] for t in tickers if t in got}; screen.reconcile = lambda *a, **k: None
             q = screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44})
             v = q["BSE:ADANIPORTS"]; assert v["price"] == 1754.0 and v["exchange"] == "BSE" and v["name"].startswith("Adani Ports"), v
+        calls = []
+        def flaky(tickers, **k):   # first batch drops the ticker, the retry returns it
+            calls.append(list(tickers)); return {} if len(calls) == 1 else {t: df for t in tickers if t == "ADANIPORTS.BO"}
+        screen.fetch = flaky
+        assert screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44})["BSE:ADANIPORTS"]["price"] == 1754.0 and len(calls) == 2
         screen.fetch = lambda tickers, **k: {}
         assert screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44}) == {}
     finally:
