@@ -444,6 +444,14 @@ def write_listings():
     old = read_json("listings.json", {})
     n = {r["symbol"]: [r["name"], BSE_ISIN.get(r["isin"], "") or (old.get("n", {}).get(r["symbol"], ["", ""])[1] if not BSE_ISIN else "")] for r in nse.to_dict("records") if r["symbol"]}
     b = {r["symbol"]: [r["name"], str(r["code"])] for r in bse.to_dict("records") if r["symbol"] and r["symbol"] not in n}
+    if "BSE" in BHAV and BHAV["BSE"][1]:   # official BSE closing prices, for the BSE side of every share (Yahoo's BSE history can be thin)
+        day, m = BHAV["BSE"]; c = {}
+        for sym, v in list(n.items()) + list(b.items()):
+            r = m.get(v[1]) if v[1] else None
+            if r and r[3]: c[sym] = round(r[3], 2)
+        oc = read_json("bse_close.json", {})
+        if c and (oc.get("date") != str(day) or oc.get("c") != c):
+            (ROOT / "bse_close.json").write_text(json.dumps(dict(date=str(day), source="BSE official end-of-day file", c=c), separators=(",", ":")))
     if n == old.get("n") and b == old.get("b"): LST.update(old); return
     out = dict(updated=dt.datetime.now(dt.timezone.utc).isoformat(), bse_file=str(BHAV["BSE"][0]) if "BSE" in BHAV else old.get("bse_file"),
                dual=sum(1 for v in n.values() if v[1]), n=n, b=b)

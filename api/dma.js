@@ -164,7 +164,7 @@ module.exports = async (req, res) => {
       }
       const t = String(req.query.t || "").toUpperCase();
       if (!/^[A-Z0-9&\-^_=]{1,25}(\.NS|\.BO)?$/.test(t)) return send(res, { error: "Bad ticker." }, 400);
-      const key = "chart:" + t, hit = await redis(["GET", key]);
+      const key = "chart3:" + t, hit = await redis(["GET", key]);
       if (hit) return send(res, JSON.parse(hit));
       try {
         // two years of daily bars, plus the last 5 days asked separately: the long range can lag a day or two behind

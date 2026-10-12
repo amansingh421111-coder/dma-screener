@@ -91,6 +91,7 @@ def t_listings():
     try:
         screen.ROOT = d; screen.LST.clear(); screen.BHAV.setdefault("NSE", ("2026-10-12", {})); screen.BHAV["BSE"] = ("2026-10-12", {})
         screen.BSE_ISIN.clear(); screen.BSE_ISIN.update({"INE742F01042": "532921", "INE900L01028": "541967"})
+        screen.BHAV["BSE"] = ("2026-10-12", {"532921": (1, 1, 1, 1752.1, 100, 0, 0, None, 0)})
         screen.write_listings()
         L = json.loads((d / "listings.json").read_text())
         assert L["n"]["ADANIPORTS"] == ["Adani Ports and Special Economic Zone Limited", "532921"], L["n"]["ADANIPORTS"]
@@ -98,6 +99,7 @@ def t_listings():
         assert screen.pos_tickers({"symbol": "ADANIPORTS", "exchange": "BSE"}) == ["ADANIPORTS.BO", "532921.BO"]
         assert screen.pos_yahoo({"symbol": "ADANIPORTS", "exchange": "NSE"}) == "ADANIPORTS.NS"
         bs = next(iter(L["b"])); assert screen.pos_tickers({"symbol": bs, "exchange": "BSE"})[0] == L["b"][bs][1] + ".BO"
+        bc = json.loads((d / "bse_close.json").read_text()); assert bc["c"] == {"ADANIPORTS": 1752.1} and bc["date"] == "2026-10-12", bc
         assert screen.share_name("ADANIPORTS", "BSE") == "Adani Ports and Special Economic Zone Limited"
         m = (d / "listings.json").stat().st_mtime_ns; screen.write_listings(); assert (d / "listings.json").stat().st_mtime_ns == m   # unchanged: not rewritten
     finally:

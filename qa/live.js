@@ -8,8 +8,8 @@ const URL = "https://screenedstocks.vercel.app/";
   await new Promise((r) => setTimeout(r, 150000));   // let the deploy of the same push finish first
   const b = await chromium.launch();
   const probe = [];   // the price feed itself: last days per ticker
-  for (const t of ["RELIANCE.NS", "RELIANCE.BO", "500325.BO", "ADANIPORTS.NS", "ADANIPORTS.BO", "532921.BO"]) {
-    try { const r = await fetch(URL + "api/dma?a=chart&t=" + t), j = await r.json(); probe.push(`${t} ${r.status} ${j.c ? j.dates.slice(-3).join(",") + " " + j.c.slice(-3).join(",") + " asof " + j.asof : j.error}`); }
+  for (const t of ["RELIANCE.NS", "RELIANCE.BO", "500325.BO", "ADANIPORTS.NS", "ADANIPORTS.BO", "532921.BO", "TCS.BO", "INFY.BO", "HDFCBANK.BO", "CUB.BO", "KARURVYSYA.BO", "PERSISTENT.BO", "SBIN.BO", "ITC.BO"]) {
+    try { const r = await fetch(URL + "api/dma?a=chart&t=" + t), j = await r.json(); probe.push(`${t} ${r.status} ${j.c ? j.c.length + " bars " + j.dates[0] + " … " + j.dates.slice(-3).join(",") + " " + j.c.slice(-3).join(",") + " asof " + j.asof : j.error}`); }
     catch (e) { probe.push(`${t} fetch failed ${e.message}`); }
   }
   const report = [], errs = [];
