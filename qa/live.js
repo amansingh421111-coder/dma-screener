@@ -13,6 +13,7 @@ const URL = "https://screenedstocks.vercel.app/";
     const p = await ctx.newPage();
     p.on("pageerror", (e) => errs.push(`${w}: ${e.message}`));
     p.on("console", (m) => { if (m.type() === "error") errs.push(`${w} console: ${m.text().slice(0, 160)}`); });
+    p.on("response", (r) => { if (r.status() >= 400) errs.push(`${w} ${r.status()} ${r.url().replace("https://screenedstocks.vercel.app", "").slice(0, 120)}`); });
     await p.goto(URL, { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
     await p.screenshot({ path: `shots/screener_${w}.png` });
     report.push(`${w} screener liq=${JSON.stringify(await p.evaluate(() => { const c = {}; document.querySelectorAll(".lq").forEach((e) => { const k = e.textContent.trim().split(/\s/)[0]; c[k] = (c[k] || 0) + 1; }); return { pills: c, banner: (document.getElementById("mliq") || {}).textContent?.trim().slice(0, 200) || "hidden", build: (document.body.textContent.match(/Build [\d.-]+/) || [""])[0] }; }))}`);
@@ -44,6 +45,7 @@ const URL = "https://screenedstocks.vercel.app/";
   {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: "block" });
     const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(`pos: ${e.message}`));
+    p.on("response", (r) => { if (r.status() >= 400) errs.push(`pos ${r.status()} ${r.url().replace("https://screenedstocks.vercel.app", "").slice(0, 120)}`); });
     const sj = await (await fetch(URL + "signals.json")).json().catch(() => ({}));
     const bseOnly = ((sj.signals || []).find((x) => x.exchange === "BSE") || {}).symbol || null;
     const T = [["ADANIPORTS", "BSE", 3, 1700], ["MBAPL", "NSE", 5, 160], ["RELIANCE", "NSE", 2, 1200]].concat(bseOnly ? [[bseOnly, "BSE", 1, 100]] : []);

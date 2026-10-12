@@ -167,8 +167,9 @@ module.exports = async (req, res) => {
       const key = "chart:" + t, hit = await redis(["GET", key]);
       if (hit) return send(res, JSON.parse(hit));
       try {
-        const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=2y&interval=1d&events=split`, { headers: { "user-agent": UA } });
-        const j = await r.json(); const R = j && j.chart && j.chart.result && j.chart.result[0];
+        // two years of daily bars, plus the last 5 days asked separately: the long range can lag a day or two behind
+        const yq = (rng) => fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t)}?range=${rng}&interval=1d&events=split`, { headers: { "user-agent": UA } }).then((r) => r.json()).catch(() => null);
+        const [j, j5] = await Promise.all([yq("2y"), yq("5d")]); const R = j && j.chart && j.chart.result && j.chart.result[0], R5 = j5 && j5.chart && j5.chart.result && j5.chart.result[0];
         if (!R || !R.timestamp) return send(res, { error: "No price history for " + t + "." }, 404);
         const q = R.indicators.quote[0], adj = (R.indicators.adjclose && R.indicators.adjclose[0].adjclose) || q.close;
         const out = { t, name: (R.meta && (R.meta.longName || R.meta.shortName)) || null, dates: [], o: [], h: [], l: [], c: [], v: [] };
@@ -176,7 +177,20 @@ module.exports = async (req, res) => {
           const c = q.close[i]; if (c == null || !(c > 0)) return; const f = adj[i] != null && c ? adj[i] / c : 1, r2 = (x) => (x == null ? null : Math.round(x * f * 100) / 100);
           out.dates.push(new Date((ts + 19800) * 1000).toISOString().slice(0, 10)); out.o.push(r2(q.open[i])); out.h.push(r2(q.high[i])); out.l.push(r2(q.low[i])); out.c.push(r2(c)); out.v.push(q.volume[i] || 0);
         });
-        await redis(["SET", key, JSON.stringify(out), "EX", 1800]);
+        const r2 = (x) => (x == null ? null : Math.round(x * 100) / 100), put = (d, o, h, l, c, v) => {   // add a newer day, or refresh the same day
+          if (!(c > 0)) return; const n = out.dates.length, last = n ? out.dates[n - 1] : "";
+          if (d > last) { out.dates.push(d); out.o.push(r2(o ?? c)); out.h.push(r2(h ?? c)); out.l.push(r2(l ?? c)); out.c.push(r2(c)); out.v.push(v || 0); }
+          else if (d === last) { out.c[n - 1] = r2(c); if (h != null) out.h[n - 1] = Math.max(out.h[n - 1] ?? h, r2(h)); if (l != null) out.l[n - 1] = Math.min(out.l[n - 1] ?? l, r2(l)); if (v) out.v[n - 1] = v; }
+        };
+        if (R5 && R5.timestamp) {   // same dividend adjustment as the long series
+          const q5 = R5.indicators.quote[0], a5 = (R5.indicators.adjclose && R5.indicators.adjclose[0].adjclose) || q5.close;
+          R5.timestamp.forEach((ts, i) => { const c = q5.close[i]; if (!(c > 0)) return; const f = a5[i] != null ? a5[i] / c : 1, m = (x) => (x == null ? null : x * f);
+            put(new Date((ts + 19800) * 1000).toISOString().slice(0, 10), m(q5.open[i]), m(q5.high[i]), m(q5.low[i]), c * f, q5.volume[i]); });
+        }
+        const M = R.meta || {}, li = q.close.length - 1, lastF = li >= 0 && q.close[li] > 0 && adj[li] != null ? adj[li] / q.close[li] : 1;
+        if (M.regularMarketTime && M.regularMarketPrice > 0 && Math.abs(lastF - 1) < 0.001) put(new Date((M.regularMarketTime + 19800) * 1000).toISOString().slice(0, 10), null, M.regularMarketDayHigh, M.regularMarketDayLow, M.regularMarketPrice, M.regularMarketVolume);
+        out.asof = M.regularMarketTime ? new Date(M.regularMarketTime * 1000).toISOString() : null;
+        await redis(["SET", key, JSON.stringify(out), "EX", 600]);   // 10 minutes: prices refresh during market hours
         return send(res, out);
       } catch (e) { return send(res, { error: "Could not reach the price source." }, 502); }
     }

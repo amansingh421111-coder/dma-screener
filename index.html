@@ -448,7 +448,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-13.1</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-13.2</span></footer>
 
 </main>
 <script src="listing.js"></script>
@@ -854,13 +854,13 @@ function pdetail(p,c){const L=c.L,N=ledgerNet(p),rowOf=new Map(L.rows.map(r=>[r.
   <div class="act"><button class="btn sm" onclick="openForm('levels','${p.id}')">Stop loss, target &amp; alerts</button>${tvLink(p)}<button class="btn sm danger" onclick="delHolding('${p.id}')">Delete holding</button></div></div>
   <div class="hr">${c.open?exPanel(p,c):""}<div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
 /* where the last price came from: the exchange, and when (live checks every 15 minutes in market hours, else the close) */
-function pxSrc(p,q){if(!q)return"";const ex_=p.exchange==="BSE"?"BSE":"NSE";
- if(q.src==="chart")return `${ex_} ${q.date?new Date(q.date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"}):""}`;
- const t=new Date(q.at||data.updated),today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"})===t.toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
- return `${ex_} ${today?t.toLocaleTimeString("en-IN",{timeZone:"Asia/Kolkata",hour:"numeric",minute:"2-digit"}):t.toLocaleDateString("en-IN",{timeZone:"Asia/Kolkata",day:"numeric",month:"short"})}`}
+function pxSrc(p,q){if(!q)return"";const ex_=p.exchange==="BSE"?"BSE":"NSE",IST={timeZone:"Asia/Kolkata"};
+ const today=new Date().toLocaleDateString("en-CA",IST),d=q.date||(q.src==="chart"?"":data.price_date)||"",dm=x=>new Date(x+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+ if(d&&d!==today)return `${ex_} ${dm(d)}`;   // an earlier day: that day's closing price
+ const t=new Date(q.asof||q.at||data.updated);return `${ex_} ${t.toLocaleTimeString("en-IN",Object.assign({hour:"numeric",minute:"2-digit"},IST))}`}
 const pName=(p,q)=>(q&&q.name)||(typeof lsName==="function"?lsName(p.symbol):"")||"";
 function openRow(p,c,tv){const q=c.q,st=c.st,w=tv?(c.value/tv*100).toFixed(1)+"%":"–",nm=pName(p,q)?`<small>${esc(pName(p,q))}</small>`:"",L=c.L;
- let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer">${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}${exTag(p.exchange)}${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b><small>"+pxSrc(p,q)+"</small>":"<small>Loading price…</small>"}</td>
+ let h=`<tr class="hrow"><td onclick="toggleH('${p.id}')" style="cursor:pointer">${entS(p.symbol,p.exchange,"<b>"+esc(p.symbol)+"</b>")}${exTag(p.exchange)}${typeof inNewsBadge==="function"?inNewsBadge(p.symbol,p.exchange):""}${nm}</td><td>${L.qty}</td><td>${inr(L.avg)}</td><td>${c.px!=null?"<b>"+inr(c.px)+"</b><small title=\"Exchange and time of this price: a time means today in market hours (checked every 15 minutes), a date means that day's closing price\">"+pxSrc(p,q)+"</small>":"<small>Loading price…</small>"}</td>
  <td class="cx">${q&&q.chg!=null?`<span class="${pcl(q.chg)}">${sg(q.chg)}%</span>`:"–"}</td><td class="cx">${inr(c.invested)}</td><td>${inr(c.value)}</td><td>${c.unreal==null?"–":`<span class="${pcl(c.unreal)}">${mny(c.unreal)}</span>`}</td><td>${pcs(c.unrealPct)}</td><td class="cx">${w}</td>
  ${(()=>{const v=lv(p),tag=a=>`<small class="exa${a?"":" own"}">${a?"Auto":"Yours"}</small>`;return `<td>${v.sl?inr(v.sl)+tag(v.slAuto)+(c.px!=null?`<small>${((c.px/v.sl-1)*100).toFixed(1)}% away</small>`:""):v.A&&v.A.pending?"<small>Working out…</small>":"–"}</td><td>${v.tg?inr(v.tg)+tag(v.tgAuto)+(c.px!=null?`<small>${((v.tg/c.px-1)*100).toFixed(1)}% to go</small>`:""):v.A&&!v.A.pending&&v.tgAuto?"<small>None: trailing stop</small>":"–"}</td>`})()}
  <td class="cx">${q&&q.pct!=null?pcs(q.pct):"–"}</td><td><span class="tag ${st[1]}" style="margin:0">${st[0]}</span></td><td class="ac">${acts(p,c)}</td></tr>`;

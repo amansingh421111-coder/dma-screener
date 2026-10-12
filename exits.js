@@ -112,7 +112,7 @@ function exPx(p) {
 function exQuote(p) {
   const C = exPx(p); if (!C || !C.c || C.c.length < 2) return null;
   const n = C.c.length, px = C.c[n - 1], m = exSma(C.c, 44)[n - 1];
-  return { price: px, chg: r2((px / C.c[n - 2] - 1) * 100), pct: m === m ? r2((px / m - 1) * 100) : null, src: "chart", date: C.dates[n - 1] };
+  return { price: px, chg: r2((px / C.c[n - 2] - 1) * 100), pct: m === m ? r2((px / m - 1) * 100) : null, src: "chart", date: C.dates[n - 1], asof: C.asof || null };
 }
 
 /* ---- the levels a position uses ---- */
