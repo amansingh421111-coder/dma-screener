@@ -11,7 +11,9 @@ A repeat signal in the same stock within 10 trading days is ignored. Only trades
 
 Choice of rule (as of the latest price date): average profit per trade after costs, in the current year (weight 3),
 last year (weight 2) and the year before (weight 1). A year with fewer than 20 trades is left out.
-Also recorded: the rule with the best average over every year (chosen_all), which a user can pick instead.
+Only rules that give every share the same percentage stop (fixed % or trailing %) are chosen by default; the best of all rules,
+including volatility (ATR) scaled and 44-DMA stops, is recorded as chosen_vol for those who prefer it.
+Also recorded: the rule with the best average over every year (chosen_all, chosen_vol_all), which a user can pick instead.
 Walk-forward check: the same choice made month by month with only the data available at that time, then used on the next
 month's trades, compared with the strategy's fixed library exit and with the rule that was best over all earlier years.
 Writes exits.json.
@@ -44,6 +46,7 @@ STRATS = [dict(id="screener", name="Screener Buy (first day 0–5% above the 44-
 KINDS = ("swing", "short")
 SI = {k: [i for i, s in enumerate(STRATS) if s["kind"] == k] for k in KINDS}
 RULES = {k: X.grid(k) for k in KINDS}
+PCT_FAMS = ("fix", "trail")   # rules that put every share's stop at the same percentage (the default; volatility-scaled rules are an option)
 
 
 def init(months):
@@ -131,52 +134,53 @@ def summarise(st, acc, months, lib_id, price_year):
         allv = sum(byyear[y] for y in yrs if y >= 2016)
         if allv[0, 0] < 60: return None
         sc = allv[:, 1] / allv[:, 0]; fallback = "Too few recent trades: all years from 2016 used, equally"
-    order = np.argsort(-sc); best = int(order[0]); li = ids.index(lib_id) if lib_id in ids else None
+    li = ids.index(lib_id) if lib_id in ids else None
+    PM = np.array([r["fam"] in PCT_FAMS for r in R])   # same percentage for every share: fixed % or trailing % rules
+    neg = np.where(PM, 0.0, -np.inf)
+    order = np.argsort(-(sc + neg)); best = int(order[0]); orderV = np.argsort(-sc); bestV = int(orderV[0])
     tot = acc.sum(1)
-    sca = tot[:, 1] / np.maximum(tot[:, 0], 1); ba = int(np.argmax(sca))   # alternative: best over every year, all trades counted equally
+    sca = tot[:, 1] / np.maximum(tot[:, 0], 1); ba = int(np.argmax(sca + neg)); baV = int(np.argmax(sca))   # alternative: best over every year, all trades counted equally
     def row(i):
         return dict(rule=ids[i], score=round(float(sc[i]), 5), years={str(y): stat(byyear[y][i]) for y in (price_year, price_year - 1, price_year - 2) if y in byyear and byyear[y][i, 0] > 0},
                     all=stat(tot[i]))
-    # walk-forward: pick each month with the data finished by then, apply to that month's trades
-    lag = LAG[kind]; cum_y = {}
-    wf = {"adaptive": np.zeros(2), "library": np.zeros(2), "longrun": np.zeros(2)}; wy = {}; diffs = []; picks = []
-    mcum = np.cumsum(acc, axis=1)   # (R, months, NF)
-    yidx = np.array([int(m[:4]) for m in months])
-    for t, m in enumerate(months):
-        y = int(m[:4])
-        if y < WF_FROM or t - lag < 0: continue
-        e = t - lag   # last month whose trades are finished
-        cur = acc[:, t]
-        if cur[0, 0] < 1: continue
-        def ysum(yy):
-            sel = np.flatnonzero((yidx == yy) & (np.arange(len(months)) <= e))
-            return acc[:, sel].sum(1) if len(sel) else None
-        by = {yy: v for yy in (y, y - 1, y - 2) if (v := ysum(yy)) is not None}
-        s_, _ = score(by, y)
-        tot_e = mcum[:, e]
-        if s_ is None or tot_e[0, 0] < 60: continue
-        pa = int(np.argmax(s_)); pl = int(np.argmax(tot_e[:, 1] / tot_e[:, 0]))
-        picks.append(ids[pa])
-        rec = wy.setdefault(y, np.zeros((3, 2)))
-        for j, (nm, i) in enumerate((("adaptive", pa), ("library", li if li is not None else pa), ("longrun", pl))):
-            wf[nm] += cur[i, :2]; rec[j] += cur[i, :2]
-        if li is not None: diffs.append(cur[pa, 1] / cur[pa, 0] - cur[li, 1] / cur[li, 0])
-    walk = None
-    if wf["adaptive"][0] > 0:
+    def walk_for(mask):
+        """pick each month with the data finished by then (among the allowed rules), apply to that month's trades"""
+        lag = LAG[kind]; mneg = np.where(mask, 0.0, -np.inf)
+        wf = {"adaptive": np.zeros(2), "library": np.zeros(2), "longrun": np.zeros(2)}; wy = {}; diffs = []; picks = []
+        mcum = np.cumsum(acc, axis=1); yidx = np.array([int(m[:4]) for m in months])
+        for t, m in enumerate(months):
+            y = int(m[:4])
+            if y < WF_FROM or t - lag < 0: continue
+            e = t - lag; cur = acc[:, t]
+            if cur[0, 0] < 1: continue
+            by = {}
+            for yy in (y, y - 1, y - 2):
+                sel = np.flatnonzero((yidx == yy) & (np.arange(len(months)) <= e))
+                if len(sel): by[yy] = acc[:, sel].sum(1)
+            s_, _ = score(by, y); tot_e = mcum[:, e]
+            if s_ is None or tot_e[0, 0] < 60: continue
+            pa = int(np.argmax(s_ + mneg)); pl = int(np.argmax(tot_e[:, 1] / tot_e[:, 0] + mneg))
+            picks.append(ids[pa]); rec = wy.setdefault(y, np.zeros((3, 2)))
+            for j, (nm, i) in enumerate((("adaptive", pa), ("library", li if li is not None else pa), ("longrun", pl))):
+                wf[nm] += cur[i, :2]; rec[j] += cur[i, :2]
+            if li is not None: diffs.append(cur[pa, 1] / cur[pa, 0] - cur[li, 1] / cur[li, 0])
+        if not wf["adaptive"][0] > 0: return None
         d = np.array(diffs); tval = float(d.mean() / (d.std(ddof=1) / math.sqrt(len(d)))) if len(d) > 5 and d.std(ddof=1) > 0 else None
-        walk = dict(start=WF_FROM, n=int(wf["adaptive"][0]), months=len(d),
-                    avg={k: round(v[1] / v[0], 5) for k, v in wf.items() if v[0] > 0},
+        return dict(start=WF_FROM, n=int(wf["adaptive"][0]), months=len(d), avg={k: round(v[1] / v[0], 5) for k, v in wf.items() if v[0] > 0},
                     years={str(y): [round(r[j, 1] / r[j, 0], 5) if r[j, 0] else None for j in range(3)] + [int(r[0, 0])] for y, r in sorted(wy.items())},
                     t_vs_library=None if tval is None else round(tval, 2), months_better=int((d > 0).sum()) if len(d) else 0,
                     distinct_picks=len(set(picks)), last_pick=picks[-1] if picks else None)
+    walk, walkV = walk_for(PM), walk_for(np.ones(len(R), bool))
+    pick = lambda i, sc_: dict(rule=ids[i], label=X.label(R[i]), score=round(float(sc_[i]), 5))
+    allx = lambda i: dict(pick(i, sca), n=int(tot[i, 0]), days=round(float(tot[i, 4] / max(tot[i, 0], 1)), 1), recent_score=round(float(sc[i]), 5),
+                          years={str(y): stat(byyear[y][i]) for y in (price_year, price_year - 1, price_year - 2) if y in byyear and byyear[y][i, 0] > 0})
     return dict(id=st["id"], name=st["name"], kind=kind, rule_text=st.get("rule"), library_rule=lib_id,
-                chosen=dict(rule=ids[best], label=X.label(R[best]), score=round(float(sc[best]), 5), parts=parts, fallback=fallback),
-                chosen_all=dict(rule=ids[ba], label=X.label(R[ba]), score=round(float(sca[ba]), 5), n=int(tot[ba, 0]), days=round(float(tot[ba, 4] / max(tot[ba, 0], 1)), 1),
-                                recent_score=round(float(sc[ba]), 5), years={str(y): stat(byyear[y][ba]) for y in (price_year, price_year - 1, price_year - 2) if y in byyear and byyear[y][ba, 0] > 0}),
+                chosen=dict(pick(best, sc), parts=parts, fallback=fallback), chosen_all=allx(ba),
+                chosen_vol=dict(pick(bestV, sc), parts=parts, years=row(bestV)["years"]), chosen_vol_all=allx(baV),
                 ranking=[row(int(i)) for i in order[:6]], library=row(li) if li is not None else None,
                 table=[[ids[i], round(float(sc[i]), 5)] + [None if byyear.get(y) is None or byyear[y][i, 0] < 1 else round(float(byyear[y][i, 1] / byyear[y][i, 0]), 5) for y in (price_year, price_year - 1, price_year - 2)] +
-                       [round(float(tot[i, 1] / tot[i, 0]), 5) if tot[i, 0] else None, round(float(tot[i, 4] / tot[i, 0]), 1) if tot[i, 0] else None] for i in order],
-                trades_by_year={str(y): int(byyear[y][0, 0]) for y in yrs if byyear[y][0, 0] > 0}, walk=walk)
+                       [round(float(tot[i, 1] / tot[i, 0]), 5) if tot[i, 0] else None, round(float(tot[i, 4] / tot[i, 0]), 1) if tot[i, 0] else None] for i in orderV],
+                trades_by_year={str(y): int(byyear[y][0, 0]) for y in yrs if byyear[y][0, 0] > 0}, walk=walk, walk_vol=walkV)
 
 
 def run(data, day, years_n):

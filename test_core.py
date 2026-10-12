@@ -44,7 +44,9 @@ def t_auto_levels():
     try:
         screen.EXITS.clear(); screen.EXITS.update({"_default": "screener", "_date": "2026-10-09", "_rules": {},
             "screener": dict(rule=dict(fam="trail", t=10, hold=40, id="trail-t10-h40"), name="Screener Buy", score=0.01, label="Trailing stop 10%",
-                             rule_all=dict(fam="fix", sp=8, tp=20, hold=40, id="fix-sp8-tp20-h40"), score_all=0.02, label_all="Stop -8%, target +20%")})
+                             variants={"pct:recent": dict(rule=dict(fam="trail", t=10, hold=40, id="trail-t10-h40"), score=0.01, label="Trailing stop 10%"),
+                                       "pct:all": dict(rule=dict(fam="fix", sp=8, tp=20, hold=40, id="fix-sp8-tp20-h40"), score=0.02, label="Stop -8%, target +20%"),
+                                       "vol:recent": dict(rule=dict(fam="chand", k=4, hold=60, id="chand-k4-h60"), score=0.03, label="Trailing 4x ATR")})})
         idx = pd.bdate_range("2026-06-01", periods=40)
         c = np.r_[np.linspace(100, 130, 30), np.linspace(129, 120, 10)]
         df = pd.DataFrame(dict(Open=c, High=c * 1.005, Low=c * 0.995, Close=c, Volume=1e6), index=idx)
@@ -58,6 +60,9 @@ def t_auto_levels():
         assert abs(a["sl"] - 130 * 0.9) < 0.6 and a["target"] is None and a["exit"] is None and a["basis"] == "recent", a
         ua = dict(u, uid="u2", settings={"exitAll": 1}); aa = screen.update_auto([ua], True)[0]["u2"]["NSE:AAA"]
         assert aa["rule"] == "fix-sp8-tp20-h40" and aa["basis"] == "all" and aa["target"] == 120.0, aa
+        uv = dict(u, uid="u3", settings={"exitVol": 1}); av = screen.update_auto([uv], True)[0]["u3"]["NSE:AAA"]
+        assert av["rule"] == "chand-k4-h60" and av["stop_kind"] == "vol", av
+        assert a["stop_kind"] == "pct"
         # price falls: the trailing stop does not come down; at 116 the stop (117) is hit
         df2 = pd.concat([df, pd.DataFrame(dict(Open=[118.0], High=[118.5], Low=[116.0], Close=[116.5], Volume=[1e6]), index=[idx[-1] + pd.tseries.offsets.BDay()])])
         screen.PXD["NSE:AAA"] = df2

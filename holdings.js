@@ -66,7 +66,7 @@ function hCell(k, r, tv, showRet) {
     case "pl": return `<td class="n">${c.unreal == null ? "–" : `<b class="${pcl(c.unreal)}">${mny(c.unreal)}</b>${showRet ? `<small class="${pcl(c.unreal)}">${sg(+c.unrealPct.toFixed(2))}%</small>` : ""}`}</td>`;
     case "ret": return `<td class="n">${pcs(c.unrealPct)}</td>`;
     case "wt": return `<td class="n">${tv ? (c.value / tv * 100).toFixed(1) + "%" : "–"}</td>`;
-    case "stop": return `<td class="n">${v.sl ? `${inr(v.sl)}<small>${v.slAuto ? `<span class="exa" title="${esc(v.A ? "Automatic: " + (v.A.rule_label || "") : "")}">Auto</span> ` : `<span class="exa own">Yours</span> `}${c.px != null ? ((c.px / v.sl - 1) * 100).toFixed(1) + "% away" : ""}</small>` : v.A && v.A.pending ? "<small>Working out…</small>" : "–"}</td>`;
+    case "stop": return `<td class="n">${v.sl ? `${inr(v.sl)}<small>${v.slAuto ? `<span class="exa" title="${esc(v.A ? "Automatic: " + (v.A.rule_label || "") : "")}">Auto</span> ${esc(v.A && typeof exStopWord === "function" ? exStopWord(v.A.rule) : "")}` : `<span class="exa own">Yours</span> ${c.px != null ? ((c.px / v.sl - 1) * 100).toFixed(1) + "% below price" : ""}`}</small>` : v.A && v.A.pending ? "<small>Working out…</small>" : "–"}</td>`;   // automatic: the rule's distance, identical for every share on that rule
     case "risk": { const x = hRisk(r); return `<td class="n">${x != null ? `${inr(x)}<small>${c.value ? (x / c.value * 100).toFixed(1) + "% of value" : ""}</small>` : "–"}</td>`; }
     case "exit": { const tg = v.tg, A = v.A; return `<td class="n">${tg ? inr(tg) + (c.px ? `<small>${((tg / c.px - 1) * 100).toFixed(1)}% to go</small>` : "") : A && !A.pending && v.tgAuto ? "Trailing stop" : "–"}${A && A.days_left != null && !A.exit ? `<small>${A.days_left} day${A.days_left === 1 ? "" : "s"} left</small>` : ""}</td>`; }
     case "held": return `<td class="n">${held(c.days)}</td>`;
@@ -98,7 +98,8 @@ function hTable(oc, T) {
     const G = new Map(); hSorted(oc).forEach((r) => { const k = hSid(r.p); if (!G.has(k)) G.set(k, []); G.get(k).push(r); });
     body = [...G.entries()].sort((a, b) => sum(b[1]).val - sum(a[1]).val).map(([sid, rows]) => {
       const A = lv(rows[0].p).A, s = typeof exStrat === "function" ? exStrat(sid) : null;
-      const why = `<small class="hgr">${A && A.rule_label ? `One exit rule for every share bought under this strategy: ${esc(A.rule_label.replace(/, sell after (\d+) trading days at the latest/, ", sold after $1 trading days at most"))}` : ""}${A && /ATR/.test(A.rule_label || "") && rows.length > 1 ? ". ATR is each share's own average daily move, so the same rule gives each share a different distance" : ""}</small>`;
+      const pctRule = A && /^(trail|fix)/.test(A.rule || "");
+      const why = `<small class="hgr">${A && A.rule_label ? `One exit rule for every share bought under this strategy${pctRule ? ", the same percentage for each" : ""}: ${esc(A.rule_label.replace(/, sell after (\d+) trading days at the latest/, ", sold after $1 trading days at most"))}` : ""}${A && /ATR/.test(A.rule_label || "") && rows.length > 1 ? ". You chose stops scaled to each share's daily move (ATR), so the distance differs by share" : ""}${pctRule ? ". The Risk to stop column shows how far today's price is above each stop: that differs only by how much each share has moved since you bought" : ""}</small>`;
       return agg(sum(rows), `<b>${esc(hStratName(sid))}</b><small>${rows.length} holding${rows.length > 1 ? "s" : ""}</small>`, "hgrp") + `<tr class="hgrn"><td colspan="${n}">${why}</td></tr>` + rowsHtml(rows);
     }).join("");
   } else body = rowsHtml(hSorted(oc));

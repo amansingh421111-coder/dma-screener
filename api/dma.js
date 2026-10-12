@@ -454,7 +454,7 @@ module.exports = async (req, res) => {
         }
       }
       if (body.settings && typeof body.settings === "object") {
-        const keys = ["exitAll", "capital", "riskPct", "brokeragePct", "brokerageFlat", "sttPct", "exchPct", "sebiPct", "stampPct", "gstPct", "dpFlat", "stcgPct", "ltcgPct", "ltcgExempt"];
+        const keys = ["exitAll", "exitVol", "capital", "riskPct", "brokeragePct", "brokerageFlat", "sttPct", "exchPct", "sebiPct", "stampPct", "gstPct", "dpFlat", "stcgPct", "ltcgPct", "ltcgExempt"];
         settings = {};
         for (const k of keys) { const v = +body.settings[k]; if (isFinite(v) && v >= 0 && v <= 1e12) settings[k] = v; }
       }

@@ -532,12 +532,18 @@ def load_exits():
     rules = {r["id"]: r for k in ("swing", "short") for r in (ex.get("rules") or {}).get(k, [])}
     EXITS["_default"] = ex.get("default") or "screener"; EXITS["_date"] = ex.get("price_date"); EXITS["_rules"] = rules
     for st in ex.get("strategies") or []:
-        r = rules.get(st["chosen"]["rule"]); ca = st.get("chosen_all") or {}; ra = rules.get(ca.get("rule")) or r
-        if r: EXITS[st["id"]] = dict(rule=r, name=st["name"], score=st["chosen"]["score"], label=st["chosen"]["label"],
-                                     rule_all=ra, score_all=ca.get("score"), label_all=ca.get("label") or st["chosen"]["label"])
+        r = rules.get(st["chosen"]["rule"])
+        if not r: continue
+        e = dict(name=st["name"], variants={})
+        # four choices: same % for every share (default) or scaled to each share's daily move; picked on recent years (default) or all years
+        for key, nm in (("pct:recent", "chosen"), ("pct:all", "chosen_all"), ("vol:recent", "chosen_vol"), ("vol:all", "chosen_vol_all")):
+            c_ = st.get(nm) or {}; rr = rules.get(c_.get("rule"))
+            if rr: e["variants"][key] = dict(rule=rr, score=c_.get("score"), label=c_.get("label") or X.label(rr))
+        v0 = e["variants"]["pct:recent"] if "pct:recent" in e["variants"] else dict(rule=r, score=st["chosen"]["score"], label=st["chosen"]["label"])
+        e.update(v0); EXITS[st["id"]] = e
     if "screener" not in EXITS:
         r = X.grid("swing")[[x["id"] for x in X.grid("swing")].index(X.library_rule("swing", 8, 20))]
-        EXITS["screener"] = dict(rule=r, name="Screener Buy (first day 0–5% above the 44-DMA)", score=None, label=X.label(r))
+        EXITS["screener"] = dict(rule=r, name="Screener Buy (first day 0–5% above the 44-DMA)", score=None, label=X.label(r), variants={})
     return EXITS
 
 def pos_entry(p):
@@ -552,9 +558,10 @@ def pos_entry(p):
         else: q -= x.get("qty") or 0
     return start, p.get("avg")
 
-def auto_levels(p, final, basis_all=False):
+def auto_levels(p, final, basis_all=False, vol=False):
     """Automatic levels for one open position, or None when its price history is missing.
-    basis_all: use the rule that was best over every year instead of the one best this year and the two before (a user setting)."""
+    basis_all: use the rule that was best over every year instead of the one best this year and the two before (a user setting).
+    vol: allow stops scaled to each share's daily move (ATR) instead of the same percentage for every share (a user setting)."""
     import exitrules as X
     E = load_exits(); sid = p.get("strategy") if p.get("strategy") in E else E["_default"]
     if sid not in E: sid = "screener"
@@ -563,12 +570,13 @@ def auto_levels(p, final, basis_all=False):
     df = df.dropna(subset=["Close"])
     if getattr(df.index, "tz", None) is not None: df.index = df.index.tz_localize(None)
     ch = E[sid]
-    if basis_all and ch.get("rule_all"): ch = dict(ch, rule=ch["rule_all"], score=ch.get("score_all"), label=ch.get("label_all"))
+    key = ("vol" if vol else "pct") + (":all" if basis_all else ":recent"); v = (ch.get("variants") or {}).get(key)
+    if v: ch = dict(ch, **v)
     L = X.live_levels(list(df.index.strftime("%Y-%m-%d")), df["Open"].to_numpy(float), df["High"].to_numpy(float), df["Low"].to_numpy(float),
                       df["Close"].to_numpy(float), start, float(avg), ch["rule"], final=final)
     if not L: return None
     return dict(L, strategy=sid, strategy_name=ch["name"], rule=ch["rule"]["id"], rule_label=ch["label"], rule_score=ch["score"],
-                entry_date=start, entry_price=round(float(avg), 2), exits_date=E.get("_date"), basis="all" if basis_all else "recent")
+                entry_date=start, entry_price=round(float(avg), 2), exits_date=E.get("_date"), basis="all" if basis_all else "recent", stop_kind="vol" if vol else "pct")
 
 def update_auto(users, final):
     """Work out the automatic levels for every open position, keep the stop from ever moving down, store them per user
@@ -581,11 +589,12 @@ def update_auto(users, final):
         items = {}
         for p in u["positions"]:
             k = pos_key(p)
-            try: a = auto_levels(p, final, bool((u.get("settings") or {}).get("exitAll")))
+            st_ = u.get("settings") or {}
+            try: a = auto_levels(p, final, bool(st_.get("exitAll")), bool(st_.get("exitVol")))
             except Exception as e: log.warning("auto levels %s: %s", k, e); a = None
             if not a: continue
             o = prev.get(k) or {}
-            same = o.get("entry_date") == a["entry_date"] and o.get("entry_price") == a["entry_price"] and o.get("strategy") == a["strategy"]
+            same = o.get("entry_date") == a["entry_date"] and o.get("entry_price") == a["entry_price"] and o.get("strategy") == a["strategy"] and o.get("stop_kind", "vol") == a["stop_kind"]   # a new kind of stop starts fresh
             if same and o.get("sl") and a["sl"] < o["sl"] and not a.get("exit"):
                 a["sl"] = o["sl"]; a["kept"] = True   # stops only move up: an earlier, higher stop stays
             nt = (o.get("notified") or {}) if same else {}

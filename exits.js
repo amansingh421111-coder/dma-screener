@@ -16,7 +16,14 @@ const exDefault = () => (EXI && EXI.default) || "screener";
 const EX_FALLBACK = { id: "fix-sp8-tp20-h40", fam: "fix", sp: 8, tp: 20, hold: 40, label: "Stop −8%, target +20%, sell after 40 trading days at the latest" };
 /* which rule: best this year and the two before (as you asked), or best over every year (your setting on the panel) */
 const exAll = () => !!(typeof SET !== "undefined" && SET && SET.exitAll);
-const exPick = (s) => (exAll() && s.chosen_all ? s.chosen_all : s.chosen);
+/* stop distance: the same percentage for every share (default), or scaled to each share's daily move (your setting) */
+const exVol = () => !!(typeof SET !== "undefined" && SET && SET.exitVol);
+const exPick = (s) => (exVol() ? (exAll() ? s.chosen_vol_all : s.chosen_vol) : exAll() ? s.chosen_all : s.chosen) || s.chosen;
+/* the rule's stop in words that are the same for every share using it */
+function exStopWord(rid) {
+  const r = exRules()[rid] || (rid === EX_FALLBACK.id ? EX_FALLBACK : null); if (!r) return "";
+  return r.fam === "trail" ? `${r.t}% below high` : r.fam === "fix" ? `${r.sp}% below cost` : r.fam === "dma" ? "at the 44-DMA" : `${r.k}× ATR` + (r.fam === "chand" ? " below high" : " below cost");
+}
 function exChosen(sid) {
   const s = exStrat(sid) || exStrat(exDefault()), R = exRules();
   if (s && R[exPick(s).rule]) return { s, rule: R[exPick(s).rule] };
@@ -122,7 +129,7 @@ function exAuto(p) {
   const L = ledger(p); if (!(L.qty > 0)) return null;
   const sid = p.strategy && exStrat(p.strategy) ? p.strategy : exDefault(), ep = r2(L.avg), k = p.exchange + ":" + p.symbol;
   const sv = AUTO && AUTO.items ? AUTO.items[k] : null;
-  if (sv && sv.entry_date === L.since && Math.abs(sv.entry_price - ep) < 0.006 && (sv.strategy === sid || (!exStrat(sid) && !p.strategy)) && (sv.basis || "recent") === (exAll() ? "all" : "recent")) return Object.assign({ src: "server" }, sv);
+  if (sv && sv.entry_date === L.since && Math.abs(sv.entry_price - ep) < 0.006 && (sv.strategy === sid || (!exStrat(sid) && !p.strategy)) && (sv.basis || "recent") === (exAll() ? "all" : "recent") && (sv.stop_kind || "vol") === (exVol() ? "vol" : "pct")) return Object.assign({ src: "server" }, sv);
   const ch = exChosen(sid); exPx(p); const Hh = typeof lsHist === "function" ? lsHist(p.symbol, p.exchange) : null, C = Hh && !Hh.thin ? Hh.C : exPx(p), base = { strategy: sid, strategy_name: ch.s ? ch.s.name : "Screener Buy", rule: ch.rule.id, rule_label: ch.rule.label || ch.rule.id, rule_score: ch.s ? exPick(ch.s).score : null, entry_date: L.since, entry_price: ep, src: "browser" };
   if (C && C.c) { const v = exLive(C.dates, C.o, C.h, C.l, C.c, L.since, ep, ch.rule, true); if (v) return Object.assign(base, v); }
   if (ch.rule.fam === "fix") return Object.assign(base, { sl: r2(ep * (1 - ch.rule.sp / 100)), target: ch.rule.tp ? r2(ep * (1 + ch.rule.tp / 100)) : null, exit: null, days_left: null });
@@ -139,20 +146,25 @@ const withLv = (p) => { const v = lv(p); return Object.assign({}, p, { sl: v.sl,
 const exPc = (v, d = 1) => (v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(d) + "%");
 function exWhy(sid) {
   const s = exStrat(sid); if (!s) return `<p class="sub">The strategy test has not run yet, so the screener rule's standard exit is used: ${esc(EX_FALLBACK.label)}.</p>`;
-  const R = exRules(), n = (EXI.rules[s.kind] || []).length, all = exAll() && s.chosen_all, cur = all ? s.chosen_all : s.chosen;
-  const curRow = all ? { years: s.chosen_all.years } : s.ranking[0] || {}, lib = s.library && s.library.rule !== cur.rule ? s.library : null;
-  const yr = (s.chosen.parts || []).map((x) => { const v = (curRow.years || {})[String(x.year)], u = lib && (lib.years || {})[String(x.year)];
+  const R = exRules(), n = (EXI.rules[s.kind] || []).length, all = exAll(), vol = exVol() && !!s.chosen_vol, cur = exPick(s);
+  const years = vol ? (all ? (s.chosen_vol_all || {}).years : (s.chosen_vol || {}).years) : all ? (s.chosen_all || {}).years : (s.ranking[0] || {}).years;
+  const lib = s.library && s.library.rule !== cur.rule ? s.library : null;
+  const yr = (s.chosen.parts || []).map((x) => { const v = (years || {})[String(x.year)], u = lib && (lib.years || {})[String(x.year)];
     return v ? `<tr><td>${x.year}${x.year === EXI.current_year ? " so far" : ""}<small>${v.n.toLocaleString("en-IN")} trades${all ? "" : " · weight " + x.weight}</small></td><td>${exPc(v.avg)}<small>${Math.round(v.win * 100)}% won · ${v.days} days</small></td>${lib ? `<td>${u ? exPc(u.avg) : "–"}${u ? `<small>${Math.round(u.win * 100)}% won · ${u.days} days</small>` : ""}</td>` : ""}</tr>` : ""; }).join("");
-  const tot = all ? `<tr class="tot"><td>Every year since ${String(EXI.first_date || "").slice(0, 4)}<small>${s.chosen_all.n.toLocaleString("en-IN")} trades</small></td><td>${exPc(s.chosen_all.score, 2)}</td>${lib ? `<td>${lib.all ? exPc(lib.all.avg, 2) : "–"}</td>` : ""}</tr>`
-    : `<tr class="tot"><td>Weighted score</td><td>${exPc(s.chosen.score, 2)}</td>${lib ? `<td>${exPc(lib.score, 2)}</td>` : ""}</tr>`;
-  const w = s.walk, wa = w && w.avg ? w.avg : null;
-  const seg = `<div class="seg2 exm" role="group" aria-label="How the rule is chosen"><button type="button" aria-pressed="${!all}" onclick="exBasis(0)">Best in recent years</button><button type="button" aria-pressed="${!!all}" onclick="exBasis(1)">Best over all years</button></div>`;
+  const tot = all ? `<tr class="tot"><td>Every year since ${String(EXI.first_date || "").slice(0, 4)}${cur.n ? `<small>${cur.n.toLocaleString("en-IN")} trades</small>` : ""}</td><td>${exPc(cur.score, 2)}</td>${lib ? `<td>${lib.all ? exPc(lib.all.avg, 2) : "–"}</td>` : ""}</tr>`
+    : `<tr class="tot"><td>Weighted score</td><td>${exPc(cur.score, 2)}</td>${lib ? `<td>${exPc(lib.score, 2)}</td>` : ""}</tr>`;
+  const w = vol ? s.walk_vol || s.walk : s.walk, wa = w && w.avg ? w.avg : null;
+  const seg = `<div class="seg2 exm" role="group" aria-label="How the rule is chosen"><button type="button" aria-pressed="${!all}" onclick="exBasis(0)">Best in recent years</button><button type="button" aria-pressed="${all}" onclick="exBasis(1)">Best over all years</button></div>`;
+  const seg2 = s.chosen_vol ? `<div class="seg2 exm" role="group" aria-label="Stop distance"><button type="button" aria-pressed="${!vol}" onclick="exVolSet(0)">Same % for every share</button><button type="button" aria-pressed="${vol}" onclick="exVolSet(1)">Scaled to each share's daily move</button></div>` : "";
+  const alt = s.chosen_vol ? (vol ? (all ? s.chosen_all : s.chosen) : all ? s.chosen_vol_all : s.chosen_vol) : null;
+  const altL = alt && alt.rule !== cur.rule ? ` The best ${vol ? "same-% rule" : "rule scaled to each share's daily move"} (${esc(((R[alt.rule] || {}).label || alt.rule).replace(/, sell after.*/, ""))}) scores ${exPc(alt.score, 2)} on the same basis${vol ? "" : "; switch above if you prefer it"}.` : "";
   const wl = wa ? `<p class="sub"><b>Month-by-month check from ${w.start}</b>, choosing with only the trades finished at the time: best in recent years <b>${exPc(wa.adaptive, 2)}</b> a trade, best over all earlier years <b>${exPc(wa.longrun, 2)}</b>, standard exit ${exPc(wa.library, 2)}. ${w.distinct_picks} different rules came out on top in recent years over that time.</p>` : "";
-  return `<div class="exb"><span class="sub">Choose the rule on</span>${seg}</div>
+  return `<div class="exb"><span class="sub">Stop distance</span>${seg2}</div><div class="exb"><span class="sub">Choose the rule on</span>${seg}</div>
     <div class="ov-scroll"><table class="ext"><thead><tr><th>Average profit per trade, after costs</th><th>This rule</th>${lib ? `<th>Standard exit<small>${esc((R[lib.rule] || {}).label || lib.rule).replace(/, sell after.*/, "")}</small></th>` : ""}</tr></thead>
     <tbody>${yr}${tot}</tbody></table></div>
-    <p class="sub">${all ? `The rule with the best average over every year` : `The rule with the best average this year and the two before (weights 3, 2, 1)`}, out of ${n} stop/target rules tested on the same ${esc(s.name)} trades (${Number(EXI.stocks || 0).toLocaleString("en-IN")} NSE shares, ${EXI.years_of_data} years). Chosen again every weekday evening.</p>${wl}`;
+    <p class="sub">${all ? `The rule with the best average over every year` : `The rule with the best average this year and the two before (weights 3, 2, 1)`}, among ${vol ? `all ${n} stop/target rules` : `the rules that give every share the same percentage stop`}, tested on the same ${esc(s.name)} trades (${Number(EXI.stocks || 0).toLocaleString("en-IN")} NSE shares, ${EXI.years_of_data} years).${altL} Chosen again every weekday evening.</p>${wl}`;
 }
+function exVolSet(v) { if (typeof SET === "undefined") return; SET.exitVol = v ? 1 : 0; savePos(); render(); }
 function exBasis(v) { if (typeof SET === "undefined") return; SET.exitAll = v ? 1 : 0; savePos(); render(); }
 function exPanel(p, c) {
   if (!c.open) return "";
@@ -167,7 +179,9 @@ function exPanel(p, c) {
   return `<div class="exw"><div class="exh"><b>Stop loss and target</b><label class="exs">Strategy you used <select onchange="exSet('${p.id}',this.value)">${opts}</select></label></div>
     ${xmsg}<div class="exg">${cell("Stop loss", v.sl, v.slAuto, "sl")}${cell("Target", v.tg, v.tgAuto, "tg")}${tl}</div>
     ${A ? `<p class="sub"><b>Rule:</b> ${esc(A.rule_label || "")}${A.kept ? ". The stop stays at its earlier, higher level: stops only move up" : ""}.</p>` : ""}${(() => {   // why this share's stop sits where it does
-      const R = A && (exRules()[A.rule] || null), ep = A && A.entry_price; if (!R || !A.atr || !ep || !(R.fam === "chand" || R.fam === "atr")) return "";
+      const R = A && (exRules()[A.rule] || null), ep = A && A.entry_price; if (!R || !ep) return "";
+      if (R.fam === "trail" || R.fam === "fix") return `<p class="sub"><b>Same for every share under this strategy:</b> the stop is ${R.fam === "trail" ? `${R.t}% below the highest close since you bought (it started ${R.t}% below your cost, ${inr(ep * (1 - R.t / 100))}, and only moves up)` : `${R.sp}% below your average cost (${inr(ep * (1 - R.sp / 100))})`}. How far it is from today's price differs only by how much each share has moved since.</p>`;
+      if (!A.atr || !(R.fam === "chand" || R.fam === "atr")) return "";
       const k = R.k, d = k * A.atr; return `<p class="sub"><b>For ${esc(p.symbol)}:</b> its average daily move (ATR, 14 days) was ${inr(A.atr)} on the day before you bought, ${(A.atr / ep * 100).toFixed(1)}% of your average cost. ${k}× that is ${inr(d)} (${(d / ep * 100).toFixed(1)}%), so the stop started at ${inr(ep - d)}${R.fam === "chand" ? " and trails " + inr(d) + " below the highest close since" : ""}. Other shares under the same strategy use the same rule with their own daily move, which is why their stops sit at different distances.</p>`; })()}
     ${exWhy(sid)}<p class="ix-fine">${src} Set your own stop or target with “Stop loss, target &amp; alerts”; it replaces the automatic one until you switch back.</p></div>`;
 }
