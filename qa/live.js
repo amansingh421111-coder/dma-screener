@@ -2,17 +2,19 @@
 // Signs in to nothing (positions stay private); only public pages are visited.
 const { chromium } = require("playwright");
 const fs = require("fs");
-const URL = "https://screenedstocks.vercel.app/";
+const URL = process.env.LIVE_URL || "https://screenedstocks.vercel.app/";
 (async () => {
   fs.mkdirSync("shots", { recursive: true });
-  await new Promise((r) => setTimeout(r, 150000));   // let the deploy of the same push finish first
-  const b = await chromium.launch();
+  await new Promise((r) => setTimeout(r, +(process.env.QA_WAIT ?? 150000)));   // let the deploy of the same push finish first
+  const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ["--no-sandbox"] } : {});
   const probe = [];   // the price feed itself: last days per ticker
   for (const t of ["RELIANCE.NS", "RELIANCE.BO", "500325.BO", "ADANIPORTS.NS", "ADANIPORTS.BO", "532921.BO", "TCS.BO", "INFY.BO", "HDFCBANK.BO", "CUB.BO", "KARURVYSYA.BO", "PERSISTENT.BO", "SBIN.BO", "ITC.BO"]) {
     try { const r = await fetch(URL + "api/dma?a=chart&t=" + t), j = await r.json(); probe.push(`${t} ${r.status} ${j.c ? j.c.length + " bars " + j.dates[0] + " … " + j.dates.slice(-3).join(",") + " " + j.c.slice(-3).join(",") + " asof " + j.asof : j.error}`); }
     catch (e) { probe.push(`${t} fetch failed ${e.message}`); }
   }
   const report = [], errs = [];
+  // screenshot of one element; the page re-renders while prices load, so take the box and shoot the page area (never throws)
+  const shot = async (p, sel, path) => { try { const box = await p.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView(); const r = e.getBoundingClientRect(); return { x: r.x, y: r.y + window.scrollY, width: r.width, height: Math.min(r.height, 6000) }; }, sel); if (box && box.width > 0) await p.screenshot({ path, clip: box, fullPage: true }); } catch (e) { report.push(`screenshot ${path} skipped: ${String(e.message).slice(0, 80)}`); } };
   for (const [w, scheme] of [[1000, "light"], [390, "dark"]]) {
     const ctx = await b.newContext({ viewport: { width: w, height: 900 }, colorScheme: scheme, serviceWorkers: "block" });
     const p = await ctx.newPage();
@@ -29,7 +31,7 @@ const URL = "https://screenedstocks.vercel.app/";
     for (const sym of ["RELIANCE", "INFY", "HDFCBANK", "NTPCGREEN", "KARURVYSYA"]) {
       await p.evaluate(`inPick('${sym}','NSE');IV.stab='company';render()`); await p.waitForTimeout(5000);
       await p.evaluate("render()"); await p.waitForTimeout(800);
-      const el = await p.$(".sk"); if (el) await el.screenshot({ path: `shots/co_${sym}_${w}.png` });
+      await shot(p, ".sk", `shots/co_${sym}_${w}.png`);
       const info = await p.evaluate(() => ({ desc: (document.querySelector(".co-d") || {}).textContent?.length || 0, empty: (document.querySelector(".sk .ix-empty") || {}).textContent || "",
         bars: document.querySelectorAll(".co-q rect").length, peers: document.querySelectorAll(".co-pt tbody tr").length, doing: document.querySelectorAll(".co-dt tbody tr").length,
         tiles: document.querySelectorAll(".co-tiles .ov-tile").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth }));
@@ -42,12 +44,12 @@ const URL = "https://screenedstocks.vercel.app/";
     await p.screenshot({ path: `shots/exits_${w}.png` });
     report.push(`${w} exits ${JSON.stringify(await p.evaluate(() => ({ loaded: typeof EXI !== "undefined" && !!(EXI && EXI.strategies), n: EXI && EXI.strategies ? EXI.strategies.length : 0, date: EXI && EXI.price_date, all: !!(EXI && EXI.strategies && EXI.strategies[0] && EXI.strategies[0].chosen_all), rows: document.querySelectorAll(".ex-t tbody tr").length, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth })))}`);
     await p.evaluate("openStock('INFY','NSE')"); await p.waitForTimeout(5000);
-    const q = await p.$(".eq-p"); if (q) await q.screenshot({ path: `shots/quote_${w}.png` });
+    await shot(p, ".eq-p", `shots/quote_${w}.png`);
     await p.evaluate("entClose && entClose()").catch(() => {});
     await ctx.close();
   }
   // My Positions with made-up test holdings (never anyone's real data): sign-in and saving are simulated, prices and pages are live
-  {
+  try {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: "block" });
     const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(`pos: ${e.message}`));
     p.on("response", (r) => { if (r.status() >= 400) errs.push(`pos ${r.status()} ${r.url().replace("https://screenedstocks.vercel.app", "").slice(0, 120)}`); });
@@ -59,7 +61,7 @@ const URL = "https://screenedstocks.vercel.app/";
       if (a === "me") return j({ username: "test" }); if (a === "status") return j({ connected: false });
       if (a === "positions") return j(r.request().method() === "GET" ? { positions: pos, ts: Date.now() + 1e9, watchlist: [], settings: {}, auto: null } : { saved: true });
       return r.continue(); });
-    await p.goto(URL + "#positions", { waitUntil: "networkidle" }); await p.waitForTimeout(12000);
+    await p.goto(URL + "#positions", { waitUntil: "load" }); await p.waitForTimeout(15000);
     const rows = await p.evaluate(() => [...document.querySelectorAll("tr.hrow")].map((r) => r.innerText.replace(/\s+/g, " ").slice(0, 220)));
     report.push("pos rows " + JSON.stringify(rows));
     await p.screenshot({ path: "shots/pos_1280.png" });
@@ -86,7 +88,7 @@ const URL = "https://screenedstocks.vercel.app/";
     report.push("quote panel " + JSON.stringify(await p.evaluate(() => ((document.querySelector(".eq-h") || {}).innerText || "").replace(/\s+/g, " ").slice(0, 200))));
     await p.screenshot({ path: "shots/quote_bse_1280.png" });
     await ctx.close();
-  }
+  } catch (e) { report.push("POSITIONS CHECK FAILED: " + String(e && e.stack || e).slice(0, 600)); }
   fs.writeFileSync("shots/report.txt", probe.concat(report).concat(["errors:"], errs.slice(0, 40)).join("\n"));
   for (const l of report) console.log("::notice::" + l.slice(0, 900));
   console.log("::notice::errors " + errs.length + ": " + errs.slice(0, 8).join(" | ").slice(0, 900));
