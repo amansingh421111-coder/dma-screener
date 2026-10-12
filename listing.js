@@ -1,10 +1,10 @@
 /* Which exchange lists a share, its full name, and the search that finds it on either exchange.
    listings.json (written by the screener): n = NSE shares {symbol: [name, BSE scrip code or ""]}, b = BSE-only {symbol: [name, code]}.
    A share with a BSE code in n trades on both exchanges: company figures are the same, prices are each exchange's own. */
-let LISTING = null;
+let LISTING = null, BSEC = null;   // BSEC: official BSE closing prices (bse_close.json)
 async function loadListing() {
   if (LISTING !== null) return LISTING; LISTING = { n: {}, b: {} };
-  try { const r = await fetch("/listings.json", { cache: "no-cache" }); if (r.ok) LISTING = await r.json(); } catch (e) {}
+  try { const [r, r2] = await Promise.all([fetch("/listings.json", { cache: "no-cache" }), fetch("/bse_close.json", { cache: "no-cache" })]); if (r.ok) LISTING = await r.json(); if (r2.ok) BSEC = await r2.json(); } catch (e) {}
   render(); return LISTING;
 }
 function lsInfo(sym) {
@@ -30,9 +30,11 @@ function lsChartLoad(sym, ex) {
   if (EQ.charts[key]) return Promise.resolve(EQ.charts[key]);
   if (LSBUSY[key]) return LSBUSY[key];   // already on its way: share the same request
   return (LSBUSY[key] = (async () => {
-    let out = null;
+    let out = null;   // the ticker with the most history wins; Yahoo often has only today's BSE price for shares also on NSE
     for (const t of T) {
-      try { const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json(); if (r.ok && j.c && j.c.length > 1) { out = j; break; } out = out || { error: j.error || "No price history." }; }
+      try { const r = await fetch("/api/dma?a=chart&t=" + encodeURIComponent(t)), j = await r.json();
+        if (r.ok && j.c && j.c.length && (!out || !out.c || j.c.length > out.c.length)) out = j; else out = out || { error: j.error || "No price history." };
+        if (out.c && out.c.length >= 60) break; }
       catch (e) { out = out || { error: "Could not reach the price source." }; }
     }
     EQ.charts[key] = out; delete LSBUSY[key];
@@ -85,9 +87,16 @@ function lsKey(e, id) {
 }
 
 /* ---- the other exchange's price, for shares on both ---- */
-function lsPx(sym, ex) {   // latest close and day change on one exchange (shared chart cache)
+/* daily history good enough for readings: the exchange's own, or NSE's for a share on both when Yahoo lacks its BSE history */
+function lsHist(sym, ex) {
+  const C = EQ.charts[lsTicker(sym, ex)]; if (C && C.c && C.c.length >= 60) return { C, from: ex };
+  if (ex === "BSE" && lsBoth(sym)) { const N = EQ.charts[sym + ".NS"]; if (N && N.c && N.c.length >= 60) return { C: N, from: "NSE" }; if (!N) lsChartLoad(sym, "NSE"); }
+  return C && C.c && C.c.length ? { C, from: ex, thin: true } : null;
+}
+function lsPx(sym, ex) {   // latest price and day change on one exchange (shared chart cache)
   if (typeof EQ === "undefined") return null; const t = lsTicker(sym, ex);
-  const C = EQ.charts[t]; if (C && C.c && C.c.length > 1) { const n = C.c.length; return { p: C.c[n - 1], d1: (C.c[n - 1] / C.c[n - 2] - 1) * 100, date: C.dates[n - 1] }; }
+  const C = EQ.charts[t]; if (C && C.c && C.c.length) { const n = C.c.length, prev = n > 1 ? C.c[n - 2] : BSEC && BSEC.c && ex === "BSE" && BSEC.date < C.dates[n - 1] ? BSEC.c[sym] : null; return { p: C.c[n - 1], d1: prev ? (C.c[n - 1] / prev - 1) * 100 : null, date: C.dates[n - 1] }; }
+  if (C && ex === "BSE" && BSEC && BSEC.c && BSEC.c[sym]) return { p: BSEC.c[sym], d1: null, date: BSEC.date, official: true };
   if (!C) lsChartLoad(sym, ex);
   return null;
 }

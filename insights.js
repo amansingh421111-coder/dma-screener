@@ -308,9 +308,17 @@ async function inPick(sym, ex) {
   if (!inF && !IV.chart[key]) {
     IV.busy = true; render();
     try {
-      const j = typeof lsChartLoad === "function" ? await lsChartLoad(sym, IV.ex) || EQ.charts[lsTicker(sym, IV.ex)] : null;
-      if (!j || !j.c) throw new Error((j && j.error) || "No price history for " + sym + " on " + IV.ex + ".");
-      IV.chart[key] = { name: j.name, t: inTech(j, INS && INS.nifty) };
+      let j = typeof lsChartLoad === "function" ? await lsChartLoad(sym, IV.ex) || EQ.charts[lsTicker(sym, IV.ex)] : null, from = IV.ex;
+      if (IV.ex === "BSE" && lsBoth(sym) && (!j || !j.c || j.c.length < 60)) {   // Yahoo has no BSE history for many shares on both: readings from NSE, price from BSE
+        const own = j && j.c && j.c.length ? j : null, n = await lsChartLoad(sym, "NSE");
+        if (n && n.c && n.c.length >= 60) {
+          const bp = own ? own.c[own.c.length - 1] : BSEC && BSEC.c && BSEC.c[sym], bd = own ? own.dates[own.dates.length - 1] : BSEC && BSEC.date;
+          const tt = inTech(n, INS && INS.nifty); if (bp) { tt.p = bp; tt.date = bd; tt.d1 = own && own.c.length > 1 ? (bp / own.c[own.c.length - 2] - 1) * 100 : BSEC && BSEC.c && BSEC.c[sym] && BSEC.date < bd ? (bp / BSEC.c[sym] - 1) * 100 : tt.d1; }
+          IV.chart[key] = { name: (own && own.name) || n.name, t: tt, hist: "NSE" }; j = null;
+        }
+      }
+      if (j !== null && (!j || !j.c)) throw new Error((j && j.error) || "No price history for " + sym + " on " + IV.ex + ".");
+      if (j) IV.chart[key] = { name: j.name, t: inTech(j, INS && INS.nifty) };
     } catch (e) { IV.err = e.message; }
     IV.busy = false;
   }
@@ -605,7 +613,7 @@ function inStocksView() {
   const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
   const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
   const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} ${typeof lsSwitch === "function" ? lsSwitch(IV.sym, IV.ex, `inPick('${esc(IV.sym)}','{ex}')`) : exTag(IV.ex)}</h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
-   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>${IV.ex} price${both ? " (switch above for " + (IV.ex === "NSE" ? "BSE" : "NSE") + ")" : ""} · close of ${esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
+   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>${IV.ex} price${both ? " (switch above for " + (IV.ex === "NSE" ? "BSE" : "NSE") + ")" : ""}${live && live.hist === "NSE" ? " · readings use NSE price history (the price feed has no BSE history for this share)" : ""} · ${t && t.date === new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) ? "today" : "close of " + esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
    <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
   const tabs = [["summary", "Summary"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
@@ -1198,7 +1206,9 @@ async function scrTech(sym, ex) {   // technical numbers for a stock the daily u
   const key = ex + ":" + sym; if (IV.chart[key] || IV.chart[key] === 0) return; IV.chart[key] = 0;
   try {
     if (typeof loadListing === "function") await loadListing();
-    const j = await lsChartLoad(sym, ex) || EQ.charts[lsTicker(sym, ex)] || {};
+    let j = await lsChartLoad(sym, ex) || EQ.charts[lsTicker(sym, ex)] || {}, hist = ex;
+    if (ex === "BSE" && lsBoth(sym) && (!j.c || j.c.length < 60)) { const n = await lsChartLoad(sym, "NSE"); if (n && n.c && n.c.length >= 60) { const own = j.c && j.c.length ? j : null; j = n; hist = "NSE";
+      const tt = inTech(n, INS && INS.nifty); if (own) { tt.p = own.c[own.c.length - 1]; tt.date = own.dates[own.dates.length - 1]; } IV.chart[key] = { name: n.name, t: tt, hist }; render(); return; } }
     IV.chart[key] = j.c ? { name: j.name, t: inTech(j, INS && INS.nifty) } : { err: j.error || "No price history." };
   } catch (e) { IV.chart[key] = { err: "Could not reach the price source." }; }
   render();

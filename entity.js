@@ -110,22 +110,25 @@ function entStratToday(sym, ex) {
   return names.map(([s, v]) => `<li><b>${esc(s.name)}</b> ${v === "b" ? "signals a buy today" : "would still be holding (bought on an earlier signal)"}, score ${(s.stars || 0).toFixed(1)} of 5.</li>`).join("");
 }
 function entStock(e) {
-  const C = EQ.charts[e.tk], sym = e.sym, ex = e.ex, co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";   // company figures: same on both exchanges
+  const sym = e.sym, ex = e.ex, own = EQ.charts[e.tk], hh = typeof lsHist === "function" && own ? lsHist(sym, ex) : null;
+  const C = hh && hh.from !== ex && !hh.thin ? hh.C : own, histNse = C !== own;   // a share on both with no BSE history at the price feed: chart from NSE
+  const co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";   // company figures: same on both exchanges
   const F = typeof FUND !== "undefined" && FUND && FUND.fund && co ? FUND.fund[sym] : null;
   const T = typeof FUND !== "undefined" && FUND && FUND.stocks && ex === "NSE" && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
   const nm = (typeof INAMES !== "undefined" && INAMES && INAMES[sym] && ex === "NSE") ? (Array.isArray(INAMES[sym]) ? INAMES[sym][0] : INAMES[sym]) : null;
   const sig = (typeof data !== "undefined" && data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === ex);
   const q = sig || (typeof data !== "undefined" && (data.quotes || {})[ex + ":" + sym]) || null;
   const name = (F && F.name) || nm || (sig && sig.name) || (typeof lsName === "function" && lsName(sym)) || (C && C.name) || "";
-  const c = C && C.c, last = q && q.price != null ? q.price : c ? c[c.length - 1] : T ? T.p : null;
-  const d1 = q && q.chg != null ? q.chg : c ? entRet(c, 1) : T ? T.d1 : null;
+  const c = C && C.c, ownLast = own && own.c && own.c.length ? own.c[own.c.length - 1] : null, last = q && q.price != null ? q.price : ownLast != null ? ownLast : c ? c[c.length - 1] : T ? T.p : null;
+  const lp = histNse && typeof lsPx === "function" ? lsPx(sym, ex) : null;
+  const d1 = q && q.chg != null ? q.chg : lp && lp.d1 != null ? lp.d1 : c ? entRet(c, 1) : T ? T.d1 : null;
   const m44 = c && c.length >= 44 ? entSma(c, 44)[c.length - 1] : null, m200 = c && c.length >= 200 ? entSma(c, 200)[c.length - 1] : null;
   const ccy = (v) => "₹" + Number(v).toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   const hold = typeof openPos === "function" ? openPos().find((p) => p.symbol === sym && p.exchange === ex) || openPos().find((p) => p.symbol === sym) : null, wl = typeof WL !== "undefined" ? WL.find((w) => w.symbol === sym && w.exchange === ex) : null;
   const news = typeof inAllStories === "function" && co ? inStockNews(sym).named : [];
   const y = c ? c.slice(-252) : null, code = ex === "BSE" && EQ.bse ? EQ.bse[sym] : null;
   const head = `<div class="eq-h"><div><h2>${esc(sym)} ${typeof lsSwitch === "function" ? lsSwitch(sym, ex, `openStock('${esc(sym)}','{ex}')`) : exTag(ex)}</h2><p>${esc(name)}</p>${F && F.sec ? `<p class="eq-sec">${entG("sec", F.sec)}${F.ind ? ` <span aria-hidden="true">›</span> ${entG("ind", F.ind)}` : ""}</p>` : ""}</div>
-   <div class="eq-px"><b>${last != null ? ccy(last) : "–"}</b><span class="${inCl(d1)}">${d1 != null ? inPct(d1, 2) + " today" : ""}</span><small>${ex} · ${q && q.price != null ? "screener price, checked every 15 minutes in market hours" : C && C.dates ? "close of " + entD(C.dates[C.dates.length - 1], true) : ""}</small></div></div>`;
+   <div class="eq-px"><b>${last != null ? ccy(last) : "–"}</b><span class="${inCl(d1)}">${d1 != null ? inPct(d1, 2) + " today" : ""}</span><small>${ex} · ${q && q.price != null ? "screener price, checked every 15 minutes in market hours" : own && own.dates ? "close of " + entD(own.dates[own.dates.length - 1], true) : ""}${histNse ? " · chart and readings use NSE history (the price feed has no BSE history for this share)" : ""}</small></div></div>`;
   const kv = entKV([["1 month", inPct(c ? entRet(c, 21) : T && T.m1), inCl(c ? entRet(c, 21) : T && T.m1)], ["1 year", inPct(c ? entRet(c, 252) : T && T.y1), inCl(c ? entRet(c, 252) : T && T.y1)],
     ["vs 44-day avg", m44 ? inPct((last / m44 - 1) * 100) : T ? inPct(T.vs44) : "–", m44 ? inCl(last - m44) : ""], ["vs 200-day avg", m200 ? inPct((last / m200 - 1) * 100) : T ? inPct(T.vs200) : "–", m200 ? inCl(last - m200) : ""],
     ["52-week high", y ? ccy(Math.max(...y)) : "–"], ["52-week low", y ? ccy(Math.min(...y)) : "–"], T ? ["RSI (14)", inNum(T.rsi, 0)] : null,

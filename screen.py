@@ -482,30 +482,42 @@ def pos_yahoo(p): return pos_tickers(p)[0]
 PXD = {}   # position key -> daily bars, kept for the automatic stop and target
 
 def position_quotes(pos, c):
+    """Latest price of every holding on the exchange it was bought on, plus daily history for the 44-DMA and the automatic levels.
+    Yahoo has full BSE history for only some shares listed on both exchanges (others return just today's price): for those the
+    price stays BSE's own and the history comes from NSE (same company), marked hist="NSE"."""
     if not pos: return {}
-    raw = fetch(list(dict.fromkeys(t for p in pos for t in pos_tickers(p)))); q = {}; data = {}
-    has = lambda t: raw.get(t) is not None and raw[t]["Close"].dropna().shape[0] >= 2
-    again = [t for p in pos if not any(has(t) for t in pos_tickers(p)) for t in pos_tickers(p)]
+    dual = lambda p: p.get("exchange") == "BSE" and p["symbol"] in (listing().get("n") or {})
+    want = lambda p: pos_tickers(p) + ([p["symbol"] + ".NS"] if dual(p) else [])
+    raw = fetch(list(dict.fromkeys(t for p in pos for t in want(p))))
+    rows = lambda t: raw[t]["Close"].dropna().shape[0] if raw.get(t) is not None else 0
+    again = [t for p in pos if not any(rows(t) for t in pos_tickers(p)) for t in want(p)]
     if again:   # Yahoo sometimes drops a ticker from a batch: ask once more for the ones still missing
-        time.sleep(2); raw.update({k: v for k, v in fetch(again, batch=10).items() if v is not None})
-    for p in pos:   # the first ticker with prices wins
-        for t in pos_tickers(p):
-            d = raw.get(t)
-            if d is not None and d["Close"].dropna().shape[0] >= 2: data[pos_yahoo(p)] = d; break
-        else: log.warning("no prices for position %s", pos_key(p))
-    reconcile(data, {pos_yahoo(p): (p.get("exchange", "NSE"), p["symbol"] if p.get("exchange") != "BSE" else (bse_code(p["symbol"]) or p["symbol"])) for p in pos})
+        time.sleep(2); raw.update({k: v for k, v in fetch(list(dict.fromkeys(again)), batch=10).items() if v is not None})
+    keys = {}
+    for t in raw:
+        sym = t.rsplit(".", 1)[0]
+        keys[t] = ("NSE", sym) if t.endswith(".NS") else ("BSE", sym if sym.isdigit() else (bse_code(sym) or sym))
+    reconcile(raw, keys)
+    q = {}
     for p in pos:
-        df = data.get(pos_yahoo(p))
-        if df is None: continue
-        PXD[pos_key(p)] = df
-        close = df["Close"].dropna()
-        if len(close) < 2: continue
-        m = moving_avg(close, c["ma_type"], c["ma_period"]).iloc[-1]
-        px = float(close.iloc[-1])
+        own = max(pos_tickers(p), key=rows); nse = p["symbol"] + ".NS" if dual(p) else None
+        if not rows(own) and not (nse and rows(nse)): log.warning("no prices for position %s", pos_key(p)); continue
+        hist = own if rows(own) >= 60 or not (nse and rows(nse) >= 60) else nse
+        H = raw[hist].dropna(subset=["Close"]); PXD[pos_key(p)] = H
+        O = raw[own].dropna(subset=["Close"]) if rows(own) else None
+        use_own = O is not None and (not nse or not rows(nse) or O.index[-1] >= raw[nse].dropna(subset=["Close"]).index[-1])
+        P = O if use_own else raw[nse].dropna(subset=["Close"])
+        px, day = float(P["Close"].iloc[-1]), P.index[-1].date()
+        prev = float(P["Close"].iloc[-2]) if len(P) >= 2 else None
+        if prev is None and p.get("exchange") == "BSE" and "BSE" in BHAV:   # one BSE bar only: previous close from the official BSE file
+            b = BHAV["BSE"][1].get(bse_code(p["symbol"]) or ""); bd = BHAV["BSE"][0]
+            if b: prev = b[3] if str(bd) < str(day) else b[5] if str(bd) == str(day) else None
+        m = moving_avg(H["Close"], c["ma_type"], c["ma_period"]).iloc[-1] if len(H) >= c["ma_period"] else float("nan")
         q[pos_key(p)] = dict(price=round(px, 2), ma=None if pd.isna(m) else round(float(m), 2),
                              pct=None if pd.isna(m) else round((px / float(m) - 1) * 100, 2),
-                             chg=round((px / float(close.iloc[-2]) - 1) * 100, 2), exchange=p.get("exchange", "NSE"),
-                             name=share_name(p["symbol"], p.get("exchange", "NSE")), date=str(close.index[-1].date()),
+                             chg=round((px / prev - 1) * 100, 2) if prev else None, exchange=p.get("exchange", "NSE"),
+                             price_from=p.get("exchange", "NSE") if use_own else "NSE", hist="NSE" if hist == nse and nse else p.get("exchange", "NSE"),
+                             name=share_name(p["symbol"], p.get("exchange", "NSE")), date=str(day),
                              at=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"))
     return q
 

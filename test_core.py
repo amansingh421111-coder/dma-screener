@@ -115,6 +115,11 @@ def t_position_quotes_bse():
             screen.fetch = lambda tickers, **k: {t: got[t] for t in tickers if t in got}; screen.reconcile = lambda *a, **k: None
             q = screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44})
             v = q["BSE:ADANIPORTS"]; assert v["price"] == 1754.0 and v["exchange"] == "BSE" and v["name"].startswith("Adani Ports"), v
+        # Yahoo has only today's BSE price: price stays BSE, history and 44-DMA come from NSE
+        one = df.iloc[-1:].copy(); one["Close"] = 1752.1
+        screen.fetch = lambda tickers, **k: {t: v for t, v in {"ADANIPORTS.BO": one, "ADANIPORTS.NS": df}.items() if t in tickers}
+        v = screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44})["BSE:ADANIPORTS"]
+        assert v["price"] == 1752.1 and v["price_from"] == "BSE" and v["hist"] == "NSE" and v["ma"] is not None and len(screen.PXD["BSE:ADANIPORTS"]) == 60, v
         calls = []
         def flaky(tickers, **k):   # first batch drops the ticker, the retry returns it
             calls.append(list(tickers)); return {} if len(calls) == 1 else {t: df for t in tickers if t == "ADANIPORTS.BO"}

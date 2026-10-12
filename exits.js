@@ -123,7 +123,7 @@ function exAuto(p) {
   const sid = p.strategy && exStrat(p.strategy) ? p.strategy : exDefault(), ep = r2(L.avg), k = p.exchange + ":" + p.symbol;
   const sv = AUTO && AUTO.items ? AUTO.items[k] : null;
   if (sv && sv.entry_date === L.since && Math.abs(sv.entry_price - ep) < 0.006 && (sv.strategy === sid || (!exStrat(sid) && !p.strategy)) && (sv.basis || "recent") === (exAll() ? "all" : "recent")) return Object.assign({ src: "server" }, sv);
-  const ch = exChosen(sid), C = exPx(p), base = { strategy: sid, strategy_name: ch.s ? ch.s.name : "Screener Buy", rule: ch.rule.id, rule_label: ch.rule.label || ch.rule.id, rule_score: ch.s ? exPick(ch.s).score : null, entry_date: L.since, entry_price: ep, src: "browser" };
+  const ch = exChosen(sid); exPx(p); const Hh = typeof lsHist === "function" ? lsHist(p.symbol, p.exchange) : null, C = Hh && !Hh.thin ? Hh.C : exPx(p), base = { strategy: sid, strategy_name: ch.s ? ch.s.name : "Screener Buy", rule: ch.rule.id, rule_label: ch.rule.label || ch.rule.id, rule_score: ch.s ? exPick(ch.s).score : null, entry_date: L.since, entry_price: ep, src: "browser" };
   if (C && C.c) { const v = exLive(C.dates, C.o, C.h, C.l, C.c, L.since, ep, ch.rule, true); if (v) return Object.assign(base, v); }
   if (ch.rule.fam === "fix") return Object.assign(base, { sl: r2(ep * (1 - ch.rule.sp / 100)), target: ch.rule.tp ? r2(ep * (1 + ch.rule.tp / 100)) : null, exit: null, days_left: null });
   return Object.assign(base, { sl: null, target: null, exit: null, pending: true });

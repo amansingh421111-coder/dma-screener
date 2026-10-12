@@ -73,6 +73,15 @@ const URL = "https://screenedstocks.vercel.app/";
     report.push("search " + JSON.stringify(await p.evaluate(() => [...document.querySelectorAll("#ix-q-l .lso")].map((x) => x.innerText.replace(/\s+/g, " ")).slice(0, 4))));
     await p.screenshot({ path: "shots/search_1280.png" });
     await p.keyboard.press("Escape");
+    // visible-text sweep: template leftovers, undefined, NaN, [object ...] anywhere on the page
+    const junk = async (l) => { const r = await p.evaluate(() => { const t = document.body.innerText, o = []; for (const rx of [/\$\{/, /\}\./, /\bundefined\b/, /\bNaN\b/, /\[object /, /\bnull\b/, /Infinity/]) { const m = t.match(new RegExp(".{0,40}" + rx.source + ".{0,40}")); if (m) o.push(m[0].replace(/\s+/g, " ")); } return o; }); if (r.length) report.push(`JUNK ${l} ${JSON.stringify(r)}`); };
+    for (const [s_, e_] of T.map((x) => [x[0], x[1]]).concat([["ADANIPORTS", "NSE"]])) {
+      await p.evaluate(([s_, e_]) => inPick(s_, e_), [s_, e_]); await p.waitForTimeout(5000);
+      for (const tab of ["summary", "company", "outlook", "tech", "fin", "peers", "news"]) { await p.evaluate((t) => { IV.stab = t; render(); }, tab); await p.waitForTimeout(500); await junk(`${s_} ${e_} ${tab}`); }
+      report.push(`stock ${s_} ${e_} ` + JSON.stringify(await p.evaluate(() => ((document.querySelector(".sk-head") || {}).innerText || "").replace(/\s+/g, " ").slice(0, 220))));
+    }
+    await p.evaluate(() => go("pos")); await p.waitForTimeout(1500); await p.evaluate((ids) => { ids.forEach((i) => EXP.add(i)); render(); }, T.map((_, i) => "t" + i)); await p.waitForTimeout(8000); await junk("positions expanded");
+    await p.screenshot({ path: "shots/pos_all_1280.png", fullPage: true });
     await p.evaluate(() => openStock("ADANIPORTS", "BSE")); await p.waitForTimeout(6000);
     report.push("quote panel " + JSON.stringify(await p.evaluate(() => ((document.querySelector(".eq-h") || {}).innerText || "").replace(/\s+/g, " ").slice(0, 200))));
     await p.screenshot({ path: "shots/quote_bse_1280.png" });
