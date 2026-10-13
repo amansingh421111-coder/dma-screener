@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-13T10:33:13.748363+00:00",
+ "updated": "2026-10-13T10:46:27.208469+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 2,
@@ -15,13 +15,13 @@
   "send": null
  },
  "health": {
-  "run_at": "2026-10-13T10:33:13.745945+00:00",
+  "run_at": "2026-10-13T10:46:27.206156+00:00",
   "price_date": "2026-10-13",
   "source": "intraday",
-  "scanned": 1728,
-  "skipped": 2,
-  "checked": 1,
-  "corrected": 18,
+  "scanned": 1479,
+  "skipped": 0,
+  "checked": 0,
+  "corrected": 0,
   "xcheck": {
    "date": "2026-10-12",
    "pairs": 1247,
@@ -60,7 +60,7 @@
    ]
   }
  },
- "fetch_secs": 153,
+ "fetch_secs": 73,
  "price_date": "2026-10-13",
  "scan": {
   "NSE": {
@@ -80,18 +80,10 @@
    "signals": 272
   },
   "BSE": {
-   "listed": 1939,
-   "dropped_before_download": {
-    "low_price": 1146,
-    "low_volume": 542
-   },
-   "downloaded": 249,
-   "rejected_after_download": {
-    "not_near_average": 64,
-    "short_history": 33,
-    "low_volume": 131,
-    "low_price": 9
-   },
+   "listed": null,
+   "dropped_before_download": {},
+   "downloaded": 0,
+   "rejected_after_download": {},
    "signals": 12
   }
  },
@@ -100,32 +92,23 @@
    "NSE": "2026-10-12",
    "BSE": "2026-10-12"
   },
-  "before": 4288,
-  "after": 1730,
+  "before": 2349,
+  "after": 1479,
   "listed": {
-   "NSE": 2349,
-   "BSE": 1939
+   "NSE": 2349
   },
   "dropped": {
    "NSE": {
     "low_price": 437,
     "low_volume": 427,
     "no_trade_latest_day": 6
-   },
-   "BSE": {
-    "low_price": 1146,
-    "low_volume": 542
    }
-  },
-  "bse_name_retry": {
-   "tried": 234,
-   "recovered": 201
   }
  },
  "price_check": {
-  "checked": 1,
+  "checked": 0,
   "mismatch": 0,
-  "added": 18,
+  "added": 0,
   "date": {
    "NSE": "2026-10-12",
    "BSE": "2026-10-12"
@@ -44115,7 +44098,7 @@
    "hist": "BSE",
    "name": "Adani Ports and Special Economic Zone Limited",
    "date": "2026-10-13",
-   "at": "2026-10-13T10:33:13+00:00"
+   "at": "2026-10-13T10:46:26+00:00"
   },
   "NSE:PERSISTENT": {
    "price": 5988.0,
@@ -44127,7 +44110,7 @@
    "hist": "NSE",
    "name": "Persistent Systems Limited",
    "date": "2026-10-13",
-   "at": "2026-10-13T10:33:13+00:00"
+   "at": "2026-10-13T10:46:26+00:00"
   },
   "NSE:CUB": {
    "price": 234.53,
@@ -44139,7 +44122,7 @@
    "hist": "NSE",
    "name": "City Union Bank Limited",
    "date": "2026-10-13",
-   "at": "2026-10-13T10:33:13+00:00"
+   "at": "2026-10-13T10:46:26+00:00"
   },
   "NSE:KARURVYSYA": {
    "price": 348.6,
@@ -44151,7 +44134,7 @@
    "hist": "NSE",
    "name": "Karur Vysya Bank Limited",
    "date": "2026-10-13",
-   "at": "2026-10-13T10:33:13+00:00"
+   "at": "2026-10-13T10:46:26+00:00"
   },
   "NSE:MBAPL": {
    "price": 162.93,
@@ -44163,7 +44146,7 @@
    "hist": "NSE",
    "name": "Madhya Bharat Agro Products Limited",
    "date": "2026-10-13",
-   "at": "2026-10-13T10:33:13+00:00"
+   "at": "2026-10-13T10:46:26+00:00"
   }
  }
 }
