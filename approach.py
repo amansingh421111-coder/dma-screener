@@ -271,6 +271,21 @@ def synthetic(n, years, seed=3):
     return data
 
 
+def add_official_day(data):
+    """Yahoo's batch download often lacks the latest session late in the evening. Add it from the official NSE day file when the
+    file is newer than the share's last bar and its previous close matches that bar (so a split or bonus on the day is not mixed in)."""
+    from screen import BHAV
+    b = BHAV.get("NSE"); n = 0
+    if not b: return 0
+    day = pd.Timestamp(str(b[0]))
+    for k, df in data.items():
+        r = b[1].get(k.split(":", 1)[1])
+        if not r or df.index[-1] >= day or not all(x is not None and x == x for x in r[:5]) or not r[5]: continue
+        if abs(float(df["Close"].iloc[-1]) / float(r[5]) - 1) > 0.01: continue
+        data[k] = pd.concat([df, pd.DataFrame(dict(Open=[r[0]], High=[r[1]], Low=[r[2]], Close=[r[3]], Volume=[r[4]]), index=[day])]); n += 1
+    return n
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     ap = argparse.ArgumentParser(); ap.add_argument("--nse", type=int, default=2600); ap.add_argument("--years", type=int, default=12)
@@ -284,6 +299,7 @@ def main():
         for k, d in data.items():
             if getattr(d.index, "tz", None) is not None: d.index = d.index.tz_localize(None)
         if len(data) < int(os.environ.get("AP_MIN", 400)): raise SystemExit("too few stocks downloaded; not updating")
+        added = add_official_day(data); log.info("latest official day added to %d shares", added)
     out = run(data, str(day))
     (ROOT / a.out).write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=lambda o: None))
     b = out["base"]; log.info("written %s: %d finished cases, test %s", a.out, b["all"]["n"], json.dumps(b["test"]))
