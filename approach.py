@@ -233,7 +233,8 @@ def run(data, day):
     # latest fit on everything finished, for today's list
     Xall, _ = design(fin, fin.iloc[:1])
     wl = logit_fit(Xall, fin["y_crossed"].to_numpy()); wr = ridge_fit(Xall, fin["y_excess"].to_numpy())
-    today = ev[ev["last"] & (ev["date"] == ev["date"].max())].copy()
+    # each share's latest bar; a share whose latest bar is a few days old (no trade, or the price source lagging) is still scored, with its date
+    today = ev[ev["last"] & (ev["date"] >= ev["date"].max() - pd.Timedelta(days=6))].copy()
     out_today = []
     if len(today):
         _, Xt = design(fin, today)
@@ -245,7 +246,7 @@ def run(data, day):
         decx = np.clip(np.ceil(np.searchsorted(np.sort(refx), pc) / max(len(refx), 1) * 10), 1, 10).astype(int)
         for i, (_, r) in enumerate(today.iterrows()):
             contrib = sorted(((f, float(wr[j + 1] * Xt[i, j])) for j, f in enumerate(FEATS)), key=lambda z: -abs(z[1]))
-            out_today.append(dict(key=r["key"], symbol=r["key"].split(":")[1], p_cross=round(float(pc[i]), 3), dec=int(dec[i]), decx=int(decx[i]), checks=int(r["checks"]), dist=round(float(r["dist"]), 4),
+            out_today.append(dict(key=r["key"], symbol=r["key"].split(":")[1], p_cross=round(float(pc[i]), 3), dec=int(dec[i]), decx=int(decx[i]), checks=int(r["checks"]), dist=round(float(r["dist"]), 4), asof=str(r["date"].date()),
                                   x={f: (None if pd.isna(r[f]) else round(float(r[f]), 4)) for f in FEATS},
                                   pull=[[f, round(v, 5)] for f, v in contrib[:5]]))
         out_today.sort(key=lambda z: (-z["p_cross"], -z["dec"]))
