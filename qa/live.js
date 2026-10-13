@@ -24,6 +24,15 @@ const URL = process.env.LIVE_URL || "https://screenedstocks.vercel.app/";
     await p.goto(URL, { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
     await p.screenshot({ path: `shots/screener_${w}.png` });
     report.push(`${w} screener liq=${JSON.stringify(await p.evaluate(() => { const c = {}; document.querySelectorAll(".lq").forEach((e) => { const k = e.textContent.trim().split(/\s/)[0]; c[k] = (c[k] || 0) + 1; }); return { pills: c, banner: (document.getElementById("mliq") || {}).textContent?.trim().slice(0, 200) || "hidden", build: (document.body.textContent.match(/Build [\d.-]+/) || [""])[0] }; }))}`);
+    try {   // Approaching tab: history panel, outlook column, order and per-share details
+      await p.evaluate(() => { setSec("range"); setTab("near"); }); await p.waitForTimeout(4000);
+      const ap = await p.evaluate(() => { const v = view(), sc = v.filter((s) => apFor(s)), ps = sc.map((s) => apFor(s).p_cross);
+        opened.add(key(v[0])); render();
+        return { panel: !!document.querySelector(".appn"), tiles: [...document.querySelectorAll(".apk b")].map((x) => x.innerText), scored: sc.length, total: v.length,
+                 ordered: ps.every((x, i) => !i || ps[i - 1] >= x), top: v.slice(0, 6).map((s) => s.symbol + " " + (apFor(s) ? Math.round(apFor(s).p_cross * 100) + "%/" + apFor(s).decx : "-")),
+                 detail: !!document.querySelector(".apd"), junk: (document.body.innerText.match(/undefined|NaN|\[object|\$\{/g) || []).length }; });
+      report.push(`${w} approaching ${JSON.stringify(ap)}`); await p.screenshot({ path: `shots/approaching_${w}.png`, fullPage: false });
+    } catch (e) { report.push(`${w} approaching check failed: ${e.message.slice(0, 200)}`); }
     await p.goto(URL + "#insights", { waitUntil: "networkidle" }); await p.waitForTimeout(4000);
     await p.evaluate("IV.view='outlook';render()"); await p.waitForTimeout(6000);
     await p.screenshot({ path: `shots/outlook_${w}.png`, fullPage: true });
