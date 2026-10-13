@@ -34,7 +34,7 @@ const AP_SHOW = {
 };
 /* the table cell: chance of a close above the 44-DMA within 10 days, and the tenth of the tested ranking */
 function apCell(s) {
-  const x = apFor(s); if (!x) return `<td class="apc"><span class="sub">${s.type === "near" ? (ex(s) === "BSE" ? "BSE only: not scored" : APX && APX.today ? "Not scored" : "–") : "–"}</span></td>`;
+  const x = apFor(s); if (!x) return `<td class="apc"><span class="sub">${s.type === "near" ? (ex(s) === "BSE" ? "BSE only: not scored" : APX && APX.today ? "Not scored: under a year of NSE history" : "–") : "–"}</span></td>`;
   const d = apDec(x), c = x.decx >= 8 ? "hi" : x.decx <= 3 ? "lo" : "";
   return `<td class="apc" title="${d ? `Rank ${x.decx} of 10. Past cases with this rank: ${apP(d.crossed)} closed above the 44-DMA within 10 days; average 20-day result ${apPc(d.r20)}` : ""}"><b class="apb ${c}">${apP(x.p_cross)}</b><small>rank ${x.decx}/10${x.checks != null ? ` · trend ${x.checks}/4` : ""}</small></td>`;
 }
