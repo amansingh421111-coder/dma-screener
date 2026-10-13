@@ -116,6 +116,10 @@ def build(data):
         idx = np.where(zone)[0]; keep = []; last = -10 ** 9
         for i in idx:
             if i - last >= COOL or i == len(df) - 1: keep.append(i); last = i
+        # the latest day is scored in a wider band, so a share on the screener's list (official closes) is covered even when
+        # Yahoo's adjusted close puts it just outside 0-2% below
+        j = len(df) - 1
+        if (not keep or keep[-1] != j) and ok[j] and -0.05 <= F["dist"][j] <= 0.03: keep.append(j)
         if not keep: continue
         keep = np.array(keep)
         t = pd.DataFrame({k: F[k][keep] for k in F}, index=d[keep])
@@ -194,6 +198,10 @@ def run(data, day):
         Xtr, Xte = design(tr, fin[te])
         fin.loc[te, "p_cross"] = 1 / (1 + np.exp(-pred(logit_fit(Xtr, tr["y_crossed"].to_numpy()), Xte)))
         fin.loc[te, "p_ex"] = pred(ridge_fit(Xtr, tr["y_excess"].to_numpy()), Xte)
+    # trend checks: the four inputs whose best fifth beat their worst in both 2015-2019 and 2020 on (see the factor tables)
+    TH = dict(fromhi=float(fin["fromhi"].quantile(0.6)), slope=float(fin["slope"].quantile(0.6)), r126=0.6)
+    tchk = lambda d: ((d["fromhi"] > TH["fromhi"]).astype(int) + (d["slope"] > TH["slope"]).astype(int) + (d["vs200"] > 0).astype(int) + (d["r126"] >= TH["r126"]).astype(int))
+    fin["checks"] = tchk(fin); ev["checks"] = tchk(ev)
     test = fin[fin["p_ex"].notna()].copy()
     # rank (tenth) of the model's estimate within each test year, so every year counts the same
     test["dec"] = test.groupby("year")["p_ex"].transform(lambda s: np.ceil(s.rank(pct=True) * 10).clip(1, 10)).astype(int)
@@ -204,6 +212,9 @@ def run(data, day):
     test["ym"] = test["date"].dt.to_period("M")
     mt = test.groupby("ym").apply(lambda g: g.loc[g["dec"] >= 9, "y_excess"].mean() - g["y_excess"].mean() if (g["dec"] >= 9).sum() >= 3 else np.nan)
     mb = test.groupby("ym").apply(lambda g: g.loc[g["dec"] <= 2, "y_excess"].mean() - g["y_excess"].mean() if (g["dec"] <= 2).sum() >= 3 else np.nan)
+    checks = {int(k): dict(all=summ(g), test=summ(g[g["p_ex"].notna()]), late=summ(g[g["year"] >= 2020]), early=summ(g[g["year"] < 2020])) for k, g in fin.groupby("checks")}
+    both = dict(top_and_trend=summ(test[(test["decx"] >= 8) & (test["checks"] >= 3)]), top_only=summ(test[(test["decx"] >= 8) & (test["checks"] < 3)]),
+                trend_only=summ(test[(test["decx"] < 8) & (test["checks"] >= 3)]), neither=summ(test[(test["decx"] < 8) & (test["checks"] < 3)]))
     by_year = {int(y): dict(all=summ(g), top=summ(g[g["dec"] >= 9]), bottom=summ(g[g["dec"] <= 2])) for y, g in test.groupby("year")}
     # each input on its own: fifths, reported before and from 2020 so stability can be seen
     fac = {}
@@ -234,7 +245,7 @@ def run(data, day):
         decx = np.clip(np.ceil(np.searchsorted(np.sort(refx), pc) / max(len(refx), 1) * 10), 1, 10).astype(int)
         for i, (_, r) in enumerate(today.iterrows()):
             contrib = sorted(((f, float(wr[j + 1] * Xt[i, j])) for j, f in enumerate(FEATS)), key=lambda z: -abs(z[1]))
-            out_today.append(dict(key=r["key"], symbol=r["key"].split(":")[1], p_cross=round(float(pc[i]), 3), dec=int(dec[i]), decx=int(decx[i]),
+            out_today.append(dict(key=r["key"], symbol=r["key"].split(":")[1], p_cross=round(float(pc[i]), 3), dec=int(dec[i]), decx=int(decx[i]), checks=int(r["checks"]), dist=round(float(r["dist"]), 4),
                                   x={f: (None if pd.isna(r[f]) else round(float(r[f]), 4)) for f in FEATS},
                                   pull=[[f, round(v, 5)] for f, v in contrib[:5]]))
         out_today.sort(key=lambda z: (-z["p_cross"], -z["dec"]))
@@ -246,7 +257,7 @@ def run(data, day):
     return dict(updated=dt.datetime.now(dt.timezone.utc).isoformat(), price_date=day, first_date=str(fin["date"].min().date()), stocks=len(data),
                 settings=dict(near_pct=NEAR * 100, cooldown=COOL, cross_days=HZ, hold_days=H, cost_pct=COST * 100, test_from=int(years[0]) if years else None,
                               min_price=MIN_PRICE, min_vol=MIN_VOL),
-                names=NAMES, base=base, deciles=deciles, deciles_cross=deciles_x, by_year=by_year, t=tt, factors=fac, coef=coef, today=out_today)
+                names=NAMES, base=base, checks=checks, both=both, check_th=TH, deciles=deciles, deciles_cross=deciles_x, by_year=by_year, t=tt, factors=fac, coef=coef, today=out_today)
 
 
 def synthetic(n, years, seed=3):
