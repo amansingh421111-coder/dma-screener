@@ -70,20 +70,20 @@ def t_auto_levels():
         b = auto2["u1"]["NSE:AAA"]
         assert b["exit"] and b["exit"]["why"] == "stop", b
         ev = screen.position_events([p], {"NSE:AAA": {"price": 116.5, "pct": 1}}, {"ma_period": 44, "near_pct": 2}, auto2["u1"])
-        assert any(k.endswith(":ax") and "STOP LOSS hit (automatic)" in m for k, m in ev), ev
+        assert any(k.endswith(":ax") and "Hit its automatic stop" in m and "sell" in m for k, m in ev), ev
         # your own stop wins over the automatic one
         pm = dict(p, sl=110.0, slMode="manual")
         e = screen.effective(pm, b)
         assert e["sl"] == 110.0 and not e["sl_auto"]
         ev = screen.position_events([pm], {"NSE:AAA": {"price": 109, "pct": 1}}, {"ma_period": 44, "near_pct": 2}, auto2["u1"])
-        assert any(k.endswith(":sl") and "stop ₹110" in m for k, m in ev), ev
+        assert any(k.endswith(":sl") and "own stop ₹110" in m for k, m in ev), ev
         # a stop that moved by 0.5% or more is announced once
         screen.PXD["NSE:AAA"] = df.iloc[:25]
         store.clear(); screen.update_auto([u], True)
         screen.PXD["NSE:AAA"] = df
         _, ch = screen.update_auto([u], True)
         assert ch["u1"][0][2][0][0] == "stop" and ch["u1"][0][2][0][2] > ch["u1"][0][2][0][1], ch
-        lv = screen.level_events(ch["u1"]); assert "automatic stop" in lv[0][1], lv
+        lv = screen.level_events(ch["u1"]); assert "Stop moved up" in lv[0][1], lv
         _, ch = screen.update_auto([u], True); assert not ch, ch   # announced once
     finally:
         screen.redis = old; screen.EXITS.clear(); screen.PXD.clear()
@@ -134,6 +134,22 @@ def t_position_quotes_bse():
         assert screen.position_quotes([{"symbol": "ADANIPORTS", "exchange": "BSE"}], {"ma_type": "SMA", "ma_period": 44}) == {}
     finally:
         screen.fetch, screen.reconcile = old_f, old_r; screen.LST.clear(); screen.LST.update(old_L); screen.PXD.clear()
+
+def t_alert_message():
+    """Position alerts read as: urgent sales first, then 44-DMA warnings, then stop updates; rupees in Indian grouping; the rule once."""
+    import datetime as dt
+    assert screen.rs(123456.5) == "₹1,23,456.50" and screen.rs(-1234567, 0) == "−₹12,34,567" and screen.rs(99.0) == "₹99"
+    c = {"ma_period": 44, "near_pct": 2, "buy_max_pct": 5}
+    mk = lambda i, s, avg: dict(id=i, symbol=s, exchange="NSE", qty=10, avg=avg, alertSl=True, alertTg=True, alertMa=True, txns=[dict(type="buy", date="2026-09-01", qty=10, price=avg)])
+    P = [mk("a", "AAA", 100), mk("b", "BBB", 200)]
+    Q = {"NSE:AAA": dict(price=101.0, ma=100.0, pct=1.0, chg=0.5), "NSE:BBB": dict(price=150.0, ma=170.0, pct=-11.8, chg=-3.0)}
+    A = lambda sl, x=None: dict(sl=sl, target=None, strategy_name="Screener Buy (x)", rule_label="Trailing stop 15% below the highest close, no fixed target, sell after 60 trading days at the latest", rule="trail-t15-h60", days_held=5, exit=x)
+    auto = {"NSE:AAA": A(85.85), "NSE:BBB": A(155.0, dict(date="2026-10-13", price=155.0, why="stop"))}
+    ev = screen.position_events(P, Q, c, auto) + screen.level_events([(P[0], auto["NSE:AAA"], [("stop", 85.0, 85.85)])], Q)
+    m = screen.pos_message(ev, dt.datetime(2026, 10, 13, 15, 31, tzinfo=screen.IST))
+    assert m.index("ACT NOW") < m.index("BBB") < m.index("WATCH") < m.index("STOP UPDATES"), m
+    assert m.count("BBB (NSE)") == 1, m   # a share whose stop was hit is not also listed under the 44-DMA warning
+    assert m.count("Trailing stop 15%") == 1 and "move it to ₹85.85" in m and "15.0% below" in m and "3:31 pm" in m, m
 
 if __name__ == "__main__":
     for k, f in list(globals().items()):

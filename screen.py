@@ -652,19 +652,57 @@ def watch_events(wl, quotes, c):
     for w in wl or []:
         q = quotes.get(pos_key(w))
         if not q: continue
-        px, s, k = q["price"], w["symbol"], f"W:{pos_key(w)}#{w.get('id') or ''}"
+        px, k, ma = q["price"], f"W:{pos_key(w)}#{w.get('id') or ''}", c["ma_period"]
+        hd = "👁 " + _head(w, q); mv = f" ({rs(q['ma'])})" if q.get("ma") else ""
         if w.get("alertBuy") and q["pct"] is not None and 0 <= q["pct"] <= c["buy_max_pct"]:
-            ev.append((k + ":w1", f"👁 WATCH: {s} is in the buy zone, {q['pct']:+}% from its {c['ma_period']}-DMA (₹{px})"))
+            ev.append((k + ":w1", f"{hd}\nIn the screener's buy zone: {q['pct']:.1f}% above its {ma}-DMA{mv}, within the 0–{c['buy_max_pct']:g}% band."))
         if w.get("alertBelow") and q["pct"] is not None and q["pct"] < 0:
-            ev.append((k + ":w2", f"👁 WATCH: {s} is below its {c['ma_period']}-DMA ({q['pct']:+}%, ₹{px})"))
-        if w.get("above") and px >= w["above"]: ev.append((k + ":w3", f"👁 WATCH: {s} reached ₹{px} (your level ₹{w['above']} or higher)"))
-        if w.get("below") and px <= w["below"]: ev.append((k + ":w4", f"👁 WATCH: {s} fell to ₹{px} (your level ₹{w['below']} or lower)"))
+            ev.append((k + ":w2", f"{hd}\nBelow its {ma}-DMA{mv} by {abs(q['pct']):.1f}%: outside the buy zone."))
+        if w.get("above") and px >= w["above"]: ev.append((k + ":w3", f"{hd}\nAt or above your alert level {rs(w['above'])}."))
+        if w.get("below") and px <= w["below"]: ev.append((k + ":w4", f"{hd}\nAt or below your alert level {rs(w['below'])}."))
     return ev
+
+def rs(x, d=2):
+    """Rupees with Indian digit grouping: ₹1,23,456.50"""
+    if x is None: return "–"
+    neg = x < 0; x = abs(float(x)); w, f = (f"{x:.{d}f}".split(".") + [""])[:2]
+    head, tail = w[:-3], w[-3:]
+    while len(head) > 2: tail = head[-2:] + "," + tail; head = head[:-2]
+    w = (head + "," + tail) if head else tail
+    if f and set(f) == {"0"}: f = ""
+    return ("−" if neg else "") + "₹" + w + ("." + f if f else "")
+
+def _head(p, q):
+    """First line of every position alert: share, exchange, price and today's move."""
+    ch = q.get("chg") if q else None
+    return f"{p['symbol']} ({p.get('exchange', 'NSE')}) {rs(q['price'])}" + (f", {pc(ch)} today" if ch is not None else "")
+
+def pc(x, d=1): return ("+" if x > 0 else "−" if x < 0 else "") + f"{abs(x):.{d}f}%"
+
+def _pnl(p, px):
+    avg, qn = p.get("avg"), p.get("qty")
+    if not avg or not qn: return ""
+    v = (px - avg) * qn
+    return f"Your {qn:g} shares at avg {rs(avg)}: {'up' if v >= 0 else 'down'} {rs(abs(v), 0)} ({pc((px / avg - 1) * 100)})"
+
+def _if_hit(p, sl):
+    """What a stop at sl would leave you with."""
+    avg, qn = p.get("avg"), p.get("qty")
+    if not avg or not qn or not sl: return ""
+    v = (sl - avg) * qn
+    return f"If the stop is hit: {'profit of' if v >= 0 else 'loss of'} {rs(abs(v), 0)} ({pc((sl / avg - 1) * 100)} on your cost)"
+
+def _rule(a):
+    """The automatic rule in a few words."""
+    if not a: return ""
+    lab = (a.get("rule_label") or "").replace(", sell after", ", sold after").replace(" trading days at the latest", " trading days at most")
+    return f"{(a.get('strategy_name') or '').split(' (')[0]}: {lab}"
 
 def position_events(pos, quotes, c, auto=None):
     """One alert set per distinct position. Two positions in the same stock (different buy price / stop) are both checked.
-    auto: {position key: automatic levels}; a field you set yourself overrides the automatic one."""
-    ev = []; seen = set()
+    auto: {position key: automatic levels}; a field you set yourself overrides the automatic one.
+    Each alert says what happened, the levels that matter and what the exit rule says to do."""
+    ev = []; seen = set(); ma = c["ma_period"]
     for p in pos:
         if not is_open(p): continue
         ident = p.get("id") or "|".join(str(p.get(x)) for x in ("exchange", "symbol", "buy", "sl", "target", "qty", "date"))
@@ -673,35 +711,61 @@ def position_events(pos, quotes, c, auto=None):
         q = quotes.get(pos_key(p))
         if not q: continue
         a = (auto or {}).get(pos_key(p)); e = effective(p, a)
-        px, s = q["price"], p["symbol"]
-        k = f"{pos_key(p)}#{ident}"
-        avg, qn = p.get("avg"), p.get("qty")
-        pl = f" · avg ₹{avg:g}, P&L {'+' if px >= avg else '−'}₹{abs(px - avg) * qn:,.0f} ({(px / avg - 1) * 100:+.1f}%)" if avg and qn else ""
-        rule = f"\n   Rule for {a['strategy_name']}: {a['rule_label']}" if a else ""
+        px = q["price"]; k = f"{pos_key(p)}#{ident}"; hd = _head(p, q); pl = _pnl(p, px)
+        sl, tg = e.get("sl"), e.get("target")
+        lines = lambda *x: "\n".join(y for y in x if y)
         x = (a or {}).get("exit")
+        done = "Once you sell, record it with Sell in the app so these alerts stop."
         if x and ((x["why"] == "stop" and e["sl_auto"] and p.get("alertSl")) or (x["why"] == "target" and e["tg_auto"] and p.get("alertTg")) or (x["why"] == "time" and (e["sl_auto"] or e["tg_auto"]))):
             d = dt.date.fromisoformat(x["date"]).strftime("%d %b")
-            msg = {"stop": f"🛑 STOP LOSS hit (automatic): {s} ₹{px} · the stop ₹{x['price']:g} was reached on {d}{pl}",
-                   "target": f"🎯 TARGET reached (automatic): {s} ₹{px} · the target ₹{x['price']:g} was reached on {d}{pl}",
-                   "time": f"⏱ TIME LIMIT: {s} ₹{px} · held {a['days_held']} trading days, the rule sells at the close on {d}{pl}"}[x["why"]]
-            ev.append((k + ":ax", msg + rule))
+            what = {"stop": f"Hit its automatic stop {rs(x['price'])} on {d}. The exit rule says: sell.",
+                    "target": f"Reached its automatic target {rs(x['price'])} on {d}. The exit rule says: sell and take the profit.",
+                    "time": f"Held {a['days_held']} trading days, the rule's limit. The exit rule says: sell at the close on {d}."}[x["why"]]
+            ev.append((k + ":ax", lines({"stop": "🛑 ", "target": "🎯 ", "time": "⏱ "}[x["why"]] + hd, what, pl, f"Rule: {_rule(a)}", done)))
         else:
-            if p.get("alertSl") and e.get("sl") and px <= e["sl"]:
-                ev.append((k + (":asl" if e["sl_auto"] else ":sl"), f"🛑 STOP LOSS hit: {s} ₹{px} ({'automatic ' if e['sl_auto'] else ''}stop ₹{e['sl']:g}){pl}" + (rule if e["sl_auto"] else "")))
-            if p.get("alertTg") and e.get("target") and px >= e["target"]:
-                ev.append((k + (":atg" if e["tg_auto"] else ":tg"), f"🎯 TARGET reached: {s} ₹{px} ({'automatic ' if e['tg_auto'] else ''}target ₹{e['target']:g}){pl}" + (rule if e["tg_auto"] else "")))
-        if p.get("alertMa") and q["pct"] is not None:
-            if q["pct"] < 0: ev.append((k + ":below", f"⚠️ {s} closed below its {c['ma_period']}-DMA ({q['pct']:+}%)"))
-            elif q["pct"] <= c["near_pct"]: ev.append((k + ":near", f"👀 {s} is approaching its {c['ma_period']}-DMA from above ({q['pct']:+}%)"))
+            if p.get("alertSl") and sl and px <= sl:
+                ev.append((k + (":asl" if e["sl_auto"] else ":sl"), lines("🛑 " + hd, f"At or below your {'automatic ' if e['sl_auto'] else 'own '}stop {rs(sl)}. The exit rule says: sell.", pl, f"Rule: {_rule(a)}" if e["sl_auto"] else "", done)))
+            if p.get("alertTg") and tg and px >= tg:
+                ev.append((k + (":atg" if e["tg_auto"] else ":tg"), lines("🎯 " + hd, f"At or above your {'automatic ' if e['tg_auto'] else 'own '}target {rs(tg)}. The exit rule says: sell and take the profit.", pl, f"Rule: {_rule(a)}" if e["tg_auto"] else "", done)))
+        if p.get("alertMa") and q["pct"] is not None and q.get("ma") and not any(x_[0].startswith(k + ":") and x_[0].endswith((":ax", ":asl", ":sl")) for x_ in ev):
+            stp = f"Your stop {rs(sl)} is {(1 - sl / px) * 100:.1f}% below the price." if sl and px > sl else ""
+            if q["pct"] < 0:
+                ev.append((k + ":below", lines("⚠️ " + hd, f"Below its {ma}-DMA {rs(q['ma'])} by {abs(q['pct']):.1f}%: the screener counts a close below the {ma}-DMA as a sell signal.",
+                                               stp + (" Your automatic exit rule sells only at that stop, the target or its time limit." if e.get("sl_auto") else ""), pl)))
+            elif q["pct"] <= c["near_pct"]:
+                ev.append((k + ":near", lines("👀 " + hd, f"Only {q['pct']:.1f}% above its {ma}-DMA {rs(q['ma'])}. A close below {rs(q['ma'])} would be the screener's sell signal.",
+                                              stp + (" Nothing to do under your exit rule yet." if e.get("sl_auto") and sl and px > sl else ""), pl)))
     return ev
 
-def level_events(changes):
+def level_events(changes, quotes=None):
     """Messages for automatic levels that moved (a trailing stop rising, or a new rule chosen for the strategy)."""
     ev = []
     for p, a, moved in changes or []:
-        parts = ", ".join(f"{lbl} ₹{old:g} → ₹{new:g}" for lbl, old, new in moved)
-        ev.append((f"{pos_key(p)}#{p.get('id') or ''}:lv:{a['sl']}:{a.get('target')}", f"🔁 {p['symbol']}: automatic {parts}\n   Rule for {a['strategy_name']}: {a['rule_label']}"))
+        q = (quotes or {}).get(pos_key(p)); px = q["price"] if q else None
+        mv = "; ".join(f"{lbl.capitalize()} moved {'up' if new > old else 'down'}: {rs(old)} → {rs(new)}" for lbl, old, new in moved)
+        sl = a.get("sl"); gap = f"The new stop is {(1 - sl / px) * 100:.1f}% below today's price." if px and sl and px > sl else ""
+        txt = "\n".join(y for y in (("🔁 " + _head(p, q)) if q else f"🔁 {p['symbol']} ({p.get('exchange', 'NSE')})", mv, gap, _if_hit(p, sl) if any(m[0] == "stop" for m in moved) else "",
+                                     f"Rule: {_rule(a)}", f"If you keep a stop-loss order with your broker, move it to {rs(sl)}." if sl and any(m[0] == "stop" for m in moved) else "") if y)
+        ev.append((f"{pos_key(p)}#{p.get('id') or ''}:lv:{a['sl']}:{a.get('target')}", txt))
     return ev
+
+def pos_message(ev, now=None):
+    """One Telegram message from position and watchlist alerts, most urgent first, one block per alert."""
+    now = now or dt.datetime.now(IST)
+    grp = lambda k: 0 if k.endswith((":ax", ":asl", ":sl", ":atg", ":tg")) else 1 if k.endswith((":below", ":near")) else 2 if ":lv:" in k else 3
+    head = {0: "ACT NOW: the exit rule says sell", 1: "WATCH: near or below the 44-DMA", 2: "STOP UPDATES: no sale needed", 3: "YOUR WATCHLIST"}
+    out, seen = [f"📌 Your positions · {now:%d %b}, {now:%I:%M %p}".replace(" 0", " ").replace("AM", "am").replace("PM", "pm")], set()
+    for g in range(4):
+        items = [t for k, t in ev if grp(k) == g and t not in seen]
+        if not items: continue
+        seen.update(items)
+        items = ["\n".join(l for l in t.split("\n") if not l.startswith("Rule: ")) for t in items]
+        out.append(f"\n━━ {head[g]} ━━")
+        out.append("\n\n".join(items))
+    rules = list(dict.fromkeys(l[6:] for _, t in ev for l in t.split("\n") if l.startswith("Rule: ")))
+    if rules: out.append("\nExit rule in use: " + "; ".join(rules) if len(rules) == 1 else "\nExit rules in use:\n" + "\n".join("• " + r for r in rules))
+    out.append("\nOpen My Positions: https://screenedstocks.vercel.app/#positions\nResearch alert, not financial advice.")
+    return "\n".join(out)[:4000]
 
 # ---- alerts ----
 def fmt_cr(x): return "" if not x else (f"₹{x / 1e5:.2f}L Cr" if x >= 1e5 else f"₹{x:,.0f} Cr")
@@ -858,7 +922,7 @@ def main():
     if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
         st["sent"] += [sk(s) for s in new]
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
-    if ev and notify("📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in ev)) + "\n\nResearch alert only, not financial advice."):
+    if ev and notify(pos_message(ev, now)):
         st["pos_sent"].update({k: t_now for k, _ in ev})
     xc = health.get("xcheck")
     if xc and xc["pairs"] >= 100 and xc["mismatch"] > max(3, 0.05 * xc["pairs"]) and not st.get("xwarn") and not a.summary:
@@ -866,8 +930,8 @@ def main():
         if notify(f"⚠️ Data check: {xc['mismatch']} of {xc['pairs']} dual-listed stocks have NSE and BSE closes that differ by more than 0.5% ({w}). Treat prices with care until it clears."): st["xwarn"] = 1
     for u in users:
         if not u["chat"]: continue
-        uev = [e for e in position_events(u["positions"], quotes, c, auto.get(u["uid"])) + level_events(changes.get(u["uid"])) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
-        if uev and send_telegram(u["chat"], "📌 Position alerts\n" + "\n".join(dict.fromkeys(t for _, t in uev)) + "\n\nResearch alert only, not financial advice."):
+        uev = [e for e in position_events(u["positions"], quotes, c, auto.get(u["uid"])) + level_events(changes.get(u["uid"]), quotes) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
+        if uev and send_telegram(u["chat"], pos_message(uev, now)):
             st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
     if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()
     if a.summary: notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"]))
