@@ -10,6 +10,7 @@ zone for weeks is not counted many times). For each case, with a buy at the NEXT
   r10, r20    return after 10 and 20 trading days, after 0.4% costs
   excess      r20 minus the median r20 of every eligible share bought on the same day (takes out the market's own move)
   best, worst the highest high and lowest low within 20 days
+  q5          quick swing: the high reached +5% before the low reached -5%, within 10 trading days
   wait        the alternative: wait for the close above the 44-DMA, buy at the next open, sell on the same day 20
 What was known on the day (the inputs), each tested on its own in fifths (quintiles) and together in a model:
   dist (how far below the 44-DMA), slope (the 44-DMA's change over 10 days), vs200, rsi, volx (day's volume / 20-day average),
@@ -91,8 +92,13 @@ def per_stock(df):
         k = np.where(crossed, hit.argmax(axis=1) + 2, 0)
         ew = ow[np.arange(n), np.clip(k, 0, H)]
         rwait = np.where(crossed, fwd(c, H) / ew - 1 - COST, np.nan)
+        # quick swing: did the high reach +5% before the low reached -5%, within 10 trading days (both on one day counts as the loss)
+        hw10, lw10 = hw[:, :HZ] / e[:, None], lw_[:, :HZ] / e[:, None]
+        up = hw10 >= 1.05; dn = lw10 <= 0.95
+        fu = np.where(up.any(axis=1), up.argmax(axis=1), 99); fd = np.where(dn.any(axis=1), dn.argmax(axis=1), 99)
+        q5 = ((fu < fd) & (fu < 99)).astype(float); q5[~np.isfinite(e)] = np.nan
     done = np.r_[np.ones(max(n - H, 0), bool), np.zeros(min(H, n), bool)]
-    return F, dict(r10=r10, r20=r20, best=best, worst=worst, crossed=crossed.astype(float), dcross=dcross, rwait=rwait), ok, done
+    return F, dict(r10=r10, r20=r20, best=best, worst=worst, crossed=crossed.astype(float), dcross=dcross, rwait=rwait, q5=q5), ok, done
 
 
 def build(data):
@@ -171,7 +177,7 @@ def summ(d):
     return dict(n=int(len(d)), crossed=round(float(d["y_crossed"].mean()), 4), days=round(float(d["y_dcross"].median()), 1) if d["y_crossed"].any() else None,
                 r10=round(float(d["y_r10"].mean()), 5), r20=round(float(r.mean()), 5), med20=round(float(r.median()), 5), win=round(float((r > 0).mean()), 4),
                 excess=round(float(d["y_excess"].mean()), 5), best=round(float(d["y_best"].median()), 4), worst=round(float(d["y_worst"].median()), 4),
-                bad10=round(float(r.quantile(0.1)), 4), wait=round(float(w.mean()), 5) if w.notna().any() else None, wait_n=int(w.notna().sum()))
+                bad10=round(float(r.quantile(0.1)), 4), q5=round(float(d["y_q5"].mean()), 4), wait=round(float(w.mean()), 5) if w.notna().any() else None, wait_n=int(w.notna().sum()))
 
 
 def run(data, day):
@@ -231,7 +237,7 @@ def run(data, day):
             out_today.append(dict(key=r["key"], symbol=r["key"].split(":")[1], p_cross=round(float(pc[i]), 3), dec=int(dec[i]), decx=int(decx[i]),
                                   x={f: (None if pd.isna(r[f]) else round(float(r[f]), 4)) for f in FEATS},
                                   pull=[[f, round(v, 5)] for f, v in contrib[:5]]))
-        out_today.sort(key=lambda z: (-z["dec"], -z["p_cross"]))
+        out_today.sort(key=lambda z: (-z["p_cross"], -z["dec"]))
     coef = dict(cross={f: round(float(wl[j + 1]), 3) for j, f in enumerate(FEATS)}, excess={f: round(float(wr[j + 1]) * 100, 3) for j, f in enumerate(FEATS)})
     tt = dict(top=tstat(mt.values), bottom=tstat(mb.values), months=int(mt.notna().sum()),
               top_better_months=int((mt > 0).sum()))
