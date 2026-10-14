@@ -1,0 +1,49 @@
+RELIANCE.NS 200 497 bars 2024-10-14 … 2026-10-12,2026-10-13,2026-10-14 1158.9,1166.7,1173.3 asof 2026-10-14T05:04:19.000Z
+RELIANCE.BO 200 1 bars 2026-10-14 … 2026-10-14 1171.7 asof 2026-10-14T04:49:19.000Z
+500325.BO 404 No price history for 500325.BO.
+ADANIPORTS.NS 200 497 bars 2024-10-14 … 2026-10-12,2026-10-13,2026-10-14 1754,1763,1748.4 asof 2026-10-14T05:04:17.000Z
+ADANIPORTS.BO 200 494 bars 2024-10-14 … 2026-10-09,2026-10-12,2026-10-14 1760,1752.1,1744.75 asof 2026-10-14T04:49:00.000Z
+532921.BO 404 No price history for 532921.BO.
+TCS.BO 200 494 bars 2024-10-14 … 2026-10-09,2026-10-12,2026-10-14 2163,2126.9,2318.7 asof 2026-10-14T04:49:20.000Z
+INFY.BO 200 1 bars 2026-10-14 … 2026-10-14 1088.75 asof 2026-10-14T04:49:21.000Z
+HDFCBANK.BO 200 1 bars 2026-10-14 … 2026-10-14 714.25 asof 2026-10-14T04:49:15.000Z
+CUB.BO 200 496 bars 2024-10-14 … 2026-10-09,2026-10-12,2026-10-14 231.55,231.3,231.45 asof 2026-10-14T04:46:59.000Z
+KARURVYSYA.BO 200 1 bars 2026-10-14 … 2026-10-14 344.5 asof 2026-10-14T04:49:09.000Z
+PERSISTENT.BO 200 1 bars 2026-10-14 … 2026-10-14 5948.65 asof 2026-10-14T04:49:13.000Z
+SBIN.BO 200 1 bars 2026-10-14 … 2026-10-14 950 asof 2026-10-14T04:49:01.000Z
+ITC.BO 200 1 bars 2026-10-14 … 2026-10-14 260.55 asof 2026-10-14T04:49:20.000Z
+security {"public_quotes":5,"cloud":["redis","users","connected","error","token_set","send"],"state.json":404,"screen.py":404,"config.yaml":404,"save.sh":404,"qa/live.js":404,"status.json":404,"headers":[],"fake_hook":200,"webhook_ok":true,"webhook_error":null,"positions_without_login":401,"post_without_header":400}
+1000 screener liq={"pills":{"Thin":1,"Very":18,"High":11,"Moderate":15,"Low":7},"banner":"Market liquidityThin\n  ₹32,089 Cr traded in 1,498 NSE shares on 14 Oct: 31% of the 20-day average (₹1,04,265 Cr), more than on 0% of days in the past year. The day is still in progress, so the figure ","build":"Build 2026-10-14.2"}
+1000 approaching {"panel":true,"tiles":["72%","+0.5%","40%","+0.5%"],"scored":86,"total":100,"ordered":true,"top":["VESUVIUS 83%/10","STARHEALTH 81%/9","MANCREDIT 81%/9","BEML 80%/9","JAYBARMARU 80%/9","RATEGAIN 80%/9"],"detail":true,"junk":0}
+1000 outlook overflow=0 fan=true decileBars=10 shareRows=37 forestRows=12
+1000 company RELIANCE {"desc":407,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+1000 company INFY {"desc":410,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+1000 company HDFCBANK {"desc":406,"empty":"","bars":4,"peers":9,"doing":6,"tiles":8,"overflow":0}
+1000 company NTPCGREEN {"desc":373,"empty":"","bars":8,"peers":9,"doing":5,"tiles":8,"overflow":0}
+1000 company KARURVYSYA {"desc":407,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+1000 exits {"loaded":true,"n":26,"date":"2026-10-13","all":true,"rows":17,"overflow":0}
+390 screener liq={"pills":{"Thin":1,"Very":18,"High":11,"Moderate":15,"Low":7},"banner":"Market liquidityThin\n  ₹32,089 Cr traded in 1,498 NSE shares on 14 Oct: 31% of the 20-day average (₹1,04,265 Cr), more than on 0% of days in the past year. The day is still in progress, so the figure ","build":"Build 2026-10-14.2"}
+390 approaching {"panel":true,"tiles":["72%","+0.5%","40%","+0.5%"],"scored":87,"total":100,"ordered":true,"top":["KERNEX 84%/10","AWL 84%/10","TECHM 83%/10","WIPRO 83%/10","UNIVCABLES 82%/9","RATEGAIN 81%/9"],"detail":true,"junk":0}
+390 outlook overflow=0 fan=true decileBars=10 shareRows=37 forestRows=12
+390 company RELIANCE {"desc":407,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+390 company INFY {"desc":410,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+390 company HDFCBANK {"desc":406,"empty":"","bars":4,"peers":9,"doing":6,"tiles":8,"overflow":0}
+390 company NTPCGREEN {"desc":373,"empty":"","bars":8,"peers":9,"doing":5,"tiles":8,"overflow":0}
+390 company KARURVYSYA {"desc":407,"empty":"","bars":10,"peers":9,"doing":6,"tiles":8,"overflow":0}
+390 exits {"loaded":true,"n":26,"date":"2026-10-13","all":true,"rows":17,"overflow":0}
+pos rows ["APIS BSE APIS INDIA LTD. Screener Buy 1 ₹100.00 ₹53.82 +4.28% · BSE 10:31 am ₹100.00 ₹53.82 −₹46.18 −46.18% ₹88.00 Auto 12% below cost Stop loss hit BuySell▾","RELIANCE NSE 6 in the news Reliance Industries Limited Screener Buy 2 ₹1,200.00 ₹1,173.30 +0.57% · NSE 10:34 am ₹2,400.00 ₹2,346.60 −₹53.40 −2.23% ₹1,056.00 Auto 12% below cost Below 44-DMA BuySell▾","ADANIPORTS BSE Adani Ports and Special Economic Zone Limited Screener Buy 3 ₹1,700.00 ₹1,744.40 −0.44% · BSE 10:31 am ₹5,100.00 ₹5,233.20 +₹133.20 +2.61% ₹1,496.00 Auto 12% below cost Near 44-DMA BuySell▾","MBAPL NSE Madhya Bharat Agro Products Limited Screener Buy 5 ₹160.00 ₹169.26 +3.89% · NSE 10:31 am ₹800.00 ₹846.30 +₹46.30 +5.79% ₹140.80 Auto 12% below cost On track BuySell▾"]
+pos table {"cols":["Share","Qty","Avg cost","LTP","Invested","Current value","P&L","Stop loss","Status"],"badSorts":[],"totalsOk":true}
+pos ADANIPORTS details {"other":"Same share on NSE\n₹1,748.40","panel":"Stop loss and target\nStrategy you used\nScreener Buy (first day 0–5% above the 44-DMA)\n44-DMA cross-up\n44-DMA buy zone (rising)\n44-DMA pullback\n20/50 average cross\nPullback to the 50-DMA in an uptrend\n52-week high breakout\nBase breakout\n20-day high breakout\nStrong momentum\nVolatility squeeze breakout"}
+ins ADANIPORTS BSE ["BSE","ADANIPORTS NSE ₹1,748.40 BSE ₹1,744.75 Adani Ports and Special Economic Zone Limited Industrials › Marine Shipping Market cap ₹4,05,727 crore ₹1,744.75 −0.4% day −0.7% 1 month +23.5% 1 year BSE price (switch above for NSE) · today."]
+search ["ADANIPORTS NSE Adani Ports and Special Economic Zone Limited · on NSE and BSE","ADANIPORTS BSE Adani Ports and Special Economic Zone Limited · on NSE and BSE"]
+stock ADANIPORTS BSE "ADANIPORTS NSE ₹1,748.40 BSE ₹1,744.75 Adani Ports and Special Economic Zone Limited Industrials › Marine Shipping Market cap ₹4,05,727 crore ₹1,744.75 −0.4% day −0.7% 1 month +23.5% 1 year BSE price (switch above for NS"
+stock MBAPL NSE "MBAPL NSE Madhya Bharat Agro Products Limited ₹162.93 −1.4% day +0.6% 1 month +106.5% 1 year NSE price · close of 13 Oct 2026."
+stock RELIANCE NSE "RELIANCE NSE ₹1,173.30 BSE ₹1,171.70 Reliance Industries Limited Energy › Oil & Gas Refining & Marketing Market cap ₹15,83,705 crore ₹1,166.70 −0.3% day −8.8% 1 month −14.0% 1 year NSE price (switch above for BSE) · clos"
+stock APIS BSE "APIS BSE only APIS India Limited ₹52.60 +1.9% day +2.6% 1 month +95.0% 1 year BSE price · today."
+stock ADANIPORTS NSE "ADANIPORTS NSE ₹1,748.40 BSE ₹1,744.75 Adani Ports and Special Economic Zone Limited Industrials › Marine Shipping Market cap ₹4,05,727 crore ₹1,763.00 +0.1% day −0.7% 1 month +24.8% 1 year NSE price (switch above for BS"
+quote panel "ADANIPORTS NSE ₹1,748.40 BSE ₹1,744.75 Adani Ports and Special Economic Zone Limited ₹1,744.40 −0.44% today BSE · screener price, checked every 15 minutes in market hours"
+errors:
+1000 401 /api/dma?a=me
+1000 console: Failed to load resource: the server responded with a status of 401 ()
+390 401 /api/dma?a=me
+390 console: Failed to load resource: the server responded with a status of 401 ()
