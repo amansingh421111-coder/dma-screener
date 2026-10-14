@@ -6,6 +6,8 @@ on:
     - cron: "*/5 3-10 * * 1-5"    # 08:30-16:25 IST, Monday to Friday: every 5 minutes
     - cron: "2,17,32,47 * * * *"  # every 15 minutes, all days
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   ping:
     runs-on: ubuntu-latest

@@ -69,7 +69,9 @@ def main():
         try: auto = json.loads(redis(["GET", f"auto:{u['uid']}"]) or "{}").get("items") or {}
         except Exception: auto = {}
         pos = [effective(p, auto.get(pos_key(p))) for p in u["positions"]]   # automatic stop / target unless you set your own
-        if send_telegram(u["chat"], build(kind, pos, sj, now)): sent += 1
+        try: mine = json.loads(redis(["GET", f"quotes:{u['uid']}"]) or "{}").get("quotes") or {}   # this user's private prices
+        except Exception: mine = {}
+        if send_telegram(u["chat"], build(kind, pos, dict(sj, quotes=mine), now)): sent += 1
     print("briefs sent:", sent)
 
 if __name__ == "__main__":

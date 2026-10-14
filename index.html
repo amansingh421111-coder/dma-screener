@@ -448,7 +448,7 @@ table.sx th{vertical-align:bottom}
 </div>
 </section>
 
-<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-14.1</span></footer>
+<footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-14.2</span></footer>
 
 </main>
 <script src="listing.js"></script>
@@ -475,6 +475,8 @@ const SAMPLE={updated:new Date().toISOString(),ma_period:44,universe:"Sample",si
 let data=SAMPLE,tab="buy",minStars=0,candles=new Set(),exch=new Set(),caps=new Set(),liqs=new Set(),shown=50,opened=new Set(),sortKey="score",sortDir=-1;
 const mem={};const rd=k=>{try{return localStorage.getItem(k)}catch(e){return mem[k]??null}};const wr=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){mem[k]=v}};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* links from outside sources open only if they are ordinary web addresses (no javascript: or data: links) */
+const safeU=u=>/^https?:\/\/[^\s"'<>]+$/i.test(String(u??"").trim())?String(u).trim():"#";
 const fmt=n=>Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
 const inr=n=>(n<0?"−":"")+"₹"+fmt(Math.abs(n));
 const sg=n=>{const v=Number(n);if(n==null||!isFinite(v))return"–";const a=Math.abs(v).toFixed(2);return(+a===0?"":v>0?"+":"−")+a};
@@ -620,7 +622,7 @@ async function initAuth(){
  catch(e){ME=null;if(e.code===401)CLOUD.ok=true;else{CLOUD.ok=false;CLOUD.err=e.code===404?"server files not added yet":e.message}}
  render()}
 async function initSync(){
- try{const s=await api("positions",null,"GET");CLOUD.ok=true;AUTO=s.auto||null;
+ try{const s=await api("positions",null,"GET");CLOUD.ok=true;AUTO=s.auto||null;PQ=s.quotes&&typeof s.quotes==="object"?s.quotes:{};
   if(s.ts>TS&&Array.isArray(s.positions)){POS=s.positions;WL=Array.isArray(s.watchlist)?s.watchlist:[];SET=s.settings&&typeof s.settings==="object"?s.settings:{};wr("dma_watch",JSON.stringify(WL));wr("dma_settings",JSON.stringify(SET));const ch=normalize();wr("dma_positions",JSON.stringify(POS));TS=s.ts;wr("dma_pos_ts",String(TS));if(ch)savePos()}
   else if(TS>s.ts||(!s.ts&&POS.length)){if(!TS)stamp();await push()}
   CLOUD.connected=(await api("status",null,"GET")).connected}
@@ -646,7 +648,7 @@ async function submitAuth(){const u=$("au").value.trim(),p=$("ap").value,m=t=>{$
  $("abtn").disabled=false;render()}
 async function logout(){if(pushT){clearTimeout(pushT);await push()}
  try{await api("logout",{})}catch(e){}
- ME=null;wipeLocal();clearTimeout(pollT);CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";closeForm();render()}
+ ME=null;wipeLocal();PQ={};AUTO=null;clearTimeout(pollT);CLOUD={ok:true,connected:false,link:null,err:"",diag:""};AUTHMODE="login";closeForm();render()}
 async function changePw(){const m=t=>{$("pwmsg").textContent=t};m("");
  try{await api("passwd",{old:$("pw0").value,new:$("pw1").value});$("pw0").value=$("pw1").value="";m("Password changed. Other devices were logged out.")}catch(e){m(e.message)}}
 async function deleteAcct(){const m=t=>{$("pwmsg").textContent=t};
@@ -712,7 +714,9 @@ function normalize(){const m=migrate(POS);POS=m.list;POS.forEach(h=>{h.exchange=
  if(m.notes.length){const seenN=new Set(rd("dma_migseen")?JSON.parse(rd("dma_migseen")):[]);const fresh=[...new Set(m.notes)].filter(n=>!seenN.has(n)&&!MIG.includes(n));if(fresh.length){MIG=MIG.concat(fresh);wr("dma_mignotes",JSON.stringify(MIG))}}return m.changed}
 function dismissMig(){let seenN=[];try{seenN=JSON.parse(rd("dma_migseen")||"[]")}catch(e){}wr("dma_migseen",JSON.stringify([...new Set(seenN.concat(MIG))].slice(-50)));MIG=[];wr("dma_mignotes","[]");render()}
 let PVIEW="open",PSORT="attention";const EXP=new Set();
-function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||(data.quotes||{})[p.exchange+":"+p.symbol]||(p.txns&&typeof exQuote==="function"?exQuote(p):null)}
+/* your holdings' prices come from your private record (PQ, loaded after login), never from the public signals file */
+var PQ={};const qmap=()=>Object.assign({},data.quotes||{},PQ||{});
+function quote(p){const s=data.signals.find(x=>ex(x)===p.exchange&&x.symbol===p.symbol);return s||qmap()[p.exchange+":"+p.symbol]||(p.txns&&typeof exQuote==="function"?exQuote(p):null)}
 function status(p,q){if(!q)return["No price yet","",0];const px=q.price,n=data.near_pct||2,v=typeof lv==="function"&&p.txns?lv(p):{sl:p.sl,tg:p.target,slAuto:false,tgAuto:false},x=v.A&&v.A.exit;
  if(x&&((x.why==="stop"&&v.slAuto)||(x.why==="target"&&v.tgAuto)||(x.why==="time"&&(v.slAuto||v.tgAuto))))return[x.why==="stop"?"Stop loss hit":x.why==="target"?"Target reached":"Time limit reached",x.why==="target"?"buy":"sell",x.why==="target"?3:4];
  if(v.sl&&px<=v.sl)return["Stop loss hit","sell",4];if(v.tg&&px>=v.tg)return["Target reached","buy",3];
@@ -1347,7 +1351,7 @@ function sxDetail(s){const t=s.test||{},pm=s.params,td=s.today||{},src=s.source,
  else body=`<p class="sx-plain"><b>In plain words:</b> ${sxPlain(s)}</p><div class="sx-tiles">${tile("Better than same-day control",pp(t.edge,2),sxc(t.edge),"edge")}${tile("How sure (monthly t)",t.t??"–","","t")}${tile("Average profit per trade",pp(t.avg_ret),sxc(t.avg_ret),"avg")}${tile("Same-day control made",t.baseline!=null?pp(t.baseline):"–","","random")}${tile("Win rate",pu(t.win_rate),"","win")}${tile("Profit factor",pf2(t.profit_factor),"","pf")}${tile(s.x?"Trades from "+SX.split_year:"Trades tested",t.n!=null?t.n.toLocaleString("en-IN"):"–","","trades")}${s.x?tile("Trades, all years",s.x.all.n.toLocaleString("en-IN"),"","trades"):""}</div>
  <div class="sx-cols"><div><h4>The rule</h4><p>${esc(s.rule)}</p></div>
  <div><h4>How a trade ends (sell rules) ${ii("stop")}</h4><p>Stop loss <b>${pm.stop}%</b> below your buy price. Target <b>${pm.target}%</b> above it (risk to reward 1 : ${(pm.target/pm.stop).toFixed(1)}). Otherwise sell at the close after <b>${pm.max_hold}</b> trading days.</p>${typeof exPosShort==="function"&&exStrat(s.id)?`<p class="m" style="margin-top:4px">That is the standard exit from the strategy test. On My Positions the automatic rule is used instead: <b>${esc(exPosShort(s.id))}</b> (see the Stop and target tab).</p>`:""}<p class="m" style="margin-top:4px">${s.x?`Picked from ${s.x.grid_n} combinations using only ${esc(SX.first_date.slice(0,4))} to ${SX.split_year-1}.`:`Picked from ${(s.grid||[]).length} combinations using only the earlier period.`}</p></div>
- <div><h4>Where it comes from</h4><p>${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(src.url)}" style="color:var(--accent)">${esc(src.name)}</a>`:"A common technical-analysis rule. No single published source was checked."}</p>${src&&src.note?`<p class="m" style="margin-top:4px">${esc(src.note)}</p>`:""}</div></div><div class="sx-cols" style="margin-top:16px"><div><h4>How the score was worked out ${ii("score")}</h4><ul class="sx-parts">${(s.score_parts||[]).map(x=>`<li><span>${esc(x[0])}</span><b class="${x[1]<0?"sx-neg":""}">${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}<li><span><b>Total</b></span><b>${(s.stars||0).toFixed(1)} of 5</b></li></ul></div></div>`;
+ <div><h4>Where it comes from</h4><p>${src?`<a target="_blank" rel="noopener noreferrer" href="${esc(safeU(src.url))}" style="color:var(--accent)">${esc(src.name)}</a>`:"A common technical-analysis rule. No single published source was checked."}</p>${src&&src.note?`<p class="m" style="margin-top:4px">${esc(src.note)}</p>`:""}</div></div><div class="sx-cols" style="margin-top:16px"><div><h4>How the score was worked out ${ii("score")}</h4><ul class="sx-parts">${(s.score_parts||[]).map(x=>`<li><span>${esc(x[0])}</span><b class="${x[1]<0?"sx-neg":""}">${x[1]>0?"+":""}${x[1]}</b></li>`).join("")}<li><span><b>Total</b></span><b>${(s.stars||0).toFixed(1)} of 5</b></li></ul></div></div>`;
  return `<div class="sx-panel">${bar}<div class="sx-tb">${body}</div></div>`}
 function renderStrat(){sxMerge();const S=STRAT;if(!S)return $("vStrat").innerHTML=`<div class="empty">Loading…</div>`;
  if(!S.strategies||!S.strategies.length||!S.strategies[0].params)return $("vStrat").innerHTML=`<div class="empty">No strategy results yet.<br>They are built by the “strategies” workflow on GitHub (Saturday morning, or run it by hand).</div>`;

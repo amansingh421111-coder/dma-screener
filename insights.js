@@ -174,7 +174,7 @@ function inLinks(x) {   // -> {sym:[...], idx:[...], why:[...]}
   const o = { sym: sym.slice(0, 7), named, idx: idx.slice(0, 4), why: why.slice(0, 3), via }; LINKC.set(x.u, o); return o;
 }
 function inPx(sym) {   // latest move for a stock: screener price (15-minute delay) if it has one, else last close from the daily update
-  const q = (typeof data !== "undefined" && ((data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === "NSE") || (data.quotes || {})["NSE:" + sym])) || null;
+  const q = (typeof data !== "undefined" && ((data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === "NSE") || (typeof qmap === "function" ? qmap() : data.quotes || {})["NSE:" + sym])) || null;
   if (q && q.chg != null) return q.chg;
   const n = INAMES && INAMES[sym]; return Array.isArray(n) ? n[2] : null;
 }
@@ -450,7 +450,7 @@ function inLinkChips(x, max) {
 function inStory(x, o) {
   o = o || {}; const N = LIVE || {}, th = (N.themes || []).find((t) => t.id === x.th);
   const also = (x.also || []).map((a) => a.s || a).join(", ");
-  return `<li class="ns${o.lead ? " lead" : ""}"><a class="ns-h" href="${esc(x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
+  return `<li class="ns${o.lead ? " lead" : ""}"><a class="ns-h" href="${esc(typeof safeU === "function" ? safeU(x.u) : x.u)}" target="_blank" rel="noopener noreferrer">${esc(x.t)}</a>
   <div class="ns-m"><span class="ns-src">${esc(x.s || "")}</span>${x.d ? `<span>${inAgo(x.d)}</span>` : ""}${x.n > 1 ? `<span title="Also reported by ${esc(also)}">${x.n} outlets</span>` : ""}${x.who && x.who.length ? `<span>${esc(x.who.join(", "))}</span>` : ""}${th && o.theme !== false ? `<button type="button" class="ns-th" onclick="inTheme('${th.id}')">${esc(th.short || th.name)}</button>` : ""}</div>
   ${inLinkChips(x, o.lead ? 6 : 4)}</li>`;
 }
@@ -735,7 +735,7 @@ function fcSectors() {
     return `<tr class="${i < 3 ? "fc-top" : i >= n - 3 ? "fc-bot" : ""}"><td class="fc-sn"><span class="fc-rk">${i + 1}</span>${entG("sec", o.name)}<small>${o.n} stocks</small></td><td>${cell(o.e21)}</td><td>${cell(o.e63)}</td>
       <td class="fc-why">${o.why.length ? o.why.map(([k, c]) => `<span class="${c > 0 ? "up" : "dn"}"><i aria-hidden="true">${c > 0 ? "+" : "−"}</i>${esc(FC_REASON[k](o, o.avg, c))}</span>`).join("") : `<span class="fc-mute">Close to the average on every input</span>`}</td>
       <td class="fc-res">${r.profit_up != null ? `Profit up at <b>${Math.round(r.profit_up * 100)}%</b> of ${r.n}<small>Median change ${fcP(r.profit_g, 0)}${r.pe ? `, P/E ${r.pe.toFixed(0)}` : ""}</small>` : "–"}</td>
-      <td class="fc-nw">${nw ? `<button type="button" class="ent" onclick="openGroup('sec','${esc(o.name)}')">${nw.n} headline${nw.n === 1 ? "" : "s"}</button>${nw.last ? `<a class="fc-nl" href="${esc(nw.last.u)}" target="_blank" rel="noopener noreferrer">${esc(nw.last.t)}</a>` : ""}` : `<span class="fc-mute">No headline names one of its companies</span>`}</td></tr>`; }).join("");
+      <td class="fc-nw">${nw ? `<button type="button" class="ent" onclick="openGroup('sec','${esc(o.name)}')">${nw.n} headline${nw.n === 1 ? "" : "s"}</button>${nw.last ? `<a class="fc-nl" href="${esc(typeof safeU === "function" ? safeU(nw.last.u) : nw.last.u)}" target="_blank" rel="noopener noreferrer">${esc(nw.last.t)}</a>` : ""}` : `<span class="fc-mute">No headline names one of its companies</span>`}</td></tr>`; }).join("");
   return `<section class="ix-sec"><header class="ix-h"><h2>Sectors: which may do better or worse than the rest</h2>
     <p>Estimated return against the average sector, with the range 8 in 10 past estimates fell within. The estimate uses each sector's recent strength against the Nifty, how many of its stocks are in uptrends, and how it has reacted to crude, the rupee and US yields. Ordered by the next-month estimate.</p></header>
     <div class="fc-scroll"><table class="fc-t"><thead><tr><th>Sector</th><th>Next month</th><th>Next 3 months</th><th>Main reasons <span class="fc-key"><i class="up">+</i> raises the estimate <i class="dn">−</i> lowers it</span></th><th>Latest results<span class="fc-tag">not in the estimate</span></th><th>${news._full ? "News, last 7 days" : "News, latest headlines"}<span class="fc-tag">not in the estimate</span></th></tr></thead><tbody>${body}</tbody></table></div>
@@ -798,7 +798,7 @@ function fcLive() {
     const lead = pool.filter((x) => !used.has(x.u)).sort((a, b) => (Math.min(b.n || 1, 8) - Math.min(a.n || 1, 8)) || String(b.d || "").localeCompare(String(a.d || "")))[0];
     if (lead) used.add(lead.u);
     return `<li><div class="fc-lh"><button type="button" class="ns-th" onclick="inTheme('${t.id}')">${esc(t.short || t.name)}</button><span class="${r >= 1.3 ? "fc-hot" : "fc-mute"}">${t.day || 0} stories in the last 24 hours, ${r >= 1.3 ? r.toFixed(1) + "× its daily average this week" : r < 0.7 ? "quieter than its daily average" : "about its daily average"}</span></div>
-      ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a><div class="ix-fine">${esc(lead.s || "")}${lead.n > 1 ? `, ${lead.n} outlets` : ""}${lead.d ? `, ${inAgo(lead.d)}` : ""}</div>` : ""}</li>`; }).join("");
+      ${t.sectors ? `<div class="ix-fine">Reaches prices through: ${esc(t.sectors)}</div>` : ""}${lead ? `<a class="fc-lead" href="${esc(typeof safeU === "function" ? safeU(lead.u) : lead.u)}" target="_blank" rel="noopener noreferrer">${esc(lead.t)}</a><div class="ix-fine">${esc(lead.s || "")}${lead.n > 1 ? `, ${lead.n} outlets` : ""}${lead.d ? `, ${inAgo(lead.d)}` : ""}</div>` : ""}</li>`; }).join("");
   const sess = MKT ? (MKT.market_open ? "today, about 15 minutes delayed" : "in the latest session") : "";
   const mk = ["BZ=F", "INR=X", "^INDIAVIX", "^GSPC", "^TNX", "GC=F"].map((k) => { const dm = inDay(k); return `<button type="button" class="lk-i" onclick="openIndex('${k}')">${esc(MK_NAMES[k] || k)}${dm ? " " + inMove(dm) : ""}</button>`; }).join("");
   return `<section class="ix-sec"><header class="ix-h"><h2>What could move these numbers: live, and not in the estimates</h2><p>News, politics and policy cannot be tested on 18 years of history the way prices can, so they are shown here beside the estimates instead of being mixed into them. Updated with the news feed${N ? `, last ${inAgo(N.updated)}` : ""}.</p></header>
@@ -1151,7 +1151,7 @@ function coPanel(sym, ex) {
   const sec = (f && f.sec) || (P && P.sec), ind = (f && f.ind) || (P && P.ind), SM = FUND.sector_med && sec ? FUND.sector_med[sec] : null;
   // 1. what it does
   const d = P && P.d ? P.d : "", long = d.length > 420, txt = long && !IV.coMore ? d.slice(0, d.lastIndexOf(" ", 400)) + "…" : d;
-  const facts = [sec ? `${entG("sec", sec)}${ind ? ` › ${entG("ind", ind)}` : ""}` : "", P && P.emp ? `${Number(P.emp).toLocaleString("en-IN")} employees` : "", P && P.city ? esc(P.city) : "", P && P.web ? `<a href="${esc(P.web)}" target="_blank" rel="noopener noreferrer">${esc(P.web.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>` : ""].filter(Boolean);
+  const facts = [sec ? `${entG("sec", sec)}${ind ? ` › ${entG("ind", ind)}` : ""}` : "", P && P.emp ? `${Number(P.emp).toLocaleString("en-IN")} employees` : "", P && P.city ? esc(P.city) : "", P && P.web ? `<a href="${esc(typeof safeU === "function" ? safeU(P.web) : P.web)}" target="_blank" rel="noopener noreferrer">${esc(P.web.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""))}</a>` : ""].filter(Boolean);
   const about = `<section class="ov-card"><h4 class="ov-h">What the company does</h4>${d ? `<p class="co-d">${esc(txt)}${long ? ` <button type="button" class="ent" onclick="event.stopPropagation();IV.coMore=!IV.coMore;render()">${IV.coMore ? "Show less" : "Read more"}</button>` : ""}</p>` : `<p class="ix-empty">No business description available.</p>`}
     ${facts.length ? `<p class="co-f">${facts.join('<span aria-hidden="true">·</span>')}</p>` : ""}<p class="ix-fine">Description: ${esc((PROF && PROF.source) || "Yahoo Finance company profile")}.</p></section>`;
   // 2. how it makes money

@@ -31,7 +31,23 @@ const send = (res, body, code = 200, cookie) => {
   return res.status(code).json(body);
 };
 const cookieFor = (token, maxAge) => `dma_s=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
-const clientIp = (req) => String((req.headers["x-forwarded-for"] || "").split(",")[0] || req.headers["x-real-ip"] || "unknown").trim();
+// Vercel sets x-vercel-forwarded-for / x-real-ip itself; a client cannot choose them, so rate limits cannot be dodged by faking a header
+const clientIp = (req) => String(req.headers["x-vercel-forwarded-for"] || req.headers["x-real-ip"] || (req.headers["x-forwarded-for"] || "").split(",")[0] || "unknown").split(",")[0].trim();
+// Telegram webhook: Telegram sends this secret with every update (set with setWebhook), so nobody else can post fake bot messages
+const PROD_HOST = String(E.VERCEL_PROJECT_PRODUCTION_URL || "screenedstocks.vercel.app").replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+const whSecret = () => (E.BOT_TOKEN ? sha("tg-webhook:" + E.BOT_TOKEN).slice(0, 48) : "");
+const sameStr = (a, b) => typeof a === "string" && a.length === b.length && b.length > 0 && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+async function ensureWebhook(force) {
+  if (!E.BOT_TOKEN) return null;
+  const ver = sha(whSecret() + PROD_HOST).slice(0, 16);
+  if (!force && (await redis(["GET", "cfg:whv"])) === ver) return { ok: true, cached: true };
+  if (!force && !(await rl("rl:whfix", 6, 3600))) return null;
+  const r = await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/setWebhook`, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url: `https://${PROD_HOST}/api/dma?a=hook`, allowed_updates: ["message"], secret_token: whSecret() }) });
+  const j = await r.json().catch(() => ({}));
+  if (j.ok) await redis(["SET", "cfg:whv", ver]);
+  return j;
+}
 const normName = (u) => String(u || "").trim().toLowerCase();
 const NAME_RE = /^[a-z0-9_.-]{3,30}$/;
 
@@ -83,6 +99,7 @@ function parseRss(xml) {
   return out;
 }
 
+const a0 = (req) => String((req.query && req.query.a) || "").slice(0, 20);
 module.exports = async (req, res) => {
   try {
     const a = req.query.a;
@@ -197,17 +214,15 @@ module.exports = async (req, res) => {
 
     // Diagnostics (no secrets returned) and one-tap webhook registration
     if (a === "health" || a === "setup") {
-      const host = req.headers["x-forwarded-host"] || req.headers.host;
       const out = { storage: !!(URL_ && TOK), bot_token: !!E.BOT_TOKEN, bot_username: E.BOT_USERNAME || null, youtube_key: !!E.YOUTUBE_API_KEY };
       if (E.BOT_TOKEN) {
         try {
-          if (a === "setup") {
-            const r = await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/setWebhook`, { method: "POST", headers: { "content-type": "application/json" },
-              body: JSON.stringify({ url: `https://${host}/api/dma`, allowed_updates: ["message"] }) });
-            out.setWebhook = await r.json();
+          if (a === "setup") {   // always the production address, always with the secret: a request cannot point the bot elsewhere
+            if (!(await rl("rl:setup:" + clientIp(req), 5, 3600))) return send(res, { error: "Too many requests this hour." }, 429);
+            out.setWebhook = await ensureWebhook(true);
           }
           const w = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getWebhookInfo`)).json();
-          out.webhook_url = w.result && w.result.url; out.webhook_error = (w.result && w.result.last_error_message) || null;
+          out.webhook_ok = !!(w.result && w.result.url === `https://${PROD_HOST}/api/dma?a=hook`); out.webhook_error = (w.result && w.result.last_error_message) || null;
           const me = await (await fetch(`https://api.telegram.org/bot${E.BOT_TOKEN}/getMe`)).json();
           out.bot_ok = !!me.ok; out.bot_real_username = me.ok ? me.result.username : null;
           out.username_matches = me.ok && String(E.BOT_USERNAME || "").replace("@", "").toLowerCase() === String(me.result.username).toLowerCase();
@@ -221,6 +236,11 @@ module.exports = async (req, res) => {
 
     // Telegram calls this when someone messages the bot
     if (a === "hook" || body.update_id !== undefined) {
+      if (!sameStr(String(req.headers["x-telegram-bot-api-secret-token"] || ""), whSecret())) {
+        // not from Telegram (or the webhook was registered before the secret existed): ignore it, and re-register once
+        try { await ensureWebhook(false); } catch (e) {}
+        return send(res, { ok: true });
+      }
       const m = body.message;
       if (m && m.text && m.chat) {
         const chat = String(m.chat.id), text = m.text.trim();
@@ -327,12 +347,12 @@ module.exports = async (req, res) => {
       if (!sameHash(await hashPw(String(body.password || "").slice(0, 128), acct.salt), acct.hash)) return send(res, { error: "Password is wrong." }, 401);
       const chat = await redis(["GET", "chat:" + uid]);
       if (chat) await redis(["DEL", "uid:" + chat]);
-      for (const k of ["chat:" + uid, "pos:" + uid, "ytnotes:" + uid, "owner:" + uid, "acct:" + sess.name, "sess:" + sha(sess.token)]) await redis(["DEL", k]);
+      for (const k of ["chat:" + uid, "pos:" + uid, "auto:" + uid, "quotes:" + uid, "ytnotes:" + uid, "owner:" + uid, "acct:" + sess.name, "rl:fail:" + sess.name, "sess:" + sha(sess.token)]) await redis(["DEL", k]);
       await redis(["SREM", "users", uid]);
       return send(res, { ok: true }, 200, cookieFor("", 0));
     }
 
-    if (a === "status") return send(res, { connected: !!(await redis(["GET", "chat:" + uid])) });
+    if (a === "status") { try { await ensureWebhook(false); } catch (e) {} return send(res, { connected: !!(await redis(["GET", "chat:" + uid])) }); }
 
     // ---- channel video list (YouTube Data API v3, official) + personal notes ----
     if (a === "yt") {
@@ -376,6 +396,7 @@ module.exports = async (req, res) => {
     if (a === "ytnotes") {
       if (req.method === "GET") { const raw = await redis(["GET", "ytnotes:" + uid]); return send(res, raw ? JSON.parse(raw) : { notes: {} }); }
       if (needPost()) return;
+      if (!(await rl("rl:w:" + uid, 900, 3600))) return send(res, { error: "Too many saves this hour. Try again later." }, 429);
       const n = body.notes;
       if (!n || typeof n !== "object" || Array.isArray(n)) return send(res, { error: "Invalid notes." }, 400);
       const clean = {}; let size = 0;
@@ -391,11 +412,14 @@ module.exports = async (req, res) => {
 
     if (a === "positions") {
       if (req.method === "GET") {
-        const [raw, au] = await Promise.all([redis(["GET", "pos:" + uid]), redis(["GET", "auto:" + uid])]);
+        const [raw, au, qu] = await Promise.all([redis(["GET", "pos:" + uid]), redis(["GET", "auto:" + uid]), redis(["GET", "quotes:" + uid])]);
         const doc = raw ? JSON.parse(raw) : { positions: [], ts: 0 };
         try { doc.auto = au ? JSON.parse(au) : null; } catch (e) { doc.auto = null; }   // automatic stop / target worked out by the screener
+        try { doc.quotes = qu ? JSON.parse(qu).quotes || {} : {}; } catch (e) { doc.quotes = {}; }   // your holdings' prices: private, never in the public files
         return send(res, doc);
       }
+      if (!(await rl("rl:w:" + uid, 900, 3600))) return send(res, { error: "Too many saves this hour. Try again later." }, 429);
+      if (JSON.stringify(body).length > 2_000_000) return send(res, { error: "Too much data in one save." }, 413);
       const list = body.positions;
       if (!Array.isArray(list) || list.length > 300) return send(res, { error: "Invalid positions." }, 400);
       const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -470,6 +494,7 @@ module.exports = async (req, res) => {
       await redis(["SET", "link:" + t, uid, "EX", 600]); await redis(["SADD", "users", uid]);
       // let the screener use the very same bot as this site (avoids a mismatched GitHub secret)
       await redis(["SET", "cfg:bot", E.BOT_TOKEN]);
+      try { await ensureWebhook(false); } catch (e) {}
       return send(res, { url: `https://t.me/${E.BOT_USERNAME.replace("@", "")}?start=${t}` });
     }
 
@@ -481,6 +506,7 @@ module.exports = async (req, res) => {
     }
     return send(res, { error: "Unknown action." }, 404);
   } catch (e) {
-    return send(res, { error: String(e.message || e) }, 500);
+    console.error("api error", a0(req), String((e && e.message) || e).slice(0, 300));   // private Vercel log only
+    return send(res, { error: "Something went wrong on the server. Try again in a minute." }, 500);
   }
 };

@@ -94,7 +94,7 @@ function entHover(ev) {
 function entD(s, year) { if (!s) return ""; const x = new Date(String(s).slice(0, 10) + "T00:00:00"); return isNaN(x) ? s : x.toLocaleDateString("en-IN", year ? { day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short", year: "2-digit" }); }
 
 /* ---------- panels ---------- */
-function entLinks(list) { return `<div class="eq-links">${list.filter(Boolean).map(([l, u, t]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(t || "")}">${esc(l)}</a>`).join("")}</div>`; }
+function entLinks(list) { return `<div class="eq-links">${list.filter(Boolean).map(([l, u, t]) => `<a href="${esc(typeof safeU === "function" ? safeU(u) : u)}" target="_blank" rel="noopener noreferrer" title="${esc(t || "")}">${esc(l)}</a>`).join("")}</div>`; }
 function entKV(rows) { return `<div class="eq-kv">${rows.filter(Boolean).map(([l, v, c]) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`).join("")}</div>`; }
 function entNews(list, more) {
   if (typeof LIVE === "undefined" || !LIVE) return `<p class="eq-m">Loading the news feed…</p>`;
@@ -117,7 +117,7 @@ function entStock(e) {
   const T = typeof FUND !== "undefined" && FUND && FUND.stocks && ex === "NSE" && FUND.stocks[sym] ? FUND.stocks[sym].t : null;
   const nm = (typeof INAMES !== "undefined" && INAMES && INAMES[sym] && ex === "NSE") ? (Array.isArray(INAMES[sym]) ? INAMES[sym][0] : INAMES[sym]) : null;
   const sig = (typeof data !== "undefined" && data.signals || []).find((s) => s.symbol === sym && (s.exchange || "NSE") === ex);
-  const q = sig || (typeof data !== "undefined" && (data.quotes || {})[ex + ":" + sym]) || null;
+  const q = sig || (typeof data !== "undefined" && (typeof qmap === "function" ? qmap() : data.quotes || {})[ex + ":" + sym]) || null;
   const name = (F && F.name) || nm || (sig && sig.name) || (typeof lsName === "function" && lsName(sym)) || (C && C.name) || "";
   const c = C && C.c, ownLast = own && own.c && own.c.length ? own.c[own.c.length - 1] : null, last = q && q.price != null ? q.price : ownLast != null ? ownLast : c ? c[c.length - 1] : T ? T.p : null;
   const lp = histNse && typeof lsPx === "function" ? lsPx(sym, ex) : null;

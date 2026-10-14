@@ -1,6 +1,6 @@
 """NSE + BSE auto screener: MA cross / approach alerts, market cap, position alerts.
 Alerts only. This program never places orders."""
-import argparse, concurrent.futures as cf, datetime as dt, io, json, logging, os, smtplib, sys, time
+import argparse, hashlib, concurrent.futures as cf, datetime as dt, io, json, logging, os, smtplib, sys, time
 from email.mime.text import MIMEText
 from pathlib import Path
 import numpy as np, pandas as pd, requests, yaml
@@ -380,6 +380,18 @@ def redis(cmd):
     r = requests.post(url, headers={"Authorization": f"Bearer {tok}"}, json=cmd, timeout=20)
     r.raise_for_status(); return r.json().get("result")
 
+def store_quotes(users, quotes):
+    """Prices of each user's own holdings and watchlist go to that user's private record (quotes:<uid>), served only to them
+    by the website after login. They are never written to the public signals.json or the public repo."""
+    for u in users or []:
+        mine = {pos_key(p): quotes[pos_key(p)] for p in list(u.get("positions") or []) + list(u.get("watchlist") or []) if pos_key(p) in quotes}
+        try: redis(["SET", f"quotes:{u['uid']}", json.dumps(dict(updated=dt.datetime.now(dt.timezone.utc).isoformat(), quotes=mine)), "EX", 7 * 86400])
+        except Exception as e: log.warning("could not store private quotes: %s", str(e)[:80])
+
+def hk(k):
+    """Alert keys in the public state.json are one-way hashes, so they do not reveal who holds what."""
+    return hashlib.sha256(("dma-alert:" + k).encode()).hexdigest()[:24]
+
 CLOUD = {"redis": False, "users": 0, "connected": 0, "error": None, "token_set": bool(os.getenv("TELEGRAM_TOKEN")), "send": None}
 
 def cloud_users():
@@ -413,7 +425,7 @@ def _tokens():
 def send_telegram(chat, text):
     toks = _tokens()
     if not toks:
-        log.warning("no Telegram token available; cannot message %s", chat)
+        log.warning("no Telegram token available; cannot send a user alert")
         CLOUD["send"] = {"ok": False, "status": None, "error": "No bot token: set the TELEGRAM_TOKEN secret, or press Connect Telegram on the site once"}; return False
     for tok in toks:
         try:
@@ -501,7 +513,7 @@ def position_quotes(pos, c):
     q = {}
     for p in pos:
         own = max(pos_tickers(p), key=rows); nse = p["symbol"] + ".NS" if dual(p) else None
-        if not rows(own) and not (nse and rows(nse)): log.warning("no prices for position %s", pos_key(p)); continue
+        if not rows(own) and not (nse and rows(nse)): log.warning("no prices for one position"); continue
         hist = own if rows(own) >= 60 or not (nse and rows(nse) >= 60) else nse
         H = raw[hist].dropna(subset=["Close"]); PXD[pos_key(p)] = H
         O = raw[own].dropna(subset=["Close"]) if rows(own) else None
@@ -821,8 +833,9 @@ def main():
         write_listings()
         users = cloud_users(); allpos = {pos_key(p): p for u in users for p in u["positions"]}
         q = position_quotes(list(allpos.values()), c)
+        store_quotes(users, q)
         sj = read_json("signals.json", {})
-        if sj and q: sj.setdefault("quotes", {}).update(q); (ROOT / "signals.json").write_text(json.dumps(sj, indent=1))
+        if sj and sj.pop("quotes", None) is not None: (ROOT / "signals.json").write_text(json.dumps(sj, indent=1))
         auto, _ = update_auto(users, not in_market_hours(now))
         n = sum(len(u["positions"]) for u in users); got = sum(len(v) for v in auto.values())
         ex = sum(1 for v in auto.values() for x in v.values() if x.get("exit"))
@@ -907,15 +920,17 @@ def main():
          "bse_updated": dt.datetime.now(dt.timezone.utc).isoformat() if scan_bse else old.get("bse_updated"),
          "cloud": CLOUD, "health": health, "fetch_secs": fetch_secs, "price_date": str(latest), "scan": {ex: {"listed": PRE.get("listed", {}).get(ex), "dropped_before_download": PRE.get("dropped", {}).get(ex, {}), "downloaded": sum(1 for u in items if u["exchange"] == ex and u["yahoo"] in data), "rejected_after_download": {k[len(ex) + 1:]: v for k, v in WHY.items() if k.startswith(ex + ":")}, "signals": sum(1 for x in sigs if x["exchange"] == ex)} for ex in ("NSE", "BSE")}, "prefilter": PRE or None, "price_check": RECON, "bse_stats": bse_stats,
          "bse_error": "; ".join(BSE_ERR) if scan_bse and BSE_ERR else None,
-         "market_liq": market_liq, "signals": sigs, "quotes": quotes}, indent=1))
+         "market_liq": market_liq, "signals": sigs}, indent=1))
+    store_quotes(users, quotes)
     st = read_json("state.json", {})
     if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": {}}
     st.setdefault("sent", []); st.setdefault("pos_sent", {})
     if isinstance(st["pos_sent"], list): st["pos_sent"] = {k: 0 for k in st["pos_sent"]}
+    st["pos_sent"] = {(k if ":" not in k else hk(k)): v for k, v in st["pos_sent"].items()}   # older files held readable keys
     t_now = time.time()
     def due(k):
         # stop loss / target alerts repeat on every run while the price stays beyond the level; other alerts once a day
-        last = st["pos_sent"].get(k)
+        last = st["pos_sent"].get(hk(k))
         return last is None or k.endswith((":sl", ":tg"))
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
     new = [] if a.summary else [s for s in sigs if sk(s) not in st["sent"]]
@@ -923,7 +938,7 @@ def main():
         st["sent"] += [sk(s) for s in new]
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
     if ev and notify(pos_message(ev, now)):
-        st["pos_sent"].update({k: t_now for k, _ in ev})
+        st["pos_sent"].update({hk(k): t_now for k, _ in ev})
     xc = health.get("xcheck")
     if xc and xc["pairs"] >= 100 and xc["mismatch"] > max(3, 0.05 * xc["pairs"]) and not st.get("xwarn") and not a.summary:
         w = ", ".join(f"{x['symbol']} NSE {x['nse']} vs BSE {x['bse']}" for x in xc["worst"][:3])
@@ -932,7 +947,7 @@ def main():
         if not u["chat"]: continue
         uev = [e for e in position_events(u["positions"], quotes, c, auto.get(u["uid"])) + level_events(changes.get(u["uid"]), quotes) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
         if uev and send_telegram(u["chat"], pos_message(uev, now)):
-            st["pos_sent"].update({f"{u['uid']}:{k}": t_now for k, _ in uev}); ev += uev
+            st["pos_sent"].update({hk(f"{u['uid']}:{k}"): t_now for k, _ in uev}); ev += uev
     if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()
     if a.summary: notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"]))
     (ROOT / "state.json").write_text(json.dumps(st))

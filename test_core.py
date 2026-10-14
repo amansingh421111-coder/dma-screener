@@ -1,3 +1,4 @@
+import json
 """Quick self-checks for the parts that must not break. Run: python test_core.py"""
 import numpy as np, pandas as pd
 import datetime as dt, json, sys
@@ -150,6 +151,22 @@ def t_alert_message():
     assert m.index("ACT NOW") < m.index("BBB") < m.index("WATCH") < m.index("STOP UPDATES"), m
     assert m.count("BBB (NSE)") == 1, m   # a share whose stop was hit is not also listed under the 44-DMA warning
     assert m.count("Trailing stop 15%") == 1 and "move it to ₹85.85" in m and "15.0% below" in m and "3:31 pm" in m, m
+
+def t_privacy():
+    """Holdings never reach public files: alert keys are hashed, each user's prices go to their own private record only."""
+    k = "u1:NSE:SECRETCO#abc:near"; h = screen.hk(k)
+    assert "SECRETCO" not in h and "u1" not in h and len(h) == 24 and screen.hk(k) == h
+    store = {}
+    old = screen.redis; screen.redis = lambda cmd: store.__setitem__(cmd[1], cmd[2]) if cmd[0] == "SET" else None
+    try:
+        users = [dict(uid="u1", positions=[dict(symbol="AAA", exchange="NSE")], watchlist=[dict(symbol="WWW", exchange="BSE")]),
+                 dict(uid="u2", positions=[dict(symbol="BBB", exchange="NSE")], watchlist=[])]
+        screen.store_quotes(users, {"NSE:AAA": {"price": 1}, "BSE:WWW": {"price": 2}, "NSE:BBB": {"price": 3}})
+        q1 = json.loads(store["quotes:u1"])["quotes"]; q2 = json.loads(store["quotes:u2"])["quotes"]
+        assert set(q1) == {"NSE:AAA", "BSE:WWW"} and set(q2) == {"NSE:BBB"}, (q1, q2)
+    finally: screen.redis = old
+    src = open(screen.__file__).read()
+    assert '"quotes": quotes' not in src, "holdings prices must not be written to signals.json"
 
 if __name__ == "__main__":
     for k, f in list(globals().items()):

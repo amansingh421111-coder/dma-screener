@@ -1,0 +1,19 @@
+# Only the website is published. Scripts, tests, run state and settings stay in the repo and are not served.
+*.py
+__pycache__
+qa
+ocr/LICENSE-tesseract.js.md
+state.json
+status.json
+nodata.json
+mcap.json
+positions.json
+config.yaml
+deps.txt
+save.sh
+README.md
+backtest.csv
+backtest.txt
+universe.csv
+*.log
+.github

@@ -13,6 +13,17 @@ const URL = process.env.LIVE_URL || "https://screenedstocks.vercel.app/";
     catch (e) { probe.push(`${t} fetch failed ${e.message}`); }
   }
   const report = [], errs = [];
+  {   // security: nothing private is published, internal files are not served, fake bot updates are ignored, headers are set
+    const sec = {};
+    try { const r = await fetch(URL + "signals.json?t=" + Date.now()), j = await r.json(); sec.public_quotes = Object.keys(j.quotes || {}).length; sec.cloud = j.cloud ? Object.keys(j.cloud) : null; } catch (e) { sec.public_quotes = "error " + e.message; }
+    for (const f of ["state.json", "screen.py", "config.yaml", "save.sh", "qa/live.js", "status.json"]) { try { sec[f] = (await fetch(URL + f)).status; } catch (e) { sec[f] = "error"; } }
+    try { const r = await fetch(URL); sec.headers = ["content-security-policy", "strict-transport-security", "x-frame-options", "x-content-type-options", "cross-origin-resource-policy", "referrer-policy"].filter((h) => !r.headers.get(h)); } catch (e) {}
+    try { const r = await fetch(URL + "api/dma?a=hook", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ update_id: 1, message: { text: "/stop", chat: { id: 1 } } }) }); sec.fake_hook = r.status; } catch (e) { sec.fake_hook = "error"; }
+    try { const h = await (await fetch(URL + "api/dma?a=health")).json(); sec.webhook_ok = h.webhook_ok; sec.webhook_error = h.webhook_error; } catch (e) {}
+    try { const r = await fetch(URL + "api/dma?a=positions"); sec.positions_without_login = r.status; } catch (e) {}
+    try { const r = await fetch(URL + "api/dma?a=register", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }); sec.post_without_header = r.status; } catch (e) {}
+    report.push("security " + JSON.stringify(sec));
+  }
   // screenshot of one element; the page re-renders while prices load, so take the box and shoot the page area (never throws)
   const shot = async (p, sel, path) => { try { const box = await p.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView(); const r = e.getBoundingClientRect(); return { x: r.x, y: r.y + window.scrollY, width: r.width, height: Math.min(r.height, 6000) }; }, sel); if (box && box.width > 0) await p.screenshot({ path, clip: box, fullPage: true }); } catch (e) { report.push(`screenshot ${path} skipped: ${String(e.message).slice(0, 80)}`); } };
   for (const [w, scheme] of [[1000, "light"], [390, "dark"]]) {
