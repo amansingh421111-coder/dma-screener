@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19T10:32:15.094661+00:00",
+ "updated": "2026-10-19T10:46:36.107901+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 2,
@@ -15,13 +15,13 @@
   "send": null
  },
  "health": {
-  "run_at": "2026-10-19T10:32:15.091727+00:00",
+  "run_at": "2026-10-19T10:46:36.105376+00:00",
   "price_date": "2026-10-19",
   "source": "intraday",
-  "scanned": 1751,
+  "scanned": 1496,
   "skipped": 0,
-  "checked": 15,
-  "corrected": 1,
+  "checked": 0,
+  "corrected": 0,
   "xcheck": {
    "date": "2026-10-16",
    "pairs": 1233,
@@ -60,7 +60,7 @@
    ]
   }
  },
- "fetch_secs": 124,
+ "fetch_secs": 85,
  "price_date": "2026-10-19",
  "scan": {
   "NSE": {
@@ -80,18 +80,10 @@
    "signals": 267
   },
   "BSE": {
-   "listed": 1858,
-   "dropped_before_download": {
-    "low_price": 1087,
-    "low_volume": 516
-   },
-   "downloaded": 255,
-   "rejected_after_download": {
-    "not_near_average": 52,
-    "short_history": 36,
-    "low_volume": 145,
-    "low_price": 5
-   },
+   "listed": null,
+   "dropped_before_download": {},
+   "downloaded": 0,
+   "rejected_after_download": {},
    "signals": 17
   }
  },
@@ -100,32 +92,23 @@
    "NSE": "2026-10-16",
    "BSE": "2026-10-16"
   },
-  "before": 4209,
-  "after": 1751,
+  "before": 2351,
+  "after": 1496,
   "listed": {
-   "NSE": 2351,
-   "BSE": 1858
+   "NSE": 2351
   },
   "dropped": {
    "NSE": {
     "low_price": 431,
     "low_volume": 410,
     "no_trade_latest_day": 14
-   },
-   "BSE": {
-    "low_price": 1087,
-    "low_volume": 516
    }
-  },
-  "bse_name_retry": {
-   "tried": 240,
-   "recovered": 204
   }
  },
  "price_check": {
-  "checked": 15,
+  "checked": 0,
   "mismatch": 0,
-  "added": 1,
+  "added": 0,
   "date": {
    "NSE": "2026-10-16",
    "BSE": "2026-10-16"
