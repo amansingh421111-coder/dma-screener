@@ -12,7 +12,7 @@ def check(now=None, status=None):
         if not f.exists(): return "status.json is missing: the screener has never reported in."
         status = json.loads(f.read_text())
     age = (now - dt.datetime.fromisoformat(status["ts"]).astimezone(IST)).total_seconds() / 60
-    if age > 25: return f"No screener run has completed for {age:.0f} minutes (last: {status.get('slot', '?')} IST)."
+    if age > 45: return f"No screener run has completed for {age:.0f} minutes (last: {status.get('slot', '?')} IST)."
     if status.get("fails", 0) >= 2: return f"The last {status['fails']} screener runs failed (slot {status.get('slot', '?')} IST)."
     return None
 

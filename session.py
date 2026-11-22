@@ -1,5 +1,5 @@
 """Runs the screener on an exact 15-minute rhythm for part of the day inside ONE GitHub job.
-GitHub's own cron may start a job 5-20 minutes late, but once this job is running it keeps time itself.
+GitHub's own cron may start a job late during peak queue loads; once this job is running it keeps time itself and catches up if started late.
 Usage: python session.py --until 12:30      (slots: 08:45 morning brief, 09:15 ... 16:15 scans, 16:00 = summary + evening review)"""
 import argparse, datetime as dt, json, subprocess, sys, time
 from pathlib import Path
@@ -21,12 +21,34 @@ def py(*args, timeout=540):
 
 def write_status(slot, rc, st):
     fails = 0 if rc == 0 else st.get("fails", 0) + 1
-    st = {"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "slot": slot.strftime("%H:%M"), "rc": rc, "fails": fails}
+    slot_str = slot.strftime("%H:%M") if hasattr(slot, "strftime") else str(slot)
+    st = {"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "slot": slot_str, "rc": rc, "fails": fails}
     (ROOT / "status.json").write_text(json.dumps(st)); return st
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--until", default="16:30"); a = ap.parse_args()
     until, done, st = hm(a.until), None, {}
+    n = now()
+
+    # Weekend check
+    if n.weekday() >= 5:
+        print("Weekend: skipping session.", flush=True)
+        return
+
+    # If GitHub Actions triggered the session after market hours (e.g. queue delay):
+    if n.time() >= dt.time(16, 0):
+        print(f"Session started after market hours ({n:%H:%M:%S} IST). Running EOD summary scan...", flush=True)
+        rc = py("screen.py", "--summary", "--force")
+        if rc == 0: py("brief.py", "evening", timeout=240)
+        write_status(dt.datetime.combine(n.date(), dt.time(16, 0), IST), rc, st)
+        subprocess.run(["bash", "save.sh"], cwd=ROOT)
+        return
+
+    # If a morning session was delayed past 12:30 but is still within trading hours, extend it to 16:30
+    if until <= dt.time(12, 30) and n.time() >= until and n.time() < dt.time(16, 30):
+        print(f"Morning session started late at {n:%H:%M:%S} IST. Extending until 16:30 IST.", flush=True)
+        until = dt.time(16, 30)
+
     while True:
         n = now()
         if n.weekday() >= 5 or n.time() >= until: break
@@ -43,6 +65,16 @@ def main():
             rc = py("screen.py", *(["--summary"] if t == dt.time(16, 0) else []))
             if t == dt.time(16, 0) and rc == 0: py("brief.py", "evening", timeout=240)
         st = write_status(slot, rc, st)
+        subprocess.run(["bash", "save.sh"], cwd=ROOT)
+
+    # Fallback catch-up: if the session ran and ended without executing even one slot:
+    if done is None and n.weekday() < 5:
+        print(f"No slots executed in session window (time {n:%H:%M:%S} IST). Running catch-up scan...", flush=True)
+        is_eod = n.time() >= dt.time(16, 0)
+        rc = py("screen.py", "--summary" if is_eod else "--force")
+        if is_eod and rc == 0:
+            py("brief.py", "evening", timeout=240)
+        write_status(n, rc, st)
         subprocess.run(["bash", "save.sh"], cwd=ROOT)
 
 if __name__ == "__main__":
