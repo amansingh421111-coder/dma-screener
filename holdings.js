@@ -8,6 +8,7 @@ const HC = [   // key, header, priority (1 = always shown, 4 = widest screens on
   ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Shares held"],
   ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold"],
   ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown, with today's change"],
+  ["chg", "Day %", 3, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price change percentage"],
   ["day", "Today", 2, true, (r) => r.c.day, "Change in this holding's value today"],
   ["inv", "Invested", 1, true, (r) => r.c.invested, "What you paid: quantity x average cost"],
   ["val", "Current value", 1, true, (r) => r.c.value, "Quantity x last traded price"],
@@ -37,7 +38,7 @@ const HCORE = new Set(["share", "ltp", "inv", "val", "pl", "stop", "act"]);
 function hFit() {
   const w = document.querySelector("#plist .htw"), t = w && w.querySelector("table"); HW = document.documentElement.clientWidth;
   if (!t || !w.offsetWidth || t.scrollWidth <= w.clientWidth + 1) return;
-  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
+  const next = ["held", "exit", "wt", "ret", "strat", "chg", "day", "risk", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
   if (next) { HDROP.add(next); render(); }
 }
 function hSort(k) { if (HS.k === k) HS.d = -HS.d; else { HS.k = k; HS.d = k === "share" || k === "strat" ? 1 : -1; } hSave(); render(); }
@@ -59,7 +60,13 @@ function hCell(k, r, tv, showRet) {
     case "strat": return `<td><span class="hst" title="${esc(v.A ? v.A.rule_label || "" : "")}">${esc(hStratName(hSid(p)))}</span></td>`;
     case "qty": return `<td class="n">${L.qty}${!hOn(HC.find((x) => x[0] === "avg")) ? `<small>@ ${inr(L.avg)}</small>` : ""}</td>`;   // average cost under the quantity when its own column does not fit
     case "avg": return `<td class="n">${inr(L.avg)}</td>`;
-    case "ltp": return `<td class="n">${c.px != null ? `<b>${inr(c.px)}</b><small><span class="${q && q.chg != null ? pcl(q.chg) : ""}">${q && q.chg != null ? sg(q.chg) + "%" : ""}</span> · <span title="Exchange and time of this price: a time means today in market hours (checked every 15 minutes), a date means that day's closing price">${pxSrc(p, q)}</span></small>` : "<small>Loading price…</small>"}</td>`;
+    case "ltp": {
+      if (c.px == null) return `<td class="n"><small>Loading price…</small></td>`;
+      const chg = q && q.chg != null ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : "";
+      const src = pxSrc(p, q);
+      return `<td class="n"><div class="ltp-box"><b>${inr(c.px)}</b>${chg}</div>${src ? `<small class="ltp-src" title="Exchange and time of this price: a time means today in market hours (checked every 15 minutes), a date means that day's closing price">${src}</small>` : ""}</td>`;
+    }
+    case "chg": return `<td class="n">${q && q.chg != null ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : "–"}</td>`;
     case "day": return `<td class="n">${c.day != null ? `<span class="${pcl(c.day)}">${mny(c.day)}</span>` : "–"}</td>`;
     case "inv": return `<td class="n">${inr(c.invested)}</td>`;
     case "val": return `<td class="n">${c.px != null ? `<b>${inr(c.value)}</b>` : `<span title="No price yet: shown at cost">${inr(c.value)}*</span>`}</td>`;
@@ -88,6 +95,7 @@ function hTable(oc, T) {
     if (k === "val") return `<td class="n"><b>${inr(s.val)}</b></td>`;
     if (k === "pl") return `<td class="n"><b class="${pcl(s.pl)}">${mny(s.pl)}</b>${showRet && s.inv ? `<small class="${pcl(s.pl)}">${sg(+(s.pl / s.inv * 100).toFixed(2))}%</small>` : ""}</td>`;
     if (k === "ret") return `<td class="n">${s.inv ? pcs(s.pl / s.inv * 100) : ""}</td>`;
+    if (k === "chg") return `<td class="n">${s.dayBase ? `<span class="ltp-chg ${pcl(s.day)}">${sg(+(s.day / s.dayBase * 100).toFixed(2))}%</span>` : ""}</td>`;
     if (k === "day") return `<td class="n">${s.dayBase ? `<span class="${pcl(s.day)}">${mny(s.day)}</span>` : ""}</td>`;
     if (k === "risk") return `<td class="n">${s.risk ? inr(s.risk) + `<small>${s.val ? (s.risk / s.val * 100).toFixed(1) + "% of value" : ""}</small>` : ""}</td>`;
     if (k === "wt") return `<td class="n">${T.val ? (s.val / T.val * 100).toFixed(1) + "%" : ""}</td>`;
@@ -114,8 +122,8 @@ function hTools() {
 }
 function hCsv() {
   const rows = POS.map((p) => ({ p, c: calc(p) })).filter((x) => x.c.open), tv = rows.reduce((a, r) => a + r.c.value, 0);
-  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Avg cost", "LTP", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
+  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Avg cost", "LTP", "Day %", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
   const q = (x) => { const s = x == null ? "" : String(x); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }, r2 = (x) => (x == null ? "" : Math.round(x * 100) / 100);
-  const lines = [H.join(",")].concat(rows.map((r) => { const { p, c } = r, v = lv(p); return [p.symbol, p.exchange, pName(p, c.q), hStratName(hSid(p)), c.L.qty, r2(c.L.avg), r2(c.px), pxSrc(p, c.q), r2(c.invested), r2(c.value), r2(c.unreal), r2(c.unrealPct), r2(c.day), tv ? r2(c.value / tv * 100) : "", r2(v.sl), v.slAuto ? "automatic" : "yours", r2(hRisk(r)), r2(v.tg), v.A ? v.A.days_left : "", c.st ? c.st[0] : "", c.L.since].map(q).join(","); }));
+  const lines = [H.join(",")].concat(rows.map((r) => { const { p, c } = r, v = lv(p); return [p.symbol, p.exchange, pName(p, c.q), hStratName(hSid(p)), c.L.qty, r2(c.L.avg), r2(c.px), r2(c.q && c.q.chg), pxSrc(p, c.q), r2(c.invested), r2(c.value), r2(c.unreal), r2(c.unrealPct), r2(c.day), tv ? r2(c.value / tv * 100) : "", r2(v.sl), v.slAuto ? "automatic" : "yours", r2(hRisk(r)), r2(v.tg), v.A ? v.A.days_left : "", c.st ? c.st[0] : "", c.L.since].map(q).join(","); }));
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); a.download = "holdings-" + todayStr() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
