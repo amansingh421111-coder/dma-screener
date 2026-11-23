@@ -796,18 +796,45 @@ def format_msg(sigs, title, cap):
 
 def notify(text):
     sent = False
-    tok, chat = os.getenv("TELEGRAM_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
-    if tok and chat:
-        r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
-                          data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
-        log.info("telegram %s", r.status_code); sent = r.ok
+    toks = _tokens()
+    chats = []
+    if os.getenv("TELEGRAM_CHAT_ID"):
+        chats.append(os.getenv("TELEGRAM_CHAT_ID").strip())
+    else:
+        # Fall back to all users with Telegram connected in Upstash Redis
+        try:
+            for u in cloud_users():
+                if u.get("chat") and u["chat"] not in chats:
+                    chats.append(u["chat"])
+        except Exception:
+            pass
+
+    if toks and chats:
+        for chat in chats:
+            for tok in toks:
+                try:
+                    r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage", timeout=20,
+                                      data={"chat_id": chat, "text": text, "disable_web_page_preview": True})
+                    if r.ok:
+                        log.info("telegram broadcast sent to %s (status %s)", str(chat)[:4] + "***", r.status_code)
+                        sent = True
+                        break
+                    else:
+                        log.warning("telegram broadcast failed to %s (status %s: %s)", str(chat)[:4] + "***", r.status_code, r.text[:80])
+                except Exception as e:
+                    log.warning("notify error: %s", e)
+
     user, pw, to = os.getenv("EMAIL_USER"), os.getenv("EMAIL_APP_PASSWORD"), os.getenv("EMAIL_TO")
     if user and pw and to:
-        msg = MIMEText(text); msg["Subject"] = text.split("\n")[0]; msg["From"] = user; msg["To"] = to
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
-            s.login(user, pw); s.send_message(msg)
-        sent = True
-    if not sent: log.warning("No alert channel configured (set secrets)")
+        try:
+            msg = MIMEText(text); msg["Subject"] = text.split("\n")[0]; msg["From"] = user; msg["To"] = to
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
+                s.login(user, pw); s.send_message(msg)
+            sent = True
+        except Exception as e:
+            log.warning("email error: %s", e)
+
+    if not sent: log.warning("No alert channel configured (set secrets or connect Telegram)")
     return sent
 
 def in_market_hours(now):

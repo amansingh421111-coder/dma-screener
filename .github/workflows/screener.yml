@@ -15,7 +15,7 @@ on:
       years: { description: "Backtest: years of history", default: "5" }
 permissions:
   contents: write
-concurrency: { group: "${{ github.event_name == 'schedule' && 'sessions' || 'manual' }}", cancel-in-progress: true }
+concurrency: { group: "${{ github.workflow }}-${{ github.event_name == 'schedule' && 'sched' || inputs.mode || 'manual' }}", cancel-in-progress: false }
 jobs:
   go:
     runs-on: ubuntu-latest

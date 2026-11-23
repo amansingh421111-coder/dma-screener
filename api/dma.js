@@ -234,6 +234,39 @@ module.exports = async (req, res) => {
     if (!URL_ || !TOK) return send(res, { error: "Storage is not connected to this project yet." }, 503);
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
 
+    // Trigger screener workflow dispatch on GitHub Actions (instant runner spin-up, bypasses delayed GitHub cron)
+    if (a === "dispatch") {
+      const mode = String(req.query.mode || "run");
+      const secret = String(req.query.secret || "");
+      const storedSecret = (await redis(["GET", "cfg:dispatch_secret"])) || "dma2026";
+      const isCron = req.headers["x-vercel-cron"] === "1" || String(req.headers["user-agent"] || "").includes("vercel-cron");
+      const sess = await getSession(req);
+      if (!isCron && secret !== storedSecret && !sess) {
+        return send(res, { error: "Unauthorized dispatch request." }, 401);
+      }
+      if (req.query.gh_token) {
+        await redis(["SET", "cfg:gh_token", String(req.query.gh_token).trim()]);
+      }
+      const ghToken = req.query.gh_token ? String(req.query.gh_token).trim() : ((await redis(["GET", "cfg:gh_token"])) || E.GH_TOKEN);
+      if (!ghToken) return send(res, { error: "GitHub token not configured. Pass ?gh_token=... once to save it." }, 500);
+
+      const repo = E.GITHUB_REPOSITORY || "amansingh421111-coder/dma-screener";
+      const r = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/screener.yml/dispatches`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${ghToken}`,
+          "Accept": "application/vnd.github.v3+json",
+          "User-Agent": "dma-screener-vercel"
+        },
+        body: JSON.stringify({ ref: "main", inputs: { mode } })
+      });
+      if (r.status === 204) {
+        return send(res, { ok: true, dispatched: mode, ts: new Date().toISOString() });
+      }
+      const txt = await r.text();
+      return send(res, { ok: false, status: r.status, error: txt }, 502);
+    }
+
     // Telegram calls this when someone messages the bot
     if (a === "hook" || body.update_id !== undefined) {
       if (!sameStr(String(req.headers["x-telegram-bot-api-secret-token"] || ""), whSecret())) {

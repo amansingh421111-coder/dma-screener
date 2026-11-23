@@ -2,7 +2,8 @@ name: news-refresh
 # Keeps the live news and market prices fresh during market hours.
 on:
   schedule:
-    - cron: "*/15 3-10 * * 1-5"    # 08:30-16:25 IST, Monday to Friday: every 15 minutes
+    - cron: "30 3 * * 1-5"         # 09:00 IST: morning market warm-up
+    - cron: "30 7 * * 1-5"         # 13:00 IST: mid-day market refresh
   workflow_dispatch:
 permissions:
   contents: read

@@ -1,7 +1,8 @@
 name: watchdog
 on:
   schedule:
-    - cron: "*/30 4-10 * * 1-5"   # 09:30-16:30 IST: warns on Telegram if the screener has stopped
+    - cron: "30 6 * * 1-5"        # 12:00 IST: mid-day screener health check
+    - cron: "45 10 * * 1-5"       # 16:15 IST: market-close screener health check
   workflow_dispatch:
 permissions:
   contents: read
