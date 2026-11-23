@@ -7,8 +7,8 @@ const HC = [   // key, header, priority (1 = always shown, 4 = widest screens on
   ["strat", "Strategy", 3, false, (r) => hStratName(hSid(r.p)), "The strategy the share was bought under; it sets the automatic stop and target"],
   ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Shares held"],
   ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold"],
-  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown, with today's change"],
-  ["chg", "Day %", 3, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price change percentage"],
+  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown"],
+  ["chg", "Day% Change", 1, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price change percentage"],
   ["day", "Today", 2, true, (r) => r.c.day, "Change in this holding's value today"],
   ["inv", "Invested", 1, true, (r) => r.c.invested, "What you paid: quantity x average cost"],
   ["val", "Current value", 1, true, (r) => r.c.value, "Quantity x last traded price"],
@@ -33,12 +33,12 @@ let HLV = 0, HW = 0, HRT = null;
 const HDROP = new Set();   // columns left out because they do not fit this screen (never the core ones, never ones you switched on)
 addEventListener("resize", () => { clearTimeout(HRT); HRT = setTimeout(() => { const w = document.documentElement.clientWidth; if (w !== HW && typeof view_ !== "undefined" && view_ === "pos") { HDROP.clear(); render(); } }, 120); });
 const hOn = (c) => (c[2] === 0 ? true : HS.cols[c[0]] != null ? HS.cols[c[0]] : !HDROP.has(c[0]) && c[2] <= hLevel());
-const HCORE = new Set(["share", "ltp", "inv", "val", "pl", "stop", "act"]);
+const HCORE = new Set(["share", "ltp", "chg", "inv", "val", "pl", "stop", "act"]);
 /* after drawing: if the table is wider than the screen, leave out the least important optional column and draw again */
 function hFit() {
   const w = document.querySelector("#plist .htw"), t = w && w.querySelector("table"); HW = document.documentElement.clientWidth;
   if (!t || !w.offsetWidth || t.scrollWidth <= w.clientWidth + 1) return;
-  const next = ["held", "exit", "wt", "ret", "strat", "chg", "day", "risk", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
+  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
   if (next) { HDROP.add(next); render(); }
 }
 function hSort(k) { if (HS.k === k) HS.d = -HS.d; else { HS.k = k; HS.d = k === "share" || k === "strat" ? 1 : -1; } hSave(); render(); }
@@ -53,7 +53,7 @@ function hSorted(rows) {
     return (typeof x === "string" ? x.localeCompare(y) : x - y) * d || a.p.symbol.localeCompare(b.p.symbol); });
 }
 /* one cell */
-function hCell(k, r, tv, showRet) {
+function hCell(k, r, tv, showRet, showChg) {
   const { p, c } = r, L = c.L, q = c.q, v = lv(p);
   switch (k) {
     case "share": return `<td class="hs" onclick="toggleH('${p.id}')"><div class="hs1">${entS(p.symbol, p.exchange, "<b>" + esc(p.symbol) + "</b>")}${exTag(p.exchange)}${typeof inNewsBadge === "function" ? inNewsBadge(p.symbol, p.exchange) : ""}</div><small>${esc(pName(p, q))}</small>${(() => { const sc = !hOn(HC[1]) && HS.group !== "strategy", st = !hOn(HC.find((x) => x[0] === "status")); return sc || st ? `<div class="hs2">${sc ? `<span class="hst">${esc(hStratName(hSid(p)))}</span>` : ""}${st ? `<span class="tag ${c.st[1]}">${c.st[0]}</span>` : ""}</div>` : ""; })()}</td>`;
@@ -62,11 +62,11 @@ function hCell(k, r, tv, showRet) {
     case "avg": return `<td class="n">${inr(L.avg)}</td>`;
     case "ltp": {
       if (c.px == null) return `<td class="n"><small>Loading price…</small></td>`;
-      const chg = q && q.chg != null ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : "";
+      const chg = (!showChg && q && q.chg != null) ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : "";
       const src = pxSrc(p, q);
       return `<td class="n"><div class="ltp-box"><b>${inr(c.px)}</b>${chg}</div>${src ? `<small class="ltp-src" title="Exchange and time of this price: a time means today in market hours (checked every 15 minutes), a date means that day's closing price">${src}</small>` : ""}</td>`;
     }
-    case "chg": return `<td class="n">${q && q.chg != null ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : "–"}</td>`;
+    case "chg": return `<td class="n">${q && q.chg != null ? `<span class="ltp-chg ${pcl(q.chg)}">${sg(q.chg)}%</span>` : `<span style="color:var(--mute)">–</span>`}</td>`;
     case "day": return `<td class="n">${c.day != null ? `<span class="${pcl(c.day)}">${mny(c.day)}</span>` : "–"}</td>`;
     case "inv": return `<td class="n">${inr(c.invested)}</td>`;
     case "val": return `<td class="n">${c.px != null ? `<b>${inr(c.value)}</b>` : `<span title="No price yet: shown at cost">${inr(c.value)}*</span>`}</td>`;
@@ -85,7 +85,7 @@ function hCell(k, r, tv, showRet) {
 /* the table, with optional strategy groups */
 function hTable(oc, T) {
   HLV = hLevel();
-  const cols = HC.filter(hOn), showRet = !cols.some((c) => c[0] === "ret"), n = cols.length;
+  const cols = HC.filter(hOn), showRet = !cols.some((c) => c[0] === "ret"), showChg = cols.some((c) => c[0] === "chg"), n = cols.length;
   const avgIn = !cols.some((c) => c[0] === "avg");
   const th = cols.map(([k, l, , num, f, t]) => f ? `<th class="${num ? "n" : ""}" aria-sort="${HS.k === k ? (HS.d > 0 ? "ascending" : "descending") : "none"}" title="${esc(t)}"><button type="button" onclick="hSort('${k}')">${k === "qty" && avgIn ? "Qty · avg" : l}${HS.k === k ? `<i>${HS.d > 0 ? "▲" : "▼"}</i>` : ""}</button></th>` : `<th></th>`).join("");
   const sum = (rows) => { const s = { inv: 0, val: 0, pl: 0, day: 0, risk: 0, priced: 0, dayBase: 0 }; rows.forEach((r) => { s.inv += r.c.invested; s.val += r.c.value; if (r.c.unreal != null) s.pl += r.c.unreal; if (r.c.day != null) { s.day += r.c.day; s.dayBase += r.c.value - r.c.day; } const x = hRisk(r); if (x != null) s.risk += x; }); return s; };
@@ -100,7 +100,7 @@ function hTable(oc, T) {
     if (k === "risk") return `<td class="n">${s.risk ? inr(s.risk) + `<small>${s.val ? (s.risk / s.val * 100).toFixed(1) + "% of value" : ""}</small>` : ""}</td>`;
     if (k === "wt") return `<td class="n">${T.val ? (s.val / T.val * 100).toFixed(1) + "%" : ""}</td>`;
     return "<td></td>"; }).join("")}</tr>`;
-  const rowsHtml = (rows) => rows.map((r) => `<tr class="hrow${EXP.has(r.p.id) ? " open" : ""}">${cols.map(([k]) => hCell(k, r, T.val, showRet)).join("")}</tr>${EXP.has(r.p.id) ? `<tr class="exp"><td colspan="${n}">${pdetail(r.p, r.c)}${typeof scrIns === "function" ? scrIns(r.p.symbol, r.p.exchange) : ""}</td></tr>` : ""}`).join("");
+  const rowsHtml = (rows) => rows.map((r) => `<tr class="hrow${EXP.has(r.p.id) ? " open" : ""}">${cols.map(([k]) => hCell(k, r, T.val, showRet, showChg)).join("")}</tr>${EXP.has(r.p.id) ? `<tr class="exp"><td colspan="${n}">${pdetail(r.p, r.c)}${typeof scrIns === "function" ? scrIns(r.p.symbol, r.p.exchange) : ""}</td></tr>` : ""}`).join("");
   let body;
   if (HS.group === "strategy") {
     const G = new Map(); hSorted(oc).forEach((r) => { const k = hSid(r.p); if (!G.has(k)) G.set(k, []); G.get(k).push(r); });
@@ -122,7 +122,7 @@ function hTools() {
 }
 function hCsv() {
   const rows = POS.map((p) => ({ p, c: calc(p) })).filter((x) => x.c.open), tv = rows.reduce((a, r) => a + r.c.value, 0);
-  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Avg cost", "LTP", "Day %", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
+  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Avg cost", "LTP", "Day% Change", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
   const q = (x) => { const s = x == null ? "" : String(x); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }, r2 = (x) => (x == null ? "" : Math.round(x * 100) / 100);
   const lines = [H.join(",")].concat(rows.map((r) => { const { p, c } = r, v = lv(p); return [p.symbol, p.exchange, pName(p, c.q), hStratName(hSid(p)), c.L.qty, r2(c.L.avg), r2(c.px), r2(c.q && c.q.chg), pxSrc(p, c.q), r2(c.invested), r2(c.value), r2(c.unreal), r2(c.unrealPct), r2(c.day), tv ? r2(c.value / tv * 100) : "", r2(v.sl), v.slAuto ? "automatic" : "yours", r2(hRisk(r)), r2(v.tg), v.A ? v.A.days_left : "", c.st ? c.st[0] : "", c.L.since].map(q).join(","); }));
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); a.download = "holdings-" + todayStr() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
