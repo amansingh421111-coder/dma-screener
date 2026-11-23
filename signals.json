@@ -1,11 +1,11 @@
 {
- "updated": "2026-11-23T12:21:36.122153+00:00",
+ "updated": "2026-11-23T23:49:23.216856+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 2,
  "buy_max_pct": 5,
  "universe": "NSE + BSE",
- "bse_updated": "2026-11-23T12:21:36.122161+00:00",
+ "bse_updated": "2026-11-23T23:49:23.216864+00:00",
  "cloud": {
   "redis": true,
   "users": 2,
@@ -19,13 +19,13 @@
   }
  },
  "health": {
-  "run_at": "2026-11-23T12:21:36.119209+00:00",
+  "run_at": "2026-11-23T23:49:23.214395+00:00",
   "price_date": "2026-11-23",
   "source": "official",
   "scanned": 1738,
-  "skipped": 0,
-  "checked": 1684,
-  "corrected": 19,
+  "skipped": 1,
+  "checked": 20,
+  "corrected": 1683,
   "xcheck": {
    "date": "2026-11-23",
    "pairs": 1284,
@@ -64,7 +64,7 @@
    ]
   }
  },
- "fetch_secs": 57,
+ "fetch_secs": 67,
  "price_date": "2026-11-23",
  "scan": {
   "NSE": {
@@ -122,14 +122,14 @@
    }
   },
   "bse_name_retry": {
-   "tried": 234,
+   "tried": 233,
    "recovered": 192
   }
  },
  "price_check": {
-  "checked": 1684,
+  "checked": 20,
   "mismatch": 0,
-  "added": 19,
+  "added": 1683,
   "date": {
    "NSE": "2026-11-23",
    "BSE": "2026-11-23"
@@ -151,8 +151,8 @@
  "market_liq": {
   "date": "2026-11-23",
   "today_cr": 114924,
-  "avg20_cr": 116212,
-  "ratio": 0.99,
+  "avg20_cr": 114570,
+  "ratio": 1.0,
   "pct1y": 68,
   "shares": 1486,
   "last60": [
@@ -234,163 +234,163 @@
    ],
    [
     "2026-09-23",
-    97997
+    94572
    ],
    [
     "2026-09-24",
-    101586
+    99107
    ],
    [
     "2026-09-25",
-    91005
+    88498
    ],
    [
     "2026-09-28",
-    88809
+    86793
    ],
    [
     "2026-09-29",
-    147345
+    146088
    ],
    [
     "2026-09-30",
-    115038
+    112725
    ],
    [
     "2026-10-01",
-    120002
+    118233
    ],
    [
     "2026-10-05",
-    106412
+    104976
    ],
    [
     "2026-10-06",
-    101780
+    99694
    ],
    [
     "2026-10-07",
-    107042
+    106030
    ],
    [
     "2026-10-08",
-    104784
+    104263
    ],
    [
     "2026-10-09",
-    91580
+    91173
    ],
    [
     "2026-10-12",
-    86801
+    86479
    ],
    [
     "2026-10-13",
-    98147
+    97866
    ],
    [
     "2026-10-14",
-    107212
+    105382
    ],
    [
     "2026-10-15",
-    107961
+    106689
    ],
    [
     "2026-10-16",
-    109500
+    109020
    ],
    [
     "2026-10-19",
-    84827
+    84515
    ],
    [
     "2026-10-21",
-    97289
+    96378
    ],
    [
     "2026-10-22",
-    93826
+    93056
    ],
    [
     "2026-10-23",
-    109374
+    102467
    ],
    [
     "2026-10-26",
-    93598
+    91286
    ],
    [
     "2026-10-27",
-    109828
+    107443
    ],
    [
     "2026-10-28",
-    120518
+    118715
    ],
    [
     "2026-10-29",
-    109403
+    108279
    ],
    [
     "2026-10-30",
-    104969
+    103248
    ],
    [
     "2026-11-02",
-    106422
+    105869
    ],
    [
     "2026-11-03",
-    118022
+    116720
    ],
    [
     "2026-11-04",
-    120457
+    118800
    ],
    [
     "2026-11-05",
-    159618
+    157386
    ],
    [
     "2026-11-06",
-    142601
+    139997
    ],
    [
     "2026-11-09",
-    111139
+    109903
    ],
    [
     "2026-11-11",
-    143709
+    142490
    ],
    [
     "2026-11-12",
-    121455
+    120517
    ],
    [
     "2026-11-13",
-    109255
+    107801
    ],
    [
     "2026-11-16",
-    102655
+    101557
    ],
    [
     "2026-11-17",
-    109370
+    108689
    ],
    [
     "2026-11-18",
-    98435
+    98000
    ],
    [
     "2026-11-19",
-    112671
+    112179
    ],
    [
     "2026-11-20",
-    120750
+    120046
    ],
    [
     "2026-11-23",
@@ -4475,7 +4475,7 @@
    ],
    "exchange": "NSE",
    "name": "Ashok Leyland Limited",
-   "mcap": 90880.3,
+   "mcap": 93218.1,
    "mcap_cat": "Mid",
    "value_cr": 316.93,
    "deliv_pct": 45.89,
@@ -5888,7 +5888,7 @@
    ],
    "exchange": "NSE",
    "name": "Balaji Telefilms Limited",
-   "mcap": 1085.7,
+   "mcap": 1139.2,
    "mcap_cat": "Micro",
    "value_cr": 0.74,
    "deliv_pct": 63.41,
@@ -6673,7 +6673,7 @@
    ],
    "exchange": "NSE",
    "name": "Black Box Limited",
-   "mcap": 14739.8,
+   "mcap": 15167.9,
    "mcap_cat": "Small",
    "value_cr": 47.64,
    "deliv_pct": 36.66,
@@ -6830,7 +6830,7 @@
    ],
    "exchange": "NSE",
    "name": "Mrs. Bectors Food Specialities Limited",
-   "mcap": 6403.8,
+   "mcap": 6661.4,
    "mcap_cat": "Small",
    "value_cr": 7.84,
    "deliv_pct": 37.16,
@@ -8871,7 +8871,7 @@
    ],
    "exchange": "NSE",
    "name": "BMW Ventures Limited",
-   "mcap": 481.7,
+   "mcap": 549.0,
    "mcap_cat": "Micro",
    "value_cr": 0.6,
    "deliv_pct": 56.56,
@@ -10598,7 +10598,7 @@
    ],
    "exchange": "NSE",
    "name": "Chalet Hotels Limited",
-   "mcap": 18485.3,
+   "mcap": 19036.1,
    "mcap_cat": "Small",
    "value_cr": 64.35,
    "deliv_pct": 25.62,
@@ -12482,7 +12482,7 @@
    ],
    "exchange": "NSE",
    "name": "Crompton Greaves Consumer Electricals Limited",
-   "mcap": 13514.5,
+   "mcap": 14101.7,
    "mcap_cat": "Small",
    "value_cr": 52.53,
    "deliv_pct": 45.53,
@@ -14680,7 +14680,7 @@
    ],
    "exchange": "NSE",
    "name": "Everest Kanto Cylinder Limited",
-   "mcap": 1137.7,
+   "mcap": 1141.2,
    "mcap_cat": "Micro",
    "value_cr": 0.96,
    "deliv_pct": 53.38,
@@ -15308,7 +15308,7 @@
    ],
    "exchange": "NSE",
    "name": "Siemens Energy India Limited",
-   "mcap": 113246.3,
+   "mcap": 105999.3,
    "mcap_cat": "Large",
    "value_cr": 141.91,
    "deliv_pct": 43.29,
@@ -15622,8 +15622,8 @@
    ],
    "exchange": "NSE",
    "name": "Exide Industries Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 34157.2,
+   "mcap_cat": "Mid",
    "value_cr": 86.36,
    "deliv_pct": 45.63,
    "trades": 41926
@@ -16093,7 +16093,7 @@
    ],
    "exchange": "NSE",
    "name": "FDC Limited",
-   "mcap": 5459.8,
+   "mcap": 6071.2,
    "mcap_cat": "Small",
    "value_cr": 2.67,
    "deliv_pct": 40.54,
@@ -16878,8 +16878,8 @@
    ],
    "exchange": "NSE",
    "name": "Geojit Financial Services Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 2028.4,
+   "mcap_cat": "Micro",
    "value_cr": 1.36,
    "deliv_pct": 44.32,
    "trades": 2059
@@ -17321,8 +17321,8 @@
    ],
    "exchange": "NSE",
    "name": "Glass Wall Systems (India) Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 2317.8,
+   "mcap_cat": "Micro",
    "value_cr": 33.68,
    "deliv_pct": 38.24,
    "trades": 20880
@@ -17792,8 +17792,8 @@
    ],
    "exchange": "NSE",
    "name": "Godawari Power And Ispat limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 14188.8,
+   "mcap_cat": "Small",
    "value_cr": 34.93,
    "deliv_pct": 38.07,
    "trades": 23584
@@ -17949,7 +17949,7 @@
    ],
    "exchange": "NSE",
    "name": "Gujarat Pipavav Port Limited",
-   "mcap": 7893.7,
+   "mcap": 8457.6,
    "mcap_cat": "Small",
    "value_cr": 11.28,
    "deliv_pct": 48.99,
@@ -19990,7 +19990,7 @@
    ],
    "exchange": "NSE",
    "name": "HBL Engineering Limited",
-   "mcap": 21301.0,
+   "mcap": 21344.0,
    "mcap_cat": "Small",
    "value_cr": 99.75,
    "deliv_pct": 32.8,
@@ -20618,7 +20618,7 @@
    ],
    "exchange": "NSE",
    "name": "HDFC Life Insurance Company Limited",
-   "mcap": 114879.7,
+   "mcap": 124889.2,
    "mcap_cat": "Large",
    "value_cr": 128.56,
    "deliv_pct": 50.64,
@@ -23601,7 +23601,7 @@
    ],
    "exchange": "NSE",
    "name": "INOX India Limited",
-   "mcap": 18674.6,
+   "mcap": 18993.8,
    "mcap_cat": "Small",
    "value_cr": 36.65,
    "deliv_pct": 45.95,
@@ -23758,7 +23758,7 @@
    ],
    "exchange": "NSE",
    "name": "Intellect Design Arena Limited",
-   "mcap": 9120.3,
+   "mcap": 8135.1,
    "mcap_cat": "Small",
    "value_cr": 193.77,
    "deliv_pct": 16.58,
@@ -24229,7 +24229,7 @@
    ],
    "exchange": "NSE",
    "name": "Indian Railway Finance Corporation Limited",
-   "mcap": 101241.7,
+   "mcap": 105593.5,
    "mcap_cat": "Large",
    "value_cr": 92.2,
    "deliv_pct": 39.85,
@@ -24386,8 +24386,8 @@
    ],
    "exchange": "NSE",
    "name": "IRM Energy Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 1038.7,
+   "mcap_cat": "Micro",
    "value_cr": 2.3,
    "deliv_pct": 40.8,
    "trades": 3944
@@ -26270,7 +26270,7 @@
    ],
    "exchange": "NSE",
    "name": "JSW Steel Limited",
-   "mcap": 307709.7,
+   "mcap": 320350.4,
    "mcap_cat": "Large",
    "value_cr": 427.19,
    "deliv_pct": 58.9,
@@ -26870,8 +26870,8 @@
    ],
    "exchange": "NSE",
    "name": "Kanohar Electricals Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 7980.4,
+   "mcap_cat": "Small",
    "value_cr": 51.21,
    "deliv_pct": 24.13,
    "trades": 21750
@@ -27027,7 +27027,7 @@
    ],
    "exchange": "NSE",
    "name": "Kansai Nerolac Paints Limited",
-   "mcap": 14642.3,
+   "mcap": 15631.6,
    "mcap_cat": "Small",
    "value_cr": 2.64,
    "deliv_pct": 42.68,
@@ -27184,7 +27184,7 @@
    ],
    "exchange": "NSE",
    "name": "Kfin Technologies Limited",
-   "mcap": 15219.5,
+   "mcap": 16076.2,
    "mcap_cat": "Small",
    "value_cr": 46.15,
    "deliv_pct": 43.85,
@@ -27341,8 +27341,8 @@
    ],
    "exchange": "NSE",
    "name": "Kirloskar Pneumatic Company Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 8123.7,
+   "mcap_cat": "Small",
    "value_cr": 5.99,
    "deliv_pct": 53.02,
    "trades": 10272
@@ -29382,7 +29382,7 @@
    ],
    "exchange": "NSE",
    "name": "Lenskart Solutions Limited",
-   "mcap": 116006.5,
+   "mcap": 123786.2,
    "mcap_cat": "Large",
    "value_cr": 402.15,
    "deliv_pct": 58.37,
@@ -30167,7 +30167,7 @@
    ],
    "exchange": "NSE",
    "name": "LT Foods Limited",
-   "mcap": 14167.9,
+   "mcap": 14721.8,
    "mcap_cat": "Small",
    "value_cr": 11.49,
    "deliv_pct": 42.21,
@@ -31737,7 +31737,7 @@
    ],
    "exchange": "NSE",
    "name": "Molbio Diagnostics Limited",
-   "mcap": 16052.9,
+   "mcap": 16674.1,
    "mcap_cat": "Small",
    "value_cr": 28.49,
    "deliv_pct": 36.19,
@@ -34720,7 +34720,7 @@
    ],
    "exchange": "NSE",
    "name": "Niva Bupa Health Insurance Company Limited",
-   "mcap": 14027.8,
+   "mcap": 13853.8,
    "mcap_cat": "Small",
    "value_cr": 3.67,
    "deliv_pct": 46.8,
@@ -35348,7 +35348,7 @@
    ],
    "exchange": "NSE",
    "name": "FSN E-Commerce Ventures Limited",
-   "mcap": 100742.4,
+   "mcap": 102292.9,
    "mcap_cat": "Large",
    "value_cr": 145.58,
    "deliv_pct": 63.35,
@@ -35505,7 +35505,7 @@
    ],
    "exchange": "NSE",
    "name": "Oriental Aromatics Limited",
-   "mcap": 1908.0,
+   "mcap": 1778.9,
    "mcap_cat": "Micro",
    "value_cr": 61.86,
    "deliv_pct": 8.65,
@@ -36290,7 +36290,7 @@
    ],
    "exchange": "NSE",
    "name": "Paras Defence and Space Technologies Limited",
-   "mcap": 10797.1,
+   "mcap": 10137.1,
    "mcap_cat": "Small",
    "value_cr": 45.15,
    "deliv_pct": 25.26,
@@ -37075,8 +37075,8 @@
    ],
    "exchange": "NSE",
    "name": "PNB Housing Finance Limited",
-   "mcap": 28855.3,
-   "mcap_cat": "Small",
+   "mcap": 30800.1,
+   "mcap_cat": "Mid",
    "value_cr": 101.52,
    "deliv_pct": 55.55,
    "trades": 35575
@@ -37232,8 +37232,8 @@
    ],
    "exchange": "NSE",
    "name": "PB Fintech Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 50591.4,
+   "mcap_cat": "Mid",
    "value_cr": 1133.79,
    "deliv_pct": 25.4,
    "trades": 190995
@@ -37675,8 +37675,8 @@
    ],
    "exchange": "NSE",
    "name": "Prasol Chemicals Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 4517.5,
+   "mcap_cat": "Micro",
    "value_cr": 1.25,
    "deliv_pct": 60.24,
    "trades": 1626
@@ -38146,7 +38146,7 @@
    ],
    "exchange": "NSE",
    "name": "PSP Projects Limited",
-   "mcap": 3109.9,
+   "mcap": 3048.3,
    "mcap_cat": "Micro",
    "value_cr": 11.3,
    "deliv_pct": 95.19,
@@ -38774,7 +38774,7 @@
    ],
    "exchange": "NSE",
    "name": "Radico Khaitan Limited",
-   "mcap": 57827.0,
+   "mcap": 62124.0,
    "mcap_cat": "Mid",
    "value_cr": 180.94,
    "deliv_pct": 58.79,
@@ -40658,7 +40658,7 @@
    ],
    "exchange": "NSE",
    "name": "Rubicon Research Limited",
-   "mcap": 28024.1,
+   "mcap": 27739.4,
    "mcap_cat": "Small",
    "value_cr": 45.36,
    "deliv_pct": 40.97,
@@ -40815,7 +40815,7 @@
    ],
    "exchange": "NSE",
    "name": "S.A.L. Steel Limited",
-   "mcap": 1197.8,
+   "mcap": 1287.6,
    "mcap_cat": "Micro",
    "value_cr": 0.86,
    "deliv_pct": 55.67,
@@ -41286,8 +41286,8 @@
    ],
    "exchange": "NSE",
    "name": "Sandhar Technologies Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 3279.2,
+   "mcap_cat": "Micro",
    "value_cr": 4.31,
    "deliv_pct": 46.4,
    "trades": 8227
@@ -41443,8 +41443,8 @@
    ],
    "exchange": "NSE",
    "name": "Sanghvi Movers Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 3254.8,
+   "mcap_cat": "Micro",
    "value_cr": 6.83,
    "deliv_pct": 45.57,
    "trades": 6255
@@ -41914,7 +41914,7 @@
    ],
    "exchange": "NSE",
    "name": "SBI Funds Management Limited",
-   "mcap": 104438.3,
+   "mcap": 106923.3,
    "mcap_cat": "Large",
    "value_cr": 84.02,
    "deliv_pct": 67.75,
@@ -42071,7 +42071,7 @@
    ],
    "exchange": "NSE",
    "name": "SBI Life Insurance Company Limited",
-   "mcap": 168241.6,
+   "mcap": 181113.2,
    "mcap_cat": "Large",
    "value_cr": 121.63,
    "deliv_pct": 58.56,
@@ -42542,8 +42542,8 @@
    ],
    "exchange": "NSE",
    "name": "Shree Pushkar Chemicals & Fertilisers Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 1665.1,
+   "mcap_cat": "Micro",
    "value_cr": 2.52,
    "deliv_pct": 61.8,
    "trades": 3532
@@ -43484,7 +43484,7 @@
    ],
    "exchange": "NSE",
    "name": "S.J.S. Enterprises Limited",
-   "mcap": 6913.3,
+   "mcap": 6958.0,
    "mcap_cat": "Small",
    "value_cr": 16.97,
    "deliv_pct": 47.37,
@@ -45988,8 +45988,8 @@
    ],
    "exchange": "NSE",
    "name": "Sterling and Wilson Renewable Energy Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 3767.7,
+   "mcap_cat": "Micro",
    "value_cr": 40.02,
    "deliv_pct": 23.11,
    "trades": 33385
@@ -46773,8 +46773,8 @@
    ],
    "exchange": "NSE",
    "name": "Tata Technologies Limited",
-   "mcap": 30717.8,
-   "mcap_cat": "Mid",
+   "mcap": 28744.4,
+   "mcap_cat": "Small",
    "value_cr": 85.34,
    "deliv_pct": 39.67,
    "trades": 35981
@@ -47558,8 +47558,8 @@
    ],
    "exchange": "NSE",
    "name": "Tinna Rubber and Infrastructure Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 1645.5,
+   "mcap_cat": "Micro",
    "value_cr": 8.16,
    "deliv_pct": 28.11,
    "trades": 6684
@@ -48500,7 +48500,7 @@
    ],
    "exchange": "NSE",
    "name": "TPL Plastech Limited",
-   "mcap": 516.4,
+   "mcap": 553.2,
    "mcap_cat": "Micro",
    "value_cr": 1.31,
    "deliv_pct": 26.11,
@@ -48814,7 +48814,7 @@
    ],
    "exchange": "NSE",
    "name": "TVS Supply Chain Solutions Limited",
-   "mcap": 5555.9,
+   "mcap": 5735.7,
    "mcap_cat": "Small",
    "value_cr": 16.5,
    "deliv_pct": 51.68,
@@ -49285,7 +49285,7 @@
    ],
    "exchange": "NSE",
    "name": "Ujjivan Small Finance Bank Limited",
-   "mcap": 12788.0,
+   "mcap": 11822.7,
    "mcap_cat": "Small",
    "value_cr": 122.43,
    "deliv_pct": 46.38,
@@ -49756,7 +49756,7 @@
    ],
    "exchange": "NSE",
    "name": "UPL Limited",
-   "mcap": 44652.1,
+   "mcap": 47141.5,
    "mcap_cat": "Mid",
    "value_cr": 119.0,
    "deliv_pct": 52.54,
@@ -50384,8 +50384,8 @@
    ],
    "exchange": "NSE",
    "name": "Vishal Mega Mart Limited",
-   "mcap": null,
-   "mcap_cat": null,
+   "mcap": 44271.4,
+   "mcap_cat": "Mid",
    "value_cr": 131.76,
    "deliv_pct": 35.37,
    "trades": 57813
@@ -51012,7 +51012,7 @@
    ],
    "exchange": "NSE",
    "name": "Wakefit Innovations Limited",
-   "mcap": 4633.4,
+   "mcap": 4463.9,
    "mcap_cat": "Micro",
    "value_cr": 1.06,
    "deliv_pct": 48.45,
@@ -51954,7 +51954,7 @@
    ],
    "exchange": "NSE",
    "name": "Zim Laboratories Limited",
-   "mcap": 721.3,
+   "mcap": 764.6,
    "mcap_cat": "Micro",
    "value_cr": 0.89,
    "deliv_pct": 54.78,
