@@ -1,9 +1,5 @@
 name: screener
 on:
-  schedule:
-    - cron: "12 3 * * 1-5"       # 08:42 IST: morning session, exact 15-minute scans until 12:30
-    - cron: "48 6 * * 1-5"       # 12:18 IST: afternoon session until 16:30
-    - cron: "15 11 * * 1-5"      # 16:45 IST: guaranteed End-of-Day summary scan (after market close)
   workflow_dispatch:
     inputs:
       mode:
@@ -15,7 +11,7 @@ on:
       years: { description: "Backtest: years of history", default: "5" }
 permissions:
   contents: write
-concurrency: { group: "${{ github.workflow }}-${{ github.event_name == 'schedule' && 'sched' || inputs.mode || 'manual' }}", cancel-in-progress: false }
+concurrency: { group: "${{ github.workflow }}-${{ inputs.mode || 'manual' }}", cancel-in-progress: false }
 jobs:
   go:
     runs-on: ubuntu-latest
@@ -34,16 +30,16 @@ jobs:
         with: { python-version: "3.11", cache: pip, cache-dependency-path: deps.txt }
       - run: pip install -r deps.txt
       - name: Session (exact 15-minute scans)
-        if: (github.event_name == 'schedule' && github.event.schedule != '15 11 * * 1-5') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.mode, 'session'))
+        if: startsWith(inputs.mode, 'session')
         env: { PYTHONUNBUFFERED: "1" }
         run: |
-          if [ "${{ inputs.mode }}" = "session-am" ] || [ "${{ github.event.schedule }}" = "12 3 * * 1-5" ]; then
+          if [ "${{ inputs.mode }}" = "session-am" ]; then
             python session.py --until 12:30
           else
             python session.py --until 16:30
           fi
-      - name: End-of-Day Summary Scan (scheduled 16:45 IST or manual run)
-        if: (github.event_name == 'schedule' && github.event.schedule == '15 11 * * 1-5') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run')
+      - name: End-of-Day Summary Scan (manual run or scheduled EOD)
+        if: inputs.mode == 'run'
         run: |
           python screen.py --summary --force
           python brief.py evening || true

@@ -907,7 +907,26 @@ def main():
     if not data: log.error("No price data fetched"); sys.exit(1)
     latest = max(d.dropna().index[-1].date() for d in data.values() if not d.dropna().empty)
     if latest != now.date() and not (a.force or a.summary):
-        log.info("No bar for today (holiday?), skipping"); return
+        if now.weekday() < 5 and now.time() >= dt.time(9, 30):
+            st = read_json("state.json", {})
+            today_str = str(now.date())
+            if st.get("holiday_notified") != today_str:
+                holiday_msg = (
+                    f"🏖️ Market Holiday Notice — {now:%A, %d %b %Y}\n\n"
+                    f"Indian stock exchanges (NSE & BSE) are closed today for a trading holiday.\n\n"
+                    f"• Last trading close: {latest.strftime('%d %b %Y')}\n"
+                    f"• Intraday 15-minute price tracking & screener alerts are paused today.\n"
+                    f"• Automated tracking will resume on the next trading day at 09:15 AM IST."
+                )
+                log.info("Exchange holiday detected. Sending Telegram notification.")
+                if notify(holiday_msg):
+                    st["holiday_notified"] = today_str
+                    (ROOT / "state.json").write_text(json.dumps(st))
+                    try:
+                        redis(["SET", "cfg:holiday_notified", today_str])
+                    except Exception: pass
+        log.info("No bar for today (holiday?), skipping")
+        return
     market_liq = market_turnover(data, items)
     sigs, yh = [], {}
     for u in items:

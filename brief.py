@@ -43,7 +43,12 @@ def build(kind, pos, sj, now):
     head = f"☀️ Morning brief, {now:%a %d %b}" if kind == "morning" else f"🌆 Evening review, {now:%a %d %b}"
     out = [head]
     if h.get("price_date"):
-        out.append(f"Last close: {h['price_date']}" if kind == "morning" else f"Prices: {h['price_date']} {'official close' if h.get('source') == 'official' else '(about 15 min delayed)'}")
+        if kind == "morning":
+            out.append(f"Last close: {h['price_date']}")
+        elif str(h.get("price_date")) != str(now.date()):
+            out.append(f"Prices as of last close ({h['price_date']}). Market was closed today.")
+        else:
+            out.append(f"Prices: {h['price_date']} {'official close' if h.get('source') == 'official' else '(about 15 min delayed)'}")
     if lines:
         out.append(f"\nHoldings ({len(lines)})"); out += lines
         un = t["val"] - t["inv"]
@@ -63,6 +68,11 @@ def main():
     if now.weekday() >= 5: print("weekend"); return
     sj = read_json("signals.json", {})
     if not sj: print("no signals.json"); return
+    st = read_json("state.json", {})
+    today_str = str(now.date())
+    if kind == "morning" and st.get("brief_morning") == today_str:
+        print("Morning brief already sent today.", flush=True)
+        return
     sent = 0
     for u in cloud_users():
         if not u["chat"]: continue
@@ -72,6 +82,9 @@ def main():
         try: mine = json.loads(redis(["GET", f"quotes:{u['uid']}"]) or "{}").get("quotes") or {}   # this user's private prices
         except Exception: mine = {}
         if send_telegram(u["chat"], build(kind, pos, dict(sj, quotes=mine), now)): sent += 1
+    if kind == "morning" and sent > 0:
+        st["brief_morning"] = today_str
+        (ROOT / "state.json").write_text(json.dumps(st))
     print("briefs sent:", sent)
 
 if __name__ == "__main__":

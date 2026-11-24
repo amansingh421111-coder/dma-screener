@@ -35,14 +35,28 @@ def main():
         print("Weekend: skipping session.", flush=True)
         return
 
-    # If GitHub Actions triggered the session after market hours (e.g. queue delay):
+    # Guard: strictly reject execution in late evening, night, or pre-dawn (e.g. runner queue delay)
+    if n.time() > dt.time(16, 45) or n.time() < dt.time(8, 0):
+        print(f"Session started outside operating window ({n:%H:%M:%S} IST). Skipping to prevent late night alerts.", flush=True)
+        return
+
+    # If triggered in the post-market EOD window (16:00 to 16:45 IST):
     if n.time() >= dt.time(16, 0):
-        print(f"Session started after market hours ({n:%H:%M:%S} IST). Running EOD summary scan...", flush=True)
+        print(f"Session started in EOD window ({n:%H:%M:%S} IST). Running EOD summary scan...", flush=True)
         rc = py("screen.py", "--summary", "--force")
         if rc == 0: py("brief.py", "evening", timeout=240)
         write_status(dt.datetime.combine(n.date(), dt.time(16, 0), IST), rc, st)
         subprocess.run(["bash", "save.sh"], cwd=ROOT)
         return
+
+    # If morning brief has not yet been sent today and we are starting in the morning:
+    state_file = ROOT / "state.json"
+    st_data = {}
+    try: st_data = json.loads(state_file.read_text())
+    except Exception: pass
+    if n.time() < dt.time(10, 30) and st_data.get("brief_morning") != str(n.date()):
+        print(f"Morning brief not yet sent today. Running morning brief ({n:%H:%M:%S} IST)...", flush=True)
+        py("brief.py", "morning", timeout=240)
 
     # If a morning session was delayed past 12:30 but is still within trading hours, extend it to 16:30
     if until <= dt.time(12, 30) and n.time() >= until and n.time() < dt.time(16, 30):
@@ -69,6 +83,9 @@ def main():
 
     # Fallback catch-up: if the session ran and ended without executing even one slot:
     if done is None and n.weekday() < 5:
+        if n.time() > dt.time(16, 45) or n.time() < dt.time(8, 0):
+            print(f"Session ended outside operating window ({n:%H:%M:%S} IST). Skipping fallback catch-up.", flush=True)
+            return
         print(f"No slots executed in session window (time {n:%H:%M:%S} IST). Running catch-up scan...", flush=True)
         is_eod = n.time() >= dt.time(16, 0)
         rc = py("screen.py", "--summary" if is_eod else "--force")
