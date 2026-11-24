@@ -287,7 +287,7 @@ table.sx2 th:first-child,table.sx2 td:first-child{text-align:left}table.sx2 tr:l
 .sx-mc .sx-panel{padding:14px 0 4px}
 .sx-sig a{color:var(--accent);font-weight:600;text-decoration:none}
 @media(max-width:760px){.sx-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sx-t{display:none}.sx-m{display:block}.sx-bar .sp{display:none}.sx-seg button{padding:7px 11px}}
-.sx-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;border-radius:50%;border:1px solid var(--mute);color:var(--mute);font:italic 700 9px/1 Georgia,serif;text-transform:none;letter-spacing:0;cursor:pointer;vertical-align:1px;flex:none}.sx-i:hover,.sx-i:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff;outline:0}
+.ui-i,.sx-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:5px;border-radius:50%;border:1px solid var(--mute);color:var(--mute);font:italic 700 9px/1 Georgia,serif;text-transform:none;letter-spacing:0;cursor:pointer;vertical-align:1px;flex:none;background:transparent;padding:0;line-height:1}.ui-i:hover,.ui-i:focus-visible,.sx-i:hover,.sx-i:focus-visible{background:var(--accent);border-color:var(--accent);color:#fff;outline:0}
 table.sx th .th{display:inline-flex;align-items:center;gap:0;white-space:normal;line-height:1.25;text-align:right;justify-content:flex-end}
 table.sx th{vertical-align:bottom}
 .sx-g{padding:0 14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 28px}
@@ -451,6 +451,71 @@ table.sx th{vertical-align:bottom}
 <footer>Research tool, not financial advice. Prices are about 15 minutes delayed. Candles and volume are still forming during market hours, so the 4 PM reading is the most reliable. Positions are saved to your account; Export gives you a backup file. <a href="/channel.html" style="color:inherit">Channel notes</a> · <span id="ver" style="opacity:.6">Build 2026-10-14.2</span></footer>
 
 </main>
+<script>
+window.TIPA = null;
+window.tipHide = function(back) {
+  const t = document.getElementById("gtip");
+  if (t) t.hidden = true;
+  if (window.TIPA) {
+    window.TIPA.setAttribute("aria-expanded", "false");
+    if (back && document.contains(window.TIPA)) window.TIPA.focus();
+  }
+  window.TIPA = null;
+};
+window.tipPlace = function() {
+  const t = document.getElementById("gtip"), a = window.TIPA;
+  if (!t || t.hidden || !a) return;
+  if (!document.contains(a)) { window.tipHide(); return; }
+  const r = a.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight, w = Math.min(320, vw - 24);
+  t.style.width = w + "px";
+  let x = r.left + r.width / 2 - w / 2;
+  x = Math.max(12, Math.min(x, vw - w - 12));
+  const h = t.offsetHeight;
+  let y = r.bottom + 8, up = false;
+  if (y + h > vh - 8 && r.top - 8 - h > 8) { y = r.top - 8 - h; up = true; }
+  t.style.left = x + "px";
+  t.style.top = Math.max(8, y) + "px";
+  t.classList.toggle("up", up);
+  t.style.setProperty("--ax", Math.max(14, Math.min(w - 14, r.left + r.width / 2 - x)) + "px");
+};
+window.uiTip = function(a, title, body, moreFn) {
+  if (window.TIPA === a) { window.tipHide(true); return; }
+  window.tipHide();
+  if (!title || !body) return;
+  let t = document.getElementById("gtip");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "gtip";
+    t.className = "gtip";
+    t.setAttribute("role", "dialog");
+    t.addEventListener("click", e => e.stopPropagation());
+    document.body.appendChild(t);
+  }
+  t.setAttribute("aria-label", title);
+  let moreHtml = "";
+  if (typeof moreFn === "function") {
+    moreHtml = `<button type="button" class="gtip-more" onclick="window.__tipMore()">Open full glossary</button>`;
+    window.__tipMore = moreFn;
+  }
+  const escStr = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  t.innerHTML = `<div class="gtip-h"><b>${escStr(title)}</b><button type="button" class="gtip-x" aria-label="Close" onclick="tipHide(true)">×</button></div><div class="gtip-b">${body}</div>${moreHtml}`;
+  t.hidden = false;
+  window.TIPA = a;
+  a.setAttribute("aria-expanded", "true");
+  window.tipPlace();
+  const btn = t.querySelector(".gtip-x");
+  if (btn) btn.focus({ preventScroll: true });
+};
+window.uiI = function(title, desc) {
+  if (!desc) return "";
+  const t = String(title || "").replace(/"/g, '&quot;');
+  return `<span class="ui-i" role="button" tabindex="0" aria-label="What does ${t} mean?" onclick="event.stopPropagation();uiTip(this,${JSON.stringify(title)},${JSON.stringify(desc)})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();uiTip(this,${JSON.stringify(title)},${JSON.stringify(desc)})}">i</span>`;
+};
+document.addEventListener("click", () => { if (window.TIPA) window.tipHide(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && window.TIPA) window.tipHide(true); });
+addEventListener("scroll", () => window.tipPlace(), { passive: true, capture: true });
+addEventListener("resize", () => window.tipPlace());
+</script>
 <script src="listing.js"></script>
 <script src="insights.js"></script>
 <script src="exits.js"></script>
@@ -587,11 +652,11 @@ function renderScreen(){
  $("ft").textContent=a?`Filters (${a} active)`:"Filters";
  $("count").textContent=`Showing ${Math.min(shown,v.length)} of ${v.length} matches`+(a?` · ${a} filter${a>1?"s":""} active`:"");
  const more=v.length>shown?`<button class="btn" style="width:100%;margin-top:8px" onclick="shown+=50;render()">Show 50 more</button>`:"";
- $("list").innerHTML=(typeof apPanel==="function"?apPanel():"")+(!v.length?`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Clear all filters.</div>`:mobile()?v.slice(0,shown).map(card).join("")+more:`<div class="tw"><table><thead><tr>${colsNow().map(([k,l,t])=>`<th class="${k===sortKey?"on":""}" title="${t}" onclick="sortBy('${k}')">${l}${k===sortKey?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${v.slice(0,shown).map(tr).join("")}</tbody></table></div>${more}`)}
+ $("list").innerHTML=(typeof apPanel==="function"?apPanel():"")+(!v.length?`<div class="empty">No stocks match these filters.<br>Loosen a filter or tap Clear all filters.</div>`:mobile()?v.slice(0,shown).map(card).join("")+more:`<div class="tw"><table><thead><tr>${colsNow().map(([k,l,t])=>`<th class="${k===sortKey?"on":""}" title="${t}" onclick="sortBy('${k}')"><span class="th-txt">${l}${k===sortKey?(sortDir>0?" ▲":" ▼"):""}</span>${uiI(l,t)}</th>`).join("")}</tr></thead><tbody>${v.slice(0,shown).map(tr).join("")}</tbody></table></div>${more}`)}
 function renderMliq(){const m=data.market_liq,el=$("mliq");if(!el)return;if(!m||!m.ratio){el.hidden=true;return}el.hidden=false;
  const r=m.ratio,state=r<0.75?["thin","Thin"]:r>1.25?["busy","Busy"]:["norm","Normal"],L=m.last60||[],mx=Math.max(...L.map(x=>x[1]),1),avg=m.avg20_cr;
  const bars=L.map(([d,v],i)=>`<i style="height:${Math.max(2,v/mx*28).toFixed(1)}px" class="${i===L.length-1?"now":""}" title="${new Date(d+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"})}: ₹${Math.round(v).toLocaleString("en-IN")} Cr"></i>`).join("");
- el.innerHTML=`<div class="ml-l"><span class="ml-k">Market liquidity</span><span class="lq st ${state[0]}">${state[1]}</span></div>
+ el.innerHTML=`<div class="ml-l"><span class="ml-k">Market liquidity ${uiI("Market liquidity","How much rupee trading volume is taking place today compared to its 20-day normal average across the whole market.")}</span><span class="lq st ${state[0]}">${state[1]}</span></div>
   <div class="ml-t">₹${Math.round(m.today_cr).toLocaleString("en-IN")} Cr traded in ${m.shares.toLocaleString("en-IN")} NSE shares on ${new Date(m.date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"})}: <b>${Math.round(r*100)}%</b> of the 20-day average (₹${Math.round(avg).toLocaleString("en-IN")} Cr), more than on ${m.pct1y}% of days in the past year.${m.date===String(new Date().toISOString().slice(0,10))&&mOpen()?" The day is still in progress, so the figure grows until the close.":""}</div>
   <div class="ml-s" aria-hidden="true">${bars}<b style="bottom:${(avg/mx*28).toFixed(1)}px"></b></div><button type="button" class="btn ghost sm" onclick="tglHelp('liq')">What this means</button>`;
  const h=$("liqhelp");if(h)h.hidden=helpOpen!=="liq"}
@@ -863,7 +928,7 @@ function pdetail(p,c){const L=c.L,N=ledgerNet(p),rowOf=new Map(L.rows.map(r=>[r.
   ${st("First bought",fdate(L.first))}${st(c.open?"Holding for":"Held for",held(c.days))}${st("Avg cost after charges",L.qty?inr(N.avg):"–")}${st("Realised after charges",L.sold?`<span class="${pcl(N.real)}">${mny(N.real)}</span>`:"–")}</div>
   ${c.open?pbar(withLv(p),L.avg,c.px):""}<div class="sub" style="margin-top:8px">${p.thesis?esc(p.thesis)+" · ":""}Average cost = total paid for the shares you still hold ÷ quantity. Sales don't change it. Brokerage and taxes are not included.</div>
   <div class="act"><button class="btn sm" onclick="openForm('levels','${p.id}')">Stop loss, target &amp; alerts</button>${tvLink(p)}<button class="btn sm danger" onclick="delHolding('${p.id}')">Delete holding</button></div></div>
-  <div class="hr">${c.open?exPanel(p,c):""}<div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th><th>Realised</th><th>Why</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
+  <div class="hr">${c.open?exPanel(p,c):""}<div class="sub" style="margin-bottom:6px"><b>Transactions</b> (${p.txns.length})</div><div class="tw"><table class="pt lt"><thead><tr><th>Date${uiI("Date","Date this purchase or sale was executed.")}</th><th>Type${uiI("Type","Buy or Sell order.")}</th><th>Qty${uiI("Qty","Number of shares traded in this transaction.")}</th><th>Price${uiI("Price","Execution price per share in rupees.")}</th><th>Value${uiI("Value","Total transaction value: Quantity × Price.")}</th><th>Realised${uiI("Realised","Profit or loss locked in on this sale.")}</th><th>Why${uiI("Why","Strategy rule or trading thesis noted for this order.")}</th><th></th></tr></thead><tbody>${tx}</tbody></table></div></div></div>`}
 /* where the last price came from: the exchange, and when (live checks every 15 minutes in market hours, else the close) */
 function pxSrc(p,q){if(!q)return"";const ex_=p.exchange==="BSE"?"BSE":"NSE",IST={timeZone:"Asia/Kolkata"};
  const today=new Date().toLocaleDateString("en-CA",IST),d=q.date||(q.src==="chart"?"":data.price_date)||"",dm=x=>new Date(x+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"});
@@ -897,12 +962,12 @@ function renderPos(){
  const all=POS.map(p=>({p,c:calc(p)})),oc=all.filter(x=>x.c.open),cc=all.filter(x=>!x.c.open);
  let inv=0,val=0,day=0,dayBase=0,priced=0,attn=0,re=0,riskAmt=0,nostop=0;let atStop=0,fromNow=0;oc.forEach(({p,c})=>{const sl=lv(p).sl;if(sl){riskAmt+=Math.max(0,c.L.qty*(c.L.avg-sl));atStop+=c.L.qty*(sl-c.L.avg);if(c.px!=null)fromNow+=c.L.qty*Math.max(0,c.px-sl)}else nostop++;inv+=c.invested;val+=c.value;if(c.px!=null)priced++;if(c.day!=null){day+=c.day;dayBase+=c.value-c.day}if(c.st&&c.st[2]>=3)attn++});
  all.forEach(({c})=>{re+=c.L.real});const un=val-inv,unp=inv?un/inv*100:0,sells=all.filter(x=>x.c.L.sold>0).length;
- $("psum").innerHTML=`<div class="sc"><span>Invested</span><b>${inr(inv)}</b><small>What you paid for the shares you hold</small></div>
- <div class="sc"><span>Current value</span><b>${inr(val)}</b><small>${dayBase?`Today <span class="${pcl(day)}">${mny(day)} (${sg(+(day/dayBase*100).toFixed(2))}%)</span>`:"At latest prices"}</small></div>
- <div class="sc"><span>Unrealised P&amp;L</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
- <div class="sc"><span>Realised P&amp;L</span><b class="${pcl(re)}">${sells?mny(re):"₹0"}</b><small>${sells?"From "+sells+" holding"+(sells>1?"s":"")+" with sales":"No sales yet"}</small></div>
- <div class="sc" title="Sum over holdings of quantity x (stop - average cost): what you would book against your cost if every stop were hit"><span>If every stop is hit</span><b class="${nostop===oc.length?"":pcl(atStop)}">${nostop===oc.length&&oc.length?"–":mny(atStop)}</b><small>${val&&fromNow?`${mny(-fromNow)} from today's value (${(fromNow/val*100).toFixed(1)}%)`:""}${nostop?(fromNow?" · ":"")+nostop+" without a stop":""}</small></div>
- <div class="sc"><span>Holdings</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" of "+oc.length+" priced"}</small></div>`;
+ $("psum").innerHTML=`<div class="sc"><span>Invested ${uiI("Invested","Total cash paid for all shares you currently hold: sum of (Quantity × Average cost) across open holdings.")}</span><b>${inr(inv)}</b><small>What you paid for the shares you hold</small></div>
+ <div class="sc"><span>Current value ${uiI("Current value","Current market value of all open holdings based on latest prices (Quantity × LTP), plus today's gain/loss.")}</span><b>${inr(val)}</b><small>${dayBase?`Today <span class="${pcl(day)}">${mny(day)} (${sg(+(day/dayBase*100).toFixed(2))}%)</span>`:"At latest prices"}</small></div>
+ <div class="sc"><span>Unrealised P&amp;L ${uiI("Unrealised P&L","Total open profit or loss across all shares you still hold. Becomes realised only upon selling.")}</span><b class="${pcl(un)}">${oc.length?mny(un):"₹0"}</b><small>${oc.length?sg(+unp.toFixed(2))+"% on "+oc.length+" holding"+(oc.length>1?"s":""):"No open holdings"}</small></div>
+ <div class="sc"><span>Realised P&amp;L ${uiI("Realised P&L","Total net profit or loss booked and locked in from all completed sales of shares.")}</span><b class="${pcl(re)}">${sells?mny(re):"₹0"}</b><small>${sells?"From "+sells+" holding"+(sells>1?"s":"")+" with sales":"No sales yet"}</small></div>
+ <div class="sc" title="Sum over holdings of quantity x (stop - average cost): what you would book against your cost if every stop were hit"><span>If every stop is hit ${uiI("If every stop is hit","Total rupee gain or loss you would book against your original cost if every open holding fell to its stop loss and was sold today.")}</span><b class="${nostop===oc.length?"":pcl(atStop)}">${nostop===oc.length&&oc.length?"–":mny(atStop)}</b><small>${val&&fromNow?`${mny(-fromNow)} from today's value (${(fromNow/val*100).toFixed(1)}%)`:""}${nostop?(fromNow?" · ":"")+nostop+" without a stop":""}</small></div>
+ <div class="sc"><span>Holdings ${uiI("Holdings","Count of distinct open stock holdings in your portfolio, and how many currently need attention (target reached, stop loss hit, or 44-DMA broken).")}</span><b>${oc.length}</b><small>${attn?`<span class="neg">${attn} need attention</span>`:priced+" of "+oc.length+" priced"}</small></div>`;
  $("pview").innerHTML=`<button aria-pressed="${PVIEW==="open"}" onclick="PVIEW='open';render()">Holdings (${oc.length})</button><button aria-pressed="${PVIEW==="closed"}" onclick="PVIEW='closed';render()">Closed (${cc.length})</button><button aria-pressed="${PVIEW==="watch"}" onclick="PVIEW='watch';render()">Watchlist (${WL.length})</button><button aria-pressed="${PVIEW==="size"}" onclick="PVIEW='size';render()">Position size</button><button aria-pressed="${PVIEW==="reports"}" onclick="PVIEW='reports';render()">Reports</button>`;
  $("szcard").hidden=PVIEW!=="size";$("psort").hidden=PVIEW!=="open"&&PVIEW!=="closed";$("setcard").hidden=PVIEW!=="reports";if(PVIEW!=="watch")$("wform").hidden=true;$("wbar").hidden=PVIEW!=="watch";fillSettings();
  fillPsort();$("psort").classList.toggle("hide-wide",PVIEW==="open");
@@ -915,7 +980,7 @@ function renderPos(){
   else out=hTools()+hTable(rows,{inv,val,pl:un,day,dayBase,risk:fromNow})+`<div class="pcards">${hSorted(rows).map(({p,c})=>openCard(p,c,val)).join("")}</div>`}
  else{const rows=sortRows(cc,true);let rt=0,rc=0;rows.forEach(({c})=>{rt+=c.L.real;rc+=c.L.soldCost});
   if(!rows.length)out=`<div class="empty">No closed holdings yet.<br>When you sell every share of a holding, it moves here with its realised profit or loss.</div>`;
-  else out=`<div class="ptable"><div class="tw"><table class="pt" style="min-width:900px"><thead><tr><th>Symbol</th><th>Bought</th><th>Avg buy</th><th>Avg sell</th><th>Realised P&amp;L</th><th>Return</th><th>First buy</th><th>Last sale</th><th>Held</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>closedRow(p,c)).join("")}
+  else out=`<div class="ptable"><div class="tw"><table class="pt" style="min-width:900px"><thead><tr><th>Symbol${uiI("Symbol","Stock symbol and exchange of the closed holding.")}</th><th>Bought${uiI("Bought","Total quantity of shares purchased over the life of this trade.")}</th><th>Avg buy${uiI("Avg buy","Weighted average purchase price paid per share.")}</th><th>Avg sell${uiI("Avg sell","Weighted average price received per share on sales.")}</th><th>Realised P&amp;L${uiI("Realised P&L","Net profit or loss booked upon closing the position: Total sales proceeds minus total purchase cost.")}</th><th>Return${uiI("Return","Percentage gain or loss on capital invested in this closed holding.")}</th><th>First buy${uiI("First buy","Date of initial share purchase.")}</th><th>Last sale${uiI("Last sale","Date when the final remaining shares were sold.")}</th><th>Held${uiI("Held","Total calendar days from first purchase to final sale.")}</th><th></th></tr></thead><tbody>${rows.map(({p,c})=>closedRow(p,c)).join("")}
   <tr class="tot"><td>Total</td><td></td><td></td><td></td><td><span class="${pcl(rt)}">${mny(rt)}</span></td><td>${rc?pcs(rt/rc*100):""}</td><td></td><td></td><td></td><td></td></tr></tbody></table></div></div>
   <div class="pcards">${rows.map(({p,c})=>closedCard(p,c)).join("")}</div>`}
  $("plist").innerHTML=out;if(PVIEW==="open"&&typeof hFit==="function")hFit();
@@ -1007,7 +1072,7 @@ function sizeCalc(){const f=cfg(),cap=num("sz-cap"),risk=num("sz-risk"),maxp=num
  ${kv("Stop distance",dist.toFixed(2)+"% below the entry")}${kv("Break-even sale price",inr(r.be)+` <small>(covers all charges)</small>`)}</div>
  ${rr!=null?`<div class="sub" style="margin-top:6px">At ${(1/(1+rr)*100).toFixed(0)}% winning trades or better, this reward-to-risk ratio breaks even before tax.</div>`:""}
  ${W.length?`<ul class="szw">${W.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
- <div class="szwhat"><b>Same trade at other risk levels</b><div class="sx-w"><table class="sx2" style="min-width:0"><thead><tr><th>Risk per trade</th><th>Shares</th><th>Position cost</th><th>Loss at stop</th></tr></thead><tbody>${[.5,1,1.5,2].map(x=>{const z=szCalc(cap,x,maxp,en,sl,tg);return `<tr${Math.abs(x-risk)<1e-9?' class="on"':""}><td>${x}%</td><td>${z.q}</td><td>${inr(z.value)}</td><td>−${inr(z.lossStop)}</td></tr>`}).join("")}</tbody></table></div></div>
+ <div class="szwhat"><b>Same trade at other risk levels</b><div class="sx-w"><table class="sx2" style="min-width:0"><thead><tr><th>Risk per trade${uiI("Risk per trade","Percentage of your total trading capital at risk on this single trade.")}</th><th>Shares${uiI("Shares","Recommended number of shares to purchase based on your stop-loss distance.")}</th><th>Position cost${uiI("Position cost","Total cash required to enter this trade: Shares × Entry price.")}</th><th>Loss at stop${uiI("Loss at stop","Maximum monetary loss incurred if the stop loss is triggered, including estimated broker charges.")}</th></tr></thead><tbody>${[.5,1,1.5,2].map(x=>{const z=szCalc(cap,x,maxp,en,sl,tg);return `<tr${Math.abs(x-risk)<1e-9?' class="on"':""}><td>${x}%</td><td>${z.q}</td><td>${inr(z.value)}</td><td>−${inr(z.lossStop)}</td></tr>`}).join("")}</tbody></table></div></div>
  <div style="margin-top:10px"><button class="btn pri" onclick="szUse()">Add this as a position</button></div>`}
 function szUse(){const en=num("sz-en"),sl=num("sz-sl"),tg=num("sz-tg"),r=szCalc(num("sz-cap"),num("sz-risk"),num("sz-max")||100,en,sl,tg);if(r.q<1)return;
  const sym=$("sz-sym").value.trim().toUpperCase();openForm({symbol:sym,exchange:$("sz-ex").value,qty:r.q,price:en,sl:sl,target:tg||""})}
@@ -1044,7 +1109,8 @@ function renderReports(){loadNifty();const pr=perfRows(),tx=taxReport(),f=cfg();
  const grp=(arr,key,name)=>{const g={};arr.forEach(s=>{const k=key(s);(g[k]=g[k]||{n:0,w:0,t:0}).n++;g[k].w+=s.r>0?1:0;g[k].t+=s.r});return Object.entries(g).sort((a,b)=>a[0]<b[0]?1:-1).map(([k,v])=>`<tr><td>${name(k)}</td><td>${v.n}</td><td>${Math.round(v.w/v.n*100)}%</td><td><span class="${pcl(v.t)}">${mny(v.t)}</span></td></tr>`).join("")};
  const have=pr.filter(x=>x.nifty!=null),avg=have.length?have.reduce((s,x)=>s+x.mine-x.nifty,0)/have.length:null;
  const buys=POS.reduce((n,h)=>n+h.txns.filter(t=>t.type==="buy"&&t.rule).length,0),yes=POS.reduce((n,h)=>n+h.txns.filter(t=>t.type==="buy"&&t.rule==="yes").length,0);
- const th=h=>`<thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead>`,tbl=(h,b)=>`<div class="tw"><table class="pt" style="min-width:0">${th(h)}<tbody>${b}</tbody></table></div>`;
+ const RPT_HELP={"Holding":"Stock symbol and whether the position is currently open or closed.","From":"Date when the holding was first bought.","To":"Date of the last sale, or 'today' for open holdings.","You":"Your holding's return percentage over this exact timeframe.","Nifty":"Nifty 50 index return over the same holding period.","Difference":"How much your holding beat (positive) or trailed (negative) the Nifty 50 in percentage points.","Followed my rule?":"Whether this trade adhered to your disciplined trading rules upon entry and exit.","Sales":"Total number of completed sale transactions.","Winners":"Percentage of sales that produced a net profit.","Realised P&L":"Net booked profit or loss in rupees.","Realised P&amp;L":"Net booked profit or loss in rupees.","Month":"Calendar month when share sales were executed.","Financial year":"Indian tax financial year (1 April to 31 March).","Charges paid":"Total estimated transaction charges (STT, brokerage, exchange charges, GST, stamp duty).","Short-term gain":"Capital gains on equity shares held for 12 months or less.","Long-term gain":"Capital gains on equity shares held for more than 12 months.","Estimated tax":"Indicative capital gains tax liability before cess and surcharge."};
+ const th=h=>`<thead><tr>${h.map(x=>`<th>${x}${RPT_HELP[x]?uiI(x.replace("&amp;","&"),RPT_HELP[x]):""}</th>`).join("")}</tr></thead>`,tbl=(h,b)=>`<div class="tw"><table class="pt" style="min-width:0">${th(h)}<tbody>${b}</tbody></table></div>`;
  return `<div class="fm"><h3>Your returns vs the Nifty 50</h3><div class="sub">Return on each holding from its first purchase to its last sale (or today), against the Nifty 50 over the same dates. It uses average cost and ignores the timing of extra buys, so treat it as a guide.</div>
  ${pr.length?tbl(["Holding","From","To","You","Nifty","Difference"],pr.map(x=>`<tr><td><b>${esc(x.h.symbol)}</b>${x.open?` <span class="tag near" style="margin:0">open</span>`:""}</td><td>${fdate(x.from)}</td><td>${x.open?"today":fdate(x.to)}</td><td>${pcs(x.mine)}</td><td>${x.nifty==null?"–":pcs(x.nifty)}</td><td>${x.nifty==null?"–":pcs(x.mine-x.nifty)}</td></tr>`).join(""))+(avg!=null?`<div class="sub" style="margin-top:8px">Average difference per holding: <b class="${pcl(avg)}">${sg(+avg.toFixed(2))} percentage points</b> across ${have.length} holding${have.length>1?"s":""}.</div>`:`<div class="sub" style="margin-top:8px">${NK.length?"Not enough index history for these dates.":"Index history loads after the next end-of-day screener run."}</div>`):`<div class="sub" style="margin-top:8px">Add holdings to see this.</div>`}</div>
  <div class="fm"><h3>Journal review</h3><div class="sub">Based on the “Followed my rule?” answer you give on each trade.</div>
@@ -1239,22 +1305,8 @@ const GLOSS=[
 ];
 const GLK=Object.fromEntries(GLOSS.map(g=>[g[0],g]));
 function sxHelp(id){SGUIDE=true;SGLOS=true;render();const e=$("g_"+id);if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.classList.add("hl");setTimeout(()=>e.classList.remove("hl"),2200)}}
-const ii=id=>`<span class="sx-i" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" aria-label="What does ${esc(GLK[id][1])} mean?" onclick="event.stopPropagation();tipShow(this,'${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();tipShow(this,'${id}')}">i</span>`;
-let TIPA=null;
-function tipHide(back){const t=$("gtip");if(t)t.hidden=true;if(TIPA){TIPA.setAttribute("aria-expanded","false");if(back&&document.contains(TIPA))TIPA.focus()}TIPA=null}
-function tipShow(a,id){if(TIPA===a){tipHide(true);return}tipHide();const g=GLK[id];if(!g)return;let t=$("gtip");
- if(!t){t=document.createElement("div");t.id="gtip";t.className="gtip";t.setAttribute("role","dialog");t.addEventListener("click",e=>e.stopPropagation());document.body.appendChild(t)}
- t.setAttribute("aria-label",g[1]);
- t.innerHTML=`<div class="gtip-h"><b>${esc(g[1])}</b><button type="button" class="gtip-x" aria-label="Close" onclick="tipHide(true)">×</button></div><div class="gtip-b">${g[2]}</div><button type="button" class="gtip-more" onclick="tipHide();sxHelp('${id}')">Open full glossary</button>`;
- t.hidden=false;TIPA=a;a.setAttribute("aria-expanded","true");tipPlace();t.querySelector(".gtip-x").focus({preventScroll:true})}
-function tipPlace(){const t=$("gtip"),a=TIPA;if(!t||t.hidden||!a)return;if(!document.contains(a)){tipHide();return}
- const r=a.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=window.innerHeight,w=Math.min(320,vw-24);t.style.width=w+"px";
- let x=r.left+r.width/2-w/2;x=Math.max(12,Math.min(x,vw-w-12));const h=t.offsetHeight;let y=r.bottom+8,up=false;
- if(y+h>vh-8&&r.top-8-h>8){y=r.top-8-h;up=true}t.style.left=x+"px";t.style.top=Math.max(8,y)+"px";t.classList.toggle("up",up);
- t.style.setProperty("--ax",Math.max(14,Math.min(w-14,r.left+r.width/2-x))+"px")}
-document.addEventListener("click",()=>{if(TIPA)tipHide()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&TIPA)tipHide(true)});
-addEventListener("scroll",()=>tipPlace(),{passive:true,capture:true});addEventListener("resize",()=>tipPlace());
+const ii=id=>{const g=GLK[id];return g?uiI(g[1],g[2]):""};
+function tipShow(a,id){const g=GLK[id];if(!g)return;uiTip(a,g[1],g[2],()=>{tipHide();sxHelp(id)})}
 function sxPlain(s){const t=s.test,pm=s.params;if(!t)return `This rule produced too few trades in the fair-test period to say anything about it.`;
  const per=s.x?`from ${SX.split_year} on`:"in the fair-test period",surev=t.t==null?"":t.t>=2?"Judged month by month, that gap is unlikely to be luck.":t.t>=1?"Judged month by month, that gap could still be luck.":t.t>=-1?"Judged month by month, that gap is too small to tell apart from luck.":"The rule did worse than the control.";
  const e=t.edge;return `Over <b>${t.n.toLocaleString("en-IN")}</b> trades ${per}, this rule won <b>${pu(t.win_rate)}</b> of the time and made <b>${pp(t.avg_ret)}</b> per trade on average (for every ₹1,00,000 put into a trade, about ₹${Math.round(Math.abs(t.avg_ret)*1e5).toLocaleString("en-IN")} ${t.avg_ret>=0?"profit":"loss"}). ${s.x?"Other stocks bought on the same days":"Buying the same stocks on random days"} with the same ${pm.stop}% stop, ${pm.target}% target and ${pm.max_hold}-day limit made <b>${pp(t.baseline)}</b>. ${e==null?"":e>0?`So the rule added <b>${pp(e,2)}</b> per trade.`:e<0?`So the rule did <b>${pp(Math.abs(e),2)}</b> per trade <i>worse</i>.`:"So the rule made no difference."} ${surev}`}

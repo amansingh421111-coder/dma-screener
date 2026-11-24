@@ -3,23 +3,23 @@
    subtotals and totals that line up with their columns. Every money column says what it is: Invested (what you paid),
    Current value (shares x latest price), P&L (current value - invested). */
 const HC = [   // key, header, priority (1 = always shown, 4 = widest screens only), numeric, sort value, title
-  ["share", "Share", 0, false, (r) => r.p.symbol, "Share, exchange and company"],
-  ["strat", "Strategy", 3, false, (r) => hStratName(hSid(r.p)), "The strategy the share was bought under; it sets the automatic stop and target"],
-  ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Shares held"],
-  ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold"],
-  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown"],
-  ["chg", "Day% Change", 1, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price change percentage"],
-  ["day", "Today", 2, true, (r) => r.c.day, "Change in this holding's value today"],
-  ["inv", "Invested", 1, true, (r) => r.c.invested, "What you paid: quantity x average cost"],
-  ["val", "Current value", 1, true, (r) => r.c.value, "Quantity x last traded price"],
-  ["pl", "P&L", 1, true, (r) => r.c.unreal, "Current value minus invested (not yet booked)"],
-  ["ret", "Return", 3, true, (r) => r.c.unrealPct, "P&L as a percentage of what you invested"],
-  ["wt", "Weight", 3, true, (r) => r.c.value, "Share of your current portfolio value"],
-  ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Sell level; sorted by how far the price is above it"],
-  ["risk", "Risk to stop", 2, true, (r) => hRisk(r), "What you would lose from today's price if the stop is hit: quantity x (LTP - stop)"],
-  ["exit", "Target / time", 3, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Target price, and trading days left before the rule's time limit"],
-  ["held", "Held", 4, true, (r) => r.c.days, "Days since this holding was opened"],
-  ["status", "Status", 1, false, (r) => (r.c.st ? r.c.st[2] : -1), "What needs your attention"],
+  ["share", "Share", 0, false, (r) => r.p.symbol, "Stock symbol, exchange, and company name. Tap row to view transaction history and technical analysis."],
+  ["strat", "Strategy", 3, false, (r) => hStratName(hSid(r.p)), "The trading strategy under which this stock was bought. Sets the automatic trailing stop and profit target."],
+  ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Total number of shares currently held in your open position."],
+  ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold (total money spent ÷ quantity). Sales do not change it."],
+  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown. Updated every 15 minutes during market hours."],
+  ["chg", "Day% Change", 1, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price percentage change compared to yesterday's closing price."],
+  ["day", "Today", 2, true, (r) => r.c.day, "Change in the rupee market value of your holding today."],
+  ["inv", "Invested", 1, true, (r) => r.c.invested, "Total money you paid to buy these open shares: Quantity × Average cost."],
+  ["val", "Current value", 1, true, (r) => r.c.value, "Current market value of your holding: Quantity × Last traded price (LTP)."],
+  ["pl", "P&L", 1, true, (r) => r.c.unreal, "Unrealised Profit or Loss: Current value minus Invested amount. Locked in only when sold."],
+  ["ret", "Return", 3, true, (r) => r.c.unrealPct, "Total percentage return on your invested capital: P&L ÷ Invested × 100."],
+  ["wt", "Weight", 3, true, (r) => r.c.value, "Share of this holding in your total open portfolio market value."],
+  ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Protective exit price. If price touches or breaches this level, an alert signals to sell and cut loss."],
+  ["risk", "Risk to stop", 2, true, (r) => hRisk(r), "Maximum potential capital loss from today's price if the stop loss is hit: Quantity × (LTP − Stop loss)."],
+  ["exit", "Target / time", 3, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Take-profit target price, and trading days remaining before the strategy time limit triggers exit."],
+  ["held", "Held", 4, true, (r) => r.c.days, "Number of trading days since this holding was first purchased."],
+  ["status", "Status", 1, false, (r) => (r.c.st ? r.c.st[2] : -1), "Current position state: On track, Near 44-DMA, Below 44-DMA, Target reached, or Stop loss hit."],
   ["act", "", 0, false, null, ""],
 ];
 let HS = { k: "attention", d: -1, group: "none", cols: {} };
@@ -87,7 +87,7 @@ function hTable(oc, T) {
   HLV = hLevel();
   const cols = HC.filter(hOn), showRet = !cols.some((c) => c[0] === "ret"), showChg = cols.some((c) => c[0] === "chg"), n = cols.length;
   const avgIn = !cols.some((c) => c[0] === "avg");
-  const th = cols.map(([k, l, , num, f, t]) => f ? `<th class="${num ? "n" : ""}" aria-sort="${HS.k === k ? (HS.d > 0 ? "ascending" : "descending") : "none"}" title="${esc(t)}"><button type="button" onclick="hSort('${k}')">${k === "qty" && avgIn ? "Qty · avg" : l}${HS.k === k ? `<i>${HS.d > 0 ? "▲" : "▼"}</i>` : ""}</button></th>` : `<th></th>`).join("");
+  const th = cols.map(([k, l, , num, f, t]) => f ? `<th class="${num ? "n" : ""}" aria-sort="${HS.k === k ? (HS.d > 0 ? "ascending" : "descending") : "none"}" title="${esc(t)}"><button type="button" onclick="hSort('${k}')"><span class="hth-l">${k === "qty" && avgIn ? "Qty · avg" : l}</span>${HS.k === k ? `<i>${HS.d > 0 ? "▲" : "▼"}</i>` : ""}${typeof uiI === "function" ? uiI(k === "qty" && avgIn ? "Qty · avg" : l, t) : ""}</button></th>` : `<th></th>`).join("");
   const sum = (rows) => { const s = { inv: 0, val: 0, pl: 0, day: 0, risk: 0, priced: 0, dayBase: 0 }; rows.forEach((r) => { s.inv += r.c.invested; s.val += r.c.value; if (r.c.unreal != null) s.pl += r.c.unreal; if (r.c.day != null) { s.day += r.c.day; s.dayBase += r.c.value - r.c.day; } const x = hRisk(r); if (x != null) s.risk += x; }); return s; };
   const agg = (s, label, cls, extra) => `<tr class="${cls}">${cols.map(([k]) => {
     if (k === "share") return `<td class="hs">${label}${extra || ""}</td>`;
