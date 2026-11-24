@@ -1,11 +1,11 @@
 {
- "updated": "2026-11-24T10:21:20.555458+00:00",
+ "updated": "2026-11-24T10:31:09.856223+00:00",
  "ma_period": 44,
  "ma_type": "SMA",
  "near_pct": 2,
  "buy_max_pct": 5,
  "universe": "NSE + BSE",
- "bse_updated": "2026-11-24T10:21:20.555465+00:00",
+ "bse_updated": "2026-11-24T10:31:09.856234+00:00",
  "cloud": {
   "redis": true,
   "users": 2,
@@ -19,7 +19,7 @@
   }
  },
  "health": {
-  "run_at": "2026-11-24T10:21:20.552806+00:00",
+  "run_at": "2026-11-24T10:31:09.853698+00:00",
   "price_date": "2026-11-23",
   "source": "official",
   "scanned": 1738,
