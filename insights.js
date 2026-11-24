@@ -616,24 +616,57 @@ function inStocksView() {
   const cnt = (k) => all.filter((x) => x.tone === k).length, name = inName(IV.sym);
   const tv = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent((IV.ex === "BSE" ? "BSE:" : "NSE:") + IV.sym)}`;
   const head = `<section class="sk-head"><div><h2>${esc(IV.sym)} ${typeof lsSwitch === "function" ? lsSwitch(IV.sym, IV.ex, `inPick('${esc(IV.sym)}','{ex}')`) : exTag(IV.ex)}</h2><p>${esc(name || "")}${f && f.sec ? `<span>${entG("sec", f.sec)}${f.ind ? " › " + entG("ind", f.ind) : ""}</span>` : ""}${f && f.mcap ? `<span>Market cap ₹${inNum(f.mcap / 1e7, 0)} crore</span>` : ""}</p></div>
-   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>${IV.ex} price${both ? " (switch above for " + (IV.ex === "NSE" ? "BSE" : "NSE") + ")" : ""}${live && live.hist === "NSE" ? " · readings use NSE price history (the price feed has no BSE history for this share)" : ""} · ${t && t.date === new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) ? "today" : "close of " + esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}
-   <div class="sk-tally"><span class="tn pos"></span>${cnt("pos")} supportive<span class="tn neg"></span>${cnt("neg")} caution<span class="tn neu"></span>${cnt("neu")} neutral<span class="ix-fine">A count of the readings below, not a verdict.</span></div>`;
-  const tabs = [["summary", "Summary"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["peers", "Peers"], ["news", "News"]];
+   <div class="sk-px"><b>${t ? "₹" + inNum(t.p, 2) : "–"}</b><span>${t ? `<span class="${inCl(t.d1)}">${inPct(t.d1)} day</span><span class="${inCl(t.m1)}">${inPct(t.m1)} 1 month</span><span class="${inCl(t.y1)}">${inPct(t.y1)} 1 year</span>` : ""}</span><small>${IV.ex} price${both ? " (switch above for " + (IV.ex === "NSE" ? "BSE" : "NSE") + ")" : ""}${live && live.hist === "NSE" ? " · readings use NSE price history (the price feed has no BSE history for this share)" : ""} · ${t && t.date === new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) ? "today" : "close of " + esc(inDate(t && t.date))}.</small></div></section>${typeof entStockLinks === "function" ? `<div class="sk-links">${entStockLinks(IV.sym, IV.ex)}<button type="button" class="btn sm" onclick="openStock('${esc(IV.sym)}','${IV.ex}')">Interactive chart</button></div>` : ""}`;
+   const flt = IV.stone || "all";
+   const headTally = `<div class="sk-tally">
+     <button type="button" class="sci-t-btn${flt === "all" ? " on" : ""}" onclick="IV.stone='all';render()">All (${all.length})</button>
+     ${cnt("pos") ? `<button type="button" class="sci-t-btn${flt === "pos" ? " on" : ""}" onclick="IV.stone=IV.stone==='pos'?'all':'pos';render()"><span class="tn pos"></span>${cnt("pos")} supportive</button>` : ""}
+     ${cnt("neg") ? `<button type="button" class="sci-t-btn${flt === "neg" ? " on" : ""}" onclick="IV.stone=IV.stone==='neg'?'all':'neg';render()"><span class="tn neg"></span>${cnt("neg")} caution</button>` : ""}
+     ${cnt("neu") ? `<button type="button" class="sci-t-btn${flt === "neu" ? " on" : ""}" onclick="IV.stone=IV.stone==='neu'?'all':'neu';render()"><span class="tn neu"></span>${cnt("neu")} neutral</button>` : ""}
+     <span class="ix-fine">A count of the readings below, not a verdict.</span>
+   </div>`;
+  const tabs = [["summary", `All readings (${all.length})`], ["tech", `Technical (${R.T.length})`], ["fin", `Financials (${R.F.length})`], ["company", "Company"], ["outlook", "Outlook"], ["peers", "Peers"], ["news", "News"]];
   const tabbar = `<div class="sk-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${IV.stab === k}" onclick="IV.stab='${k}';render()">${l}</button>`).join("")}</div>`;
-  const rl = (L, pre) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, pre + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings.</p>`);
+  const rl = (L, pre) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, pre + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings match this filter.</p>`);
   let body = "";
   if (IV.stab === "summary") {
     const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
     const keys = `<div class="sk-kv">${t ? kv("vs 44-day avg", inPct(t.vs44), inCl(t.vs44)) + kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("From 52-week high", inPct(t.hi52)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inLvl(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>`;
-    const top = all.filter((r) => r.tone !== "neu").slice(0, 6);
+    let list = all;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
     const ln = inStockLinked().slice(0, 4);
-    body = `${keys}<div class="sk-2"><section><h3>Readings that stand out</h3>${rl(top, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
+    const fltHtml = `<div class="sci-filters" role="group">
+      <button type="button" class="chip${flt === "all" ? " on" : ""}" onclick="IV.stone='all';render()">All (${all.length})</button>
+      ${cnt("pos") ? `<button type="button" class="chip${flt === "pos" ? " on" : ""}" onclick="IV.stone='pos';render()"><span class="tn pos"></span> ${cnt("pos")} supportive</button>` : ""}
+      ${cnt("neg") ? `<button type="button" class="chip${flt === "neg" ? " on" : ""}" onclick="IV.stone='neg';render()"><span class="tn neg"></span> ${cnt("neg")} caution</button>` : ""}
+      ${cnt("neu") ? `<button type="button" class="chip${flt === "neu" ? " on" : ""}" onclick="IV.stone='neu';render()"><span class="tn neu"></span> ${cnt("neu")} neutral</button>` : ""}
+    </div>`;
+    body = `${keys}<div class="sk-2"><section><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px"><h3 style="margin:0">Readings (${list.length})</h3>${fltHtml}</div>${rl(list, "su")}</section><section><h3>Linked news</h3>${ln.length ? `<ol class="nsl sm">${ln.map((x) => inStory(x)).join("")}</ol><button class="btn ghost sm" onclick="IV.stab='news';render()">All news for ${esc(IV.sym)}</button>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}</section></div>`;
   } else if (IV.stab === "company") body = coPanel(IV.sym, IV.ex);
   else if (IV.stab === "outlook") body = IV.ex === "NSE" ? soPanel(IV.sym) : both ? `<p class="ix-fine">The outlook is worked out on NSE prices; the same company's BSE price moves with it.</p>${soPanel(IV.sym)}` : `<p class="ix-empty">The outlook covers shares listed on NSE; ${esc(IV.sym)} is listed on BSE only.</p>`;
-  else if (IV.stab === "tech") body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? rl(R.T, "t") : `<p class="ix-empty">No price history.</p>`}`;
-  else if (IV.stab === "fin") {
+  else if (IV.stab === "tech") {
+    let list = R.T;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
+    const pCnt = R.T.filter((r) => r.tone === "pos").length, nCnt = R.T.filter((r) => r.tone === "neg").length, uCnt = R.T.filter((r) => r.tone === "neu").length;
+    const fltHtml = `<div class="sci-filters" style="margin-bottom:12px" role="group">
+      <button type="button" class="chip${flt === "all" ? " on" : ""}" onclick="IV.stone='all';render()">All (${R.T.length})</button>
+      ${pCnt ? `<button type="button" class="chip${flt === "pos" ? " on" : ""}" onclick="IV.stone='pos';render()"><span class="tn pos"></span> ${pCnt} supportive</button>` : ""}
+      ${nCnt ? `<button type="button" class="chip${flt === "neg" ? " on" : ""}" onclick="IV.stone='neg';render()"><span class="tn neg"></span> ${nCnt} caution</button>` : ""}
+      ${uCnt ? `<button type="button" class="chip${flt === "neu" ? " on" : ""}" onclick="IV.stone='neu';render()"><span class="tn neu"></span> ${uCnt} neutral</button>` : ""}
+    </div>`;
+    body = `<p class="ix-fine">From daily prices${pre ? "" : " fetched live"}. NISM's technical chapter treats these as tools to read trend and momentum, not certainties.</p>${t ? fltHtml + rl(list, "t") : `<p class="ix-empty">No price history.</p>`}`;
+  } else if (IV.stab === "fin") {
+    let list = R.F;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
+    const pCnt = R.F.filter((r) => r.tone === "pos").length, nCnt = R.F.filter((r) => r.tone === "neg").length, uCnt = R.F.filter((r) => r.tone === "neu").length;
+    const fltHtml = `<div class="sci-filters" style="margin-bottom:12px" role="group">
+      <button type="button" class="chip${flt === "all" ? " on" : ""}" onclick="IV.stone='all';render()">All (${R.F.length})</button>
+      ${pCnt ? `<button type="button" class="chip${flt === "pos" ? " on" : ""}" onclick="IV.stone='pos';render()"><span class="tn pos"></span> ${pCnt} supportive</button>` : ""}
+      ${nCnt ? `<button type="button" class="chip${flt === "neg" ? " on" : ""}" onclick="IV.stone='neg';render()"><span class="tn neg"></span> ${nCnt} caution</button>` : ""}
+      ${uCnt ? `<button type="button" class="chip${flt === "neu" ? " on" : ""}" onclick="IV.stone='neu';render()"><span class="tn neu"></span> ${uCnt} neutral</button>` : ""}
+    </div>`;
     const q = f && f.q && f.q.length ? `<h3>Quarterly results</h3><div class="tw"><table class="mt"><thead><tr><th>Quarter ended</th><th>Revenue (₹ crore)</th><th>Net profit (₹ crore)</th><th>Net margin</th></tr></thead><tbody>${f.q.slice().reverse().map((x) => `<tr><td>${esc(x.d)}</td><td>${x.rev == null ? "–" : inNum(x.rev / 1e7, 0)}</td><td class="${inCl(x.ni)}">${x.ni == null ? "–" : inNum(x.ni / 1e7, 0)}</td><td>${x.rev && x.ni != null ? inPct((x.ni / x.rev) * 100) : "–"}</td></tr>`).join("")}</tbody></table></div>` : "";
-    body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${rl(R.F, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
+    body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance (they can lag or contain errors; check the annual report), compared with the median of covered companies in the same sector.</p>${fltHtml}${rl(list, "f")}${q}` : `<p class="ix-empty">Financial numbers are collected for covered NSE stocks only.</p>`;
   } else if (IV.stab === "peers") {
     const P = f && f.sec && FUND.fund ? Object.entries(FUND.fund).filter(([s, o]) => o.sec === f.sec && (o.ind === f.ind || !f.ind) && o.mcap).sort((a, b) => b[1].mcap - a[1].mcap).slice(0, 12) : [];
     body = P.length > 1 ? `<p class="ix-fine">Same industry among covered companies, largest first. ${inRefBtn("peer", "p-peer")}</p><div class="tw"><table class="mt"><thead><tr><th>Company</th><th>Market cap (₹ cr)</th><th>P/E</th><th>P/B</th><th>ROE</th><th>Debt/equity</th><th>Op. margin</th><th>1 year</th></tr></thead><tbody>${P.map(([s, o]) => { const tt = FUND.stocks[s] && FUND.stocks[s].t; return `<tr${s === IV.sym ? ' class="on"' : ""}><td>${entS(s, "NSE")}</td><td>${inNum(o.mcap / 1e7, 0)}</td><td>${o.pe > 0 ? inNum(o.pe, 1) : "–"}</td><td>${inNum(o.pb, 2)}</td><td>${o.roe == null ? "–" : inLvl(o.roe * 100)}</td><td>${inNum(o.de, 2)}</td><td>${o.opm == null ? "–" : inLvl(o.opm * 100)}</td><td class="${inCl(tt && tt.y1)}">${inPct(tt && tt.y1)}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="ix-empty">No peer data for this company.</p>`;
@@ -644,7 +677,7 @@ function inStocksView() {
     body = `<div class="sk-2"><section><h3>Headlines naming it, live feed</h3>${ln.length ? `<ol class="nsl sm">${ln.slice(0, 15).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">No story in the live feed names ${esc(IV.sym)} right now.</p>`}${sector.length ? `<h3 style="margin-top:16px">Its sector (${esc(MK_NAMES[secK])})</h3><ol class="nsl sm">${sector.map((x) => inStory(x)).join("")}</ol>` : ""}</section>
     <section><h3>Company search, last 14 days</h3>${!N2 || N2.loading ? `<p class="ix-empty">Loading…</p>` : N2.error ? `<p class="ix-empty">${esc(N2.error)}</p>` : N2.items && N2.items.length ? `<ol class="nsl sm">${N2.items.slice(0, 15).map((x) => inStory({ t: x.t, u: x.u, s: x.s, d: x.d, n: 1 }, { theme: false })).join("")}</ol>` : `<p class="ix-empty">No headlines found.</p>`}</section></div>`;
   }
-  return strip + `<article class="sk">${head}${tabbar}<div class="sk-body">${body}</div></article>`;
+  return strip + `<article class="sk">${head}${headTally}${tabbar}<div class="sk-body">${body}</div></article>`;
 }
 function inDate(d) { if (!d) return ""; const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? String(d) : x.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
 function inStockLinked() { return IV.sym ? inStockNews(IV.sym).named : []; }
@@ -1217,7 +1250,9 @@ async function scrTech(sym, ex) {   // technical numbers for a stock the daily u
   } catch (e) { IV.chart[key] = { err: "Could not reach the price source." }; }
   render();
 }
+const SCRF = {};   // open tone filter per stock ('all' | 'pos' | 'neg' | 'neu')
 function scrTab(k, t) { SCRT[k] = t; render(); }
+function scrFilter(k, f) { SCRF[k] = (SCRF[k] === f ? "all" : f); render(); }
 function scrIns(sym, ex) {
   if (FUND === null) loadFund(); if (INS === null) loadIns(); if (LIVE === null && !IV.feedBusy) loadFeed();
   const co = typeof lsCompany === "function" ? lsCompany(sym, ex) : ex === "NSE";
@@ -1226,23 +1261,53 @@ function scrIns(sym, ex) {
   const live = IV.chart[k], t = pre ? pre.t : live && live.t ? live.t : null;
   const mpe = INS && INS.market_pe ? INS.market_pe.pe : null, R = (t || f) ? inStockReadings(t, f, FUND && FUND.sector_med, mpe, sym) : { T: [], F: [] }, all = R.T.concat(R.F);
   const news = co ? inStockNews(sym).named : [];
-  const tab = SCRT[k] || "read", cnt = (x) => all.filter((r) => r.tone === x).length;
-  const tabs = [["read", "Key readings"], ["company", "Company"], ["outlook", "Outlook"], ["tech", "Technical"], ["fin", "Financials"], ["news", `News (${news.length})`], ["links", "Links"]];
-  const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : "");
+  const flt = SCRF[k] || "all";
+  const rawTab = SCRT[k] || "all";
+  const tab = rawTab === "read" ? "all" : rawTab;
+  const cnt = (x) => all.filter((r) => r.tone === x).length;
+  const tabs = [["all", `All readings (${all.length})`], ["tech", `Technical (${R.T.length})`], ["fin", `Financials (${R.F.length})`], ["company", "Company"], ["outlook", "Outlook"], ["news", `News (${news.length})`], ["links", "Links"]];
+  const rl = (L, p) => (L.length ? `<ul class="rl">${L.map((r, i) => `<li><span class="rl-t ${r.tone}">${TONE[r.tone]}</span><div><b>${esc(r.area)}</b><p>${esc(r.text)}</p>${r.ref ? inRefBtn(r.ref, p + k + i) : ""}</div></li>`).join("")}</ul>` : `<p class="ix-empty">No readings match this filter.</p>`);
   const wait = !FUND || (!pre && (live === 0 || live === undefined)) ? `<p class="ix-empty">Loading the readings…</p>` : "";
+
+  const fltBar = (items, curFlt) => {
+    const pCnt = items.filter((r) => r.tone === "pos").length;
+    const nCnt = items.filter((r) => r.tone === "neg").length;
+    const uCnt = items.filter((r) => r.tone === "neu").length;
+    return `<div class="sci-filters" role="group" aria-label="Filter readings by tone">
+      <button type="button" class="chip${curFlt === "all" ? " on" : ""}" onclick="event.stopPropagation();scrFilter('${k}','all')">All (${items.length})</button>
+      ${pCnt ? `<button type="button" class="chip${curFlt === "pos" ? " on" : ""}" onclick="event.stopPropagation();scrFilter('${k}','pos')"><span class="tn pos"></span> ${pCnt} supportive</button>` : ""}
+      ${nCnt ? `<button type="button" class="chip${curFlt === "neg" ? " on" : ""}" onclick="event.stopPropagation();scrFilter('${k}','neg')"><span class="tn neg"></span> ${nCnt} caution</button>` : ""}
+      ${uCnt ? `<button type="button" class="chip${curFlt === "neu" ? " on" : ""}" onclick="event.stopPropagation();scrFilter('${k}','neu')"><span class="tn neu"></span> ${uCnt} neutral</button>` : ""}
+    </div>`;
+  };
+
   let body = "";
-  if (tab === "read") {
+  if (tab === "all") {
     const kv = (l, v, c) => `<div><span>${l}</span><b class="${c || ""}">${v}</b></div>`;
     const keys = t || f ? `<div class="sk-kv">${t ? kv("vs 200-day avg", inPct(t.vs200), inCl(t.vs200)) + kv("RSI (14)", inNum(t.rsi, 0)) + kv("ADX", inNum(t.adx, 0)) + kv("vs Nifty, 6 months", t.rsc != null ? inNum(t.rsc, 0) : "–") + kv("From 52-week high", inPct(t.hi52)) : ""}${f ? kv("P/E", f.pe > 0 ? inNum(f.pe, 1) : "–") + kv("ROE", f.roe != null ? inLvl(f.roe * 100) : "–") + kv("Debt/equity", f.de != null ? inNum(f.de, 2) : "–") + kv("Revenue growth", f.revg != null ? inPct(f.revg * 100) : "–") : ""}</div>` : "";
-    const top = all.filter((r) => r.tone !== "neu").slice(0, 5);
-    body = wait || (all.length ? `${keys}${rl(top, "sr")}` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
+    let list = all;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
+    body = wait || (all.length ? `${keys}${fltBar(all, flt)}<div style="margin-top:10px">${rl(list, "sr")}</div>` : `<p class="ix-empty">${esc((live && live.err) || "No readings for this stock.")}</p>`);
+  } else if (tab === "tech") {
+    let list = R.T;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
+    body = wait || (R.T.length ? `${fltBar(R.T, flt)}<div style="margin-top:10px">${rl(list, "st")}</div>` : `<p class="ix-empty">No price history.</p>`);
+  } else if (tab === "fin") {
+    let list = R.F;
+    if (flt !== "all") list = list.filter((r) => r.tone === flt);
+    body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${fltBar(R.F, flt)}<div style="margin-top:10px">${rl(list, "sf")}</div>` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
   } else if (tab === "company") body = coPanel(sym, ex);
   else if (tab === "outlook") body = ex === "NSE" ? soPanel(sym) : co ? `<p class="ix-fine">The outlook is worked out on NSE prices; the same company's BSE price moves with it.</p>${soPanel(sym)}` : `<p class="ix-empty">The outlook covers shares listed on NSE; ${esc(sym)} is listed on BSE only.</p>`;
-  else if (tab === "tech") body = wait || rl(R.T, "st") || `<p class="ix-empty">No price history.</p>`;
-  else if (tab === "fin") body = f ? `<p class="ix-fine">Latest reported numbers from Yahoo Finance, compared with the median of covered companies in ${entG("sec", f.sec)}${f.ind ? " (" + entG("ind", f.ind) + ")" : ""}.</p>${rl(R.F, "sf")}` : `<p class="ix-empty">Financial numbers are collected for the ${esc((FUND && FUND.universe) || "most traded NSE stocks")}. For this one, open Screener.in from the Links tab.</p>`;
   else if (tab === "news") body = news.length ? `<ol class="nsl sm">${news.slice(0, 8).map((x) => inStory(x)).join("")}</ol>` : `<p class="ix-empty">${LIVE ? "No story in the live feed (last 7 days) names this stock." : "Loading the news feed…"}</p>`;
   else body = `${typeof entStockLinks === "function" ? `<div class="eq-links">${entStockLinks(sym, ex)}</div>` : ""}<ul class="eq-app" style="margin-top:12px">${typeof entStratToday === "function" ? entStratToday(sym, ex) : ""}</ul>`;
-  return `<section class="sci" onclick="event.stopPropagation()"><div class="sci-h"><h4>Stock insights</h4>${all.length ? `<span class="sci-t"><span class="tn pos"></span>${cnt("pos")} supportive <span class="tn neg"></span>${cnt("neg")} caution <span class="tn neu"></span>${cnt("neu")} neutral</span>` : ""}<span class="grow"></span><button type="button" class="btn ghost sm" onclick="openStock('${esc(sym)}','${ex}')">Interactive chart</button><button type="button" class="btn ghost sm" onclick="go('ins');inPick('${esc(sym)}','${ex}')">Full analysis</button></div>
+
+  const tallyHtml = all.length ? `<span class="sci-t">
+    <button type="button" class="sci-t-btn${flt === "pos" ? " on" : ""}" title="Show supportive readings" onclick="event.stopPropagation();scrTab('${k}','all');scrFilter('${k}','pos')"><span class="tn pos"></span>${cnt("pos")} supportive</button>
+    <button type="button" class="sci-t-btn${flt === "neg" ? " on" : ""}" title="Show caution readings" onclick="event.stopPropagation();scrTab('${k}','all');scrFilter('${k}','neg')"><span class="tn neg"></span>${cnt("neg")} caution</button>
+    <button type="button" class="sci-t-btn${flt === "neu" ? " on" : ""}" title="Show neutral readings" onclick="event.stopPropagation();scrTab('${k}','all');scrFilter('${k}','neu')"><span class="tn neu"></span>${cnt("neu")} neutral</button>
+  </span>` : "";
+
+  return `<section class="sci" onclick="event.stopPropagation()"><div class="sci-h"><h4>Stock insights</h4>${tallyHtml}<span class="grow"></span><button type="button" class="btn ghost sm" onclick="openStock('${esc(sym)}','${ex}')">Interactive chart</button><button type="button" class="btn ghost sm" onclick="go('ins');inPick('${esc(sym)}','${ex}')">Full analysis</button></div>
    <div class="sk-tabs sci-tabs" role="tablist">${tabs.map(([x, l]) => `<button type="button" role="tab" aria-selected="${tab === x}" onclick="event.stopPropagation();scrTab('${k}','${x}')">${l}</button>`).join("")}</div><div class="sci-b">${body}</div>
    <p class="ix-fine sci-f">Readings apply fixed rules from the NISM workbooks to public numbers. A count of readings, not a verdict.</p></section>`;
 }

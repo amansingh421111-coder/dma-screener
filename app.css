@@ -531,7 +531,12 @@ html.eq-on{overflow:hidden}
 .sci-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
 .sci-h h4{margin:0;font-size:14.5px;font-weight:650;color:var(--ink);text-transform:none;letter-spacing:0}
 .sci-t{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);font-size:13px}
-.sci-t .tn{margin-left:6px}
+.sci-t .tn{margin-left:2px}
+.sci-t-btn{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border:1px solid transparent;border-radius:6px;background:none;color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer;transition:background .15s,color .15s}
+.sci-t-btn:hover{background:var(--sunken);color:var(--ink)}
+.sci-t-btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.sci-filters{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px}
+.sci-filters .chip{cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .sci-tabs{margin:10px 0 0;padding:0;border-top:0}
 .sci-b{padding:14px 0 4px}
 .sci-b .sk-kv{margin-bottom:14px}
