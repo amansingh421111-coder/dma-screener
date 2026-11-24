@@ -728,18 +728,21 @@ def position_events(pos, quotes, c, auto=None):
         lines = lambda *x: "\n".join(y for y in x if y)
         x = (a or {}).get("exit")
         done = "Once you sell, record it with Sell in the app so these alerts stop."
-        if x and ((x["why"] == "stop" and e["sl_auto"] and p.get("alertSl")) or (x["why"] == "target" and e["tg_auto"] and p.get("alertTg")) or (x["why"] == "time" and (e["sl_auto"] or e["tg_auto"]))):
+        al_sl = p.get("alertSl") is not False
+        al_tg = p.get("alertTg") is not False
+        al_ma = p.get("alertMa") is not False
+        if x and ((x["why"] == "stop" and e["sl_auto"] and al_sl) or (x["why"] == "target" and e["tg_auto"] and al_tg) or (x["why"] == "time" and (e["sl_auto"] or e["tg_auto"]))):
             d = dt.date.fromisoformat(x["date"]).strftime("%d %b")
             what = {"stop": f"Hit its automatic stop {rs(x['price'])} on {d}. The exit rule says: sell.",
                     "target": f"Reached its automatic target {rs(x['price'])} on {d}. The exit rule says: sell and take the profit.",
                     "time": f"Held {a['days_held']} trading days, the rule's limit. The exit rule says: sell at the close on {d}."}[x["why"]]
             ev.append((k + ":ax", lines({"stop": "🛑 ", "target": "🎯 ", "time": "⏱ "}[x["why"]] + hd, what, pl, f"Rule: {_rule(a)}", done)))
         else:
-            if p.get("alertSl") and sl and px <= sl:
+            if al_sl and sl and px <= sl:
                 ev.append((k + (":asl" if e["sl_auto"] else ":sl"), lines("🛑 " + hd, f"At or below your {'automatic ' if e['sl_auto'] else 'own '}stop {rs(sl)}. The exit rule says: sell.", pl, f"Rule: {_rule(a)}" if e["sl_auto"] else "", done)))
-            if p.get("alertTg") and tg and px >= tg:
+            if al_tg and tg and px >= tg:
                 ev.append((k + (":atg" if e["tg_auto"] else ":tg"), lines("🎯 " + hd, f"At or above your {'automatic ' if e['tg_auto'] else 'own '}target {rs(tg)}. The exit rule says: sell and take the profit.", pl, f"Rule: {_rule(a)}" if e["tg_auto"] else "", done)))
-        if p.get("alertMa") and q["pct"] is not None and q.get("ma") and not any(x_[0].startswith(k + ":") and x_[0].endswith((":ax", ":asl", ":sl")) for x_ in ev):
+        if al_ma and q["pct"] is not None and q.get("ma") and not any(x_[0].startswith(k + ":") and x_[0].endswith((":ax", ":asl", ":sl")) for x_ in ev):
             stp = f"Your stop {rs(sl)} is {(1 - sl / px) * 100:.1f}% below the price." if sl and px > sl else ""
             if q["pct"] < 0:
                 ev.append((k + ":below", lines("⚠️ " + hd, f"Below its {ma}-DMA {rs(q['ma'])} by {abs(q['pct']):.1f}%: the screener counts a close below the {ma}-DMA as a sell signal.",
@@ -958,7 +961,7 @@ def main():
     def due(k):
         # stop loss / target alerts repeat on every run while the price stays beyond the level; other alerts once a day
         last = st["pos_sent"].get(hk(k))
-        return last is None or k.endswith((":sl", ":tg"))
+        return last is None or k.endswith((":sl", ":tg", ":asl", ":atg", ":ax"))
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
     new = [] if a.summary else [s for s in sigs if sk(s) not in st["sent"]]
     if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):

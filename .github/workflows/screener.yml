@@ -9,7 +9,7 @@ on:
       mode:
         description: "What to run"
         type: choice
-        options: [run, session, levels, test-alert, backtest, brief-morning, brief-evening]
+        options: [run, session, session-am, session-pm, levels, test-alert, backtest, brief-morning, brief-evening]
         default: run
       top: { description: "Backtest: number of stocks", default: "100" }
       years: { description: "Backtest: years of history", default: "5" }
@@ -19,7 +19,7 @@ concurrency: { group: "${{ github.workflow }}-${{ github.event_name == 'schedule
 jobs:
   go:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 360
     env:
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -34,9 +34,14 @@ jobs:
         with: { python-version: "3.11", cache: pip, cache-dependency-path: deps.txt }
       - run: pip install -r deps.txt
       - name: Session (exact 15-minute scans)
-        if: (github.event_name == 'schedule' && github.event.schedule != '15 11 * * 1-5') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'session')
+        if: (github.event_name == 'schedule' && github.event.schedule != '15 11 * * 1-5') || (github.event_name == 'workflow_dispatch' && startsWith(inputs.mode, 'session'))
         env: { PYTHONUNBUFFERED: "1" }
-        run: python session.py --until ${{ (github.event.schedule == '12 3 * * 1-5') && '12:30' || '16:30' }}
+        run: |
+          if [ "${{ inputs.mode }}" = "session-am" ] || [ "${{ github.event.schedule }}" = "12 3 * * 1-5" ]; then
+            python session.py --until 12:30
+          else
+            python session.py --until 16:30
+          fi
       - name: End-of-Day Summary Scan (scheduled 16:45 IST or manual run)
         if: (github.event_name == 'schedule' && github.event.schedule == '15 11 * * 1-5') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'run')
         run: |

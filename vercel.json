@@ -5,8 +5,12 @@
   "outputDirectory": ".",
   "crons": [
     {
-      "path": "/api/dma?a=dispatch&mode=session",
+      "path": "/api/dma?a=dispatch&mode=session-am",
       "schedule": "45 3 * * 1-5"
+    },
+    {
+      "path": "/api/dma?a=dispatch&mode=session-pm",
+      "schedule": "45 6 * * 1-5"
     },
     {
       "path": "/api/dma?a=dispatch&mode=run",
