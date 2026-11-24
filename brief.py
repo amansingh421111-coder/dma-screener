@@ -70,9 +70,15 @@ def main():
     if not sj: print("no signals.json"); return
     st = read_json("state.json", {})
     today_str = str(now.date())
-    if kind == "morning" and st.get("brief_morning") == today_str:
-        print("Morning brief already sent today.", flush=True)
-        return
+    key = f"brief_{kind}"
+    if kind in ("morning", "evening"):
+        already = st.get(key) == today_str
+        if not already:
+            try: already = redis(["GET", f"cfg:{key}"]) == today_str
+            except Exception: pass
+        if already:
+            print(f"{kind.title()} brief already sent today.", flush=True)
+            return
     sent = 0
     for u in cloud_users():
         if not u["chat"]: continue
@@ -82,9 +88,11 @@ def main():
         try: mine = json.loads(redis(["GET", f"quotes:{u['uid']}"]) or "{}").get("quotes") or {}   # this user's private prices
         except Exception: mine = {}
         if send_telegram(u["chat"], build(kind, pos, dict(sj, quotes=mine), now)): sent += 1
-    if kind == "morning" and sent > 0:
-        st["brief_morning"] = today_str
+    if kind in ("morning", "evening") and sent > 0:
+        st[key] = today_str
         (ROOT / "state.json").write_text(json.dumps(st))
+        try: redis(["SET", f"cfg:{key}", today_str, "EX", 86400])
+        except Exception: pass
     print("briefs sent:", sent)
 
 if __name__ == "__main__":

@@ -910,7 +910,11 @@ def main():
         if now.weekday() < 5 and now.time() >= dt.time(9, 30):
             st = read_json("state.json", {})
             today_str = str(now.date())
-            if st.get("holiday_notified") != today_str:
+            already = st.get("holiday_notified") == today_str
+            if not already:
+                try: already = redis(["GET", "cfg:holiday_notified"]) == today_str
+                except Exception: pass
+            if not already:
                 holiday_msg = (
                     f"🏖️ Market Holiday Notice — {now:%A, %d %b %Y}\n\n"
                     f"Indian stock exchanges (NSE & BSE) are closed today for a trading holiday.\n\n"
@@ -923,7 +927,7 @@ def main():
                     st["holiday_notified"] = today_str
                     (ROOT / "state.json").write_text(json.dumps(st))
                     try:
-                        redis(["SET", "cfg:holiday_notified", today_str])
+                        redis(["SET", "cfg:holiday_notified", today_str, "EX", 86400])
                     except Exception: pass
         log.info("No bar for today (holiday?), skipping")
         return
@@ -972,7 +976,14 @@ def main():
          "market_liq": market_liq, "signals": sigs}, indent=1))
     store_quotes(users, quotes)
     st = read_json("state.json", {})
-    if st.get("date") != str(now.date()): st = {"date": str(now.date()), "sent": [], "pos_sent": {}}
+    today_str = str(now.date())
+    if st.get("date") != today_str:
+        st = {
+            "date": today_str,
+            "sent": [],
+            "pos_sent": {},
+            **{k: st[k] for k in ("brief_morning", "brief_evening", "holiday_notified", "summary_sent") if st.get(k) == today_str},
+        }
     st.setdefault("sent", []); st.setdefault("pos_sent", {})
     if isinstance(st["pos_sent"], list): st["pos_sent"] = {k: 0 for k in st["pos_sent"]}
     st["pos_sent"] = {(k if ":" not in k else hk(k)): v for k, v in st["pos_sent"].items()}   # older files held readable keys
@@ -998,7 +1009,9 @@ def main():
         if uev and send_telegram(u["chat"], pos_message(uev, now)):
             st["pos_sent"].update({hk(f"{u['uid']}:{k}"): t_now for k, _ in uev}); ev += uev
     if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()
-    if a.summary: notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"]))
+    if a.summary and st.get("summary_sent") != today_str:
+        if notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])):
+            st["summary_sent"] = today_str
     (ROOT / "state.json").write_text(json.dumps(st))
     try:
         sj = json.loads((ROOT / "signals.json").read_text()); sj["cloud"] = CLOUD

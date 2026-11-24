@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/dma?a=dispatch&mode=session-pm",
-      "schedule": "45 6 * * 1-5"
+      "schedule": "00 7 * * 1-5"
     },
     {
       "path": "/api/dma?a=dispatch&mode=run",
-      "schedule": "15 10 * * 1-5"
+      "schedule": "45 10 * * 1-5"
     }
   ],
   "headers": [
