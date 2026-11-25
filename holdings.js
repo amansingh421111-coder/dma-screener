@@ -17,6 +17,8 @@ const HC = [   // key, header, priority (1 = always shown, 4 = widest screens on
   ["wt", "Weight", 3, true, (r) => r.c.value, "Share of this holding in your total open portfolio market value."],
   ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Protective exit price. If price touches or breaches this level, an alert signals to sell and cut loss."],
   ["risk", "Risk to stop", 2, true, (r) => hRisk(r), "Maximum potential capital loss from today's price if the stop loss is hit: Quantity × (LTP − Stop loss)."],
+  ["tg", "Target", 1, true, (r) => { const v = lv(r.p); return v.tg || null; }, "Take-profit target price set by the strategy. When the LTP reaches or exceeds this level, the screener signals to sell and lock in profit."],
+  ["tl", "Time limit", 1, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Trading days remaining before the strategy's time-limit exit rule triggers. Based on how long you have held vs the strategy's maximum holding period."],
   ["exit", "Target / time", 3, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Take-profit target price, and trading days remaining before the strategy time limit triggers exit."],
   ["held", "Held", 4, true, (r) => r.c.days, "Number of trading days since this holding was first purchased."],
   ["status", "Status", 1, false, (r) => (r.c.st ? r.c.st[2] : -1), "Current position state: On track, Near 44-DMA, Below 44-DMA, Target reached, or Stop loss hit."],
@@ -33,12 +35,12 @@ let HLV = 0, HW = 0, HRT = null;
 const HDROP = new Set();   // columns left out because they do not fit this screen (never the core ones, never ones you switched on)
 addEventListener("resize", () => { clearTimeout(HRT); HRT = setTimeout(() => { const w = document.documentElement.clientWidth; if (w !== HW && typeof view_ !== "undefined" && view_ === "pos") { HDROP.clear(); render(); } }, 120); });
 const hOn = (c) => (c[2] === 0 ? true : HS.cols[c[0]] != null ? HS.cols[c[0]] : !HDROP.has(c[0]) && c[2] <= hLevel());
-const HCORE = new Set(["share", "ltp", "chg", "inv", "val", "pl", "stop", "act"]);
+const HCORE = new Set(["share", "ltp", "chg", "inv", "val", "pl", "stop", "tg", "tl", "act"]);
 /* after drawing: if the table is wider than the screen, leave out the least important optional column and draw again */
 function hFit() {
   const w = document.querySelector("#plist .htw"), t = w && w.querySelector("table"); HW = document.documentElement.clientWidth;
   if (!t || !w.offsetWidth || t.scrollWidth <= w.clientWidth + 1) return;
-  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
+  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "tl", "tg", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
   if (next) { HDROP.add(next); render(); }
 }
 function hSort(k) { if (HS.k === k) HS.d = -HS.d; else { HS.k = k; HS.d = k === "share" || k === "strat" ? 1 : -1; } hSave(); render(); }
@@ -76,6 +78,23 @@ function hCell(k, r, tv, showRet, showChg) {
     case "stop": return `<td class="n">${v.sl ? `${inr(v.sl)}<small>${v.slAuto ? `<span class="exa" title="${esc(v.A ? "Automatic: " + (v.A.rule_label || "") : "")}">Auto</span> ${esc(v.A && typeof exStopWord === "function" ? exStopWord(v.A.rule) : "")}` : `<span class="exa own">Yours</span> ${c.px != null ? ((c.px / v.sl - 1) * 100).toFixed(1) + "% below price" : ""}`}</small>` : v.A && v.A.pending ? "<small>Working out…</small>" : "–"}</td>`;   // automatic: the rule's distance, identical for every share on that rule
     case "risk": { const x = hRisk(r); return `<td class="n">${x != null ? `${inr(x)}<small>${c.value ? (x / c.value * 100).toFixed(1) + "% of value" : ""}</small>` : "–"}</td>`; }
     case "exit": { const tg = v.tg, A = v.A; return `<td class="n">${tg ? inr(tg) + (c.px ? `<small>${((tg / c.px - 1) * 100).toFixed(1)}% to go</small>` : "") : A && !A.pending && v.tgAuto ? "Trailing stop" : "–"}${A && A.days_left != null && !A.exit ? `<small>${A.days_left} day${A.days_left === 1 ? "" : "s"} left</small>` : ""}</td>`; }
+    case "tg": {
+      const tg = v.tg, A = v.A;
+      if (A && A.exit && A.exit.why === "target") return `<td class="n"><b class="pos">🎯 Reached</b></td>`;
+      if (!tg && A && !A.pending && v.tgAuto) return `<td class="n"><small style="color:var(--mute)">Trailing stop</small></td>`;
+      if (!tg) return `<td class="n"><span style="color:var(--mute)">–</span></td>`;
+      const pct = c.px ? (tg / c.px - 1) * 100 : null;
+      const cls = pct != null && pct <= 0 ? "pos" : "";
+      return `<td class="n">${inr(tg)}${pct != null ? `<small class="${cls}">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% to go</small>` : ""}</td>`;
+    }
+    case "tl": {
+      const A = v.A;
+      if (!A || A.pending) return `<td class="n"><span style="color:var(--mute)">–</span></td>`;
+      if (A.exit && A.exit.why === "time") return `<td class="n"><b class="neg">⏱ Time up</b></td>`;
+      if (A.days_left == null) return `<td class="n"><span style="color:var(--mute)">–</span></td>`;
+      const urgent = A.days_left <= 5;
+      return `<td class="n"><span class="${urgent ? "neg" : ""}">${A.days_left} day${A.days_left === 1 ? "" : "s"}</span><small style="color:var(--mute)">${A.exit ? "" : "left"}</small></td>`;
+    }
     case "held": return `<td class="n">${held(c.days)}</td>`;
     case "status": return `<td><span class="tag ${c.st[1]}" style="margin:0">${c.st[0]}</span></td>`;
     case "act": return `<td class="ac"><button class="btn sm pri" onclick="openForm('buy','${p.id}')">Buy</button><button class="btn sm" onclick="openForm('sell','${p.id}')">Sell</button><button class="btn sm hx" onclick="toggleH('${p.id}')" aria-expanded="${EXP.has(p.id)}" aria-label="${EXP.has(p.id) ? "Hide" : "Show"} details for ${esc(p.symbol)}" title="Details">${EXP.has(p.id) ? "▴" : "▾"}</button></td>`;
