@@ -36,11 +36,12 @@ const HDROP = new Set();   // columns left out because they do not fit this scre
 addEventListener("resize", () => { clearTimeout(HRT); HRT = setTimeout(() => { const w = document.documentElement.clientWidth; if (w !== HW && typeof view_ !== "undefined" && view_ === "pos") { HDROP.clear(); render(); } }, 120); });
 const hOn = (c) => (c[2] === 0 ? true : HS.cols[c[0]] != null ? HS.cols[c[0]] : !HDROP.has(c[0]) && c[2] <= hLevel());
 const HCORE = new Set(["share", "ltp", "chg", "inv", "val", "pl", "stop", "tg", "tl", "act"]);
-/* after drawing: if the table is wider than the screen, leave out the least important optional column and draw again */
+/* after drawing: if the table is wider than the screen, drop the least important optional column and redraw.
+   HCORE columns are never auto-dropped; manually toggled-on columns (HS.cols[k] != null) are never auto-dropped. */
 function hFit() {
   const w = document.querySelector("#plist .htw"), t = w && w.querySelector("table"); HW = document.documentElement.clientWidth;
   if (!t || !w.offsetWidth || t.scrollWidth <= w.clientWidth + 1) return;
-  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "tl", "tg", "status", "avg"].find((k) => HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
+  const next = ["held", "exit", "wt", "ret", "strat", "day", "risk", "status", "avg", "qty"].find((k) => !HCORE.has(k) && HS.cols[k] == null && !HDROP.has(k) && hOn(HC.find((x) => x[0] === k)));
   if (next) { HDROP.add(next); render(); }
 }
 function hSort(k) { if (HS.k === k) HS.d = -HS.d; else { HS.k = k; HS.d = k === "share" || k === "strat" ? 1 : -1; } hSave(); render(); }
