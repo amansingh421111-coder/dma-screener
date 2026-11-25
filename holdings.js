@@ -4,22 +4,22 @@
    Current value (shares x latest price), P&L (current value - invested). */
 const HC = [   // key, header, priority (1 = always shown, 4 = widest screens only), numeric, sort value, title
   ["share", "Share", 0, false, (r) => r.p.symbol, "Stock symbol, exchange, and company name. Tap row to view transaction history and technical analysis."],
-  ["strat", "Strategy", 3, false, (r) => hStratName(hSid(r.p)), "The trading strategy under which this stock was bought. Sets the automatic trailing stop and profit target."],
   ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Total number of shares currently held in your open position."],
   ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold (total money spent ÷ quantity). Sales do not change it."],
-  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown. Updated every 15 minutes during market hours."],
   ["chg", "Day% Change", 1, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price percentage change compared to yesterday's closing price."],
-  ["day", "Today", 2, true, (r) => r.c.day, "Change in the rupee market value of your holding today."],
+  ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown. Updated every 15 minutes during market hours."],
+  ["tg", "Target", 1, true, (r) => { const v = lv(r.p); return v.tg || null; }, "Take-profit target price set by the strategy. When the LTP reaches or exceeds this level, the screener signals to sell and lock in profit."],
+  ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Protective exit price. If price touches or breaches this level, an alert signals to sell and cut loss."],
   ["inv", "Invested", 1, true, (r) => r.c.invested, "Total money you paid to buy these open shares: Quantity × Average cost."],
   ["val", "Current value", 1, true, (r) => r.c.value, "Current market value of your holding: Quantity × Last traded price (LTP)."],
   ["pl", "P&L", 1, true, (r) => r.c.unreal, "Unrealised Profit or Loss: Current value minus Invested amount. Locked in only when sold."],
+  ["tl", "Time limit", 1, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Trading days remaining before the strategy's time-limit exit rule triggers. Based on how long you have held vs the strategy's maximum holding period."],
+  ["day", "Today", 2, true, (r) => r.c.day, "Change in the rupee market value of your holding today."],
   ["ret", "Return", 3, true, (r) => r.c.unrealPct, "Total percentage return on your invested capital: P&L ÷ Invested × 100."],
   ["wt", "Weight", 3, true, (r) => r.c.value, "Share of this holding in your total open portfolio market value."],
-  ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Protective exit price. If price touches or breaches this level, an alert signals to sell and cut loss."],
   ["risk", "Risk to stop", 2, true, (r) => hRisk(r), "Maximum potential capital loss from today's price if the stop loss is hit: Quantity × (LTP − Stop loss)."],
-  ["tg", "Target", 1, true, (r) => { const v = lv(r.p); return v.tg || null; }, "Take-profit target price set by the strategy. When the LTP reaches or exceeds this level, the screener signals to sell and lock in profit."],
-  ["tl", "Time limit", 1, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Trading days remaining before the strategy's time-limit exit rule triggers. Based on how long you have held vs the strategy's maximum holding period."],
   ["exit", "Target / time", 3, true, (r) => { const v = lv(r.p); return v.A && v.A.days_left != null ? v.A.days_left : null; }, "Take-profit target price, and trading days remaining before the strategy time limit triggers exit."],
+  ["strat", "Strategy", 3, false, (r) => hStratName(hSid(r.p)), "The trading strategy under which this stock was bought. Sets the automatic trailing stop and profit target."],
   ["held", "Held", 4, true, (r) => r.c.days, "Number of trading days since this holding was first purchased."],
   ["status", "Status", 1, false, (r) => (r.c.st ? r.c.st[2] : -1), "Current position state: On track, Near 44-DMA, Below 44-DMA, Target reached, or Stop loss hit."],
   ["act", "", 0, false, null, ""],
@@ -59,7 +59,7 @@ function hSorted(rows) {
 function hCell(k, r, tv, showRet, showChg) {
   const { p, c } = r, L = c.L, q = c.q, v = lv(p);
   switch (k) {
-    case "share": return `<td class="hs" onclick="toggleH('${p.id}')"><div class="hs1">${entS(p.symbol, p.exchange, "<b>" + esc(p.symbol) + "</b>")}${exTag(p.exchange)}${typeof inNewsBadge === "function" ? inNewsBadge(p.symbol, p.exchange) : ""}</div><small>${esc(pName(p, q))}</small>${(() => { const sc = !hOn(HC[1]) && HS.group !== "strategy", st = !hOn(HC.find((x) => x[0] === "status")); return sc || st ? `<div class="hs2">${sc ? `<span class="hst">${esc(hStratName(hSid(p)))}</span>` : ""}${st ? `<span class="tag ${c.st[1]}">${c.st[0]}</span>` : ""}</div>` : ""; })()}</td>`;
+    case "share": return `<td class="hs" onclick="toggleH('${p.id}')"><div class="hs1">${entS(p.symbol, p.exchange, "<b>" + esc(p.symbol) + "</b>")}${exTag(p.exchange)}${typeof inNewsBadge === "function" ? inNewsBadge(p.symbol, p.exchange) : ""}</div><small>${esc(pName(p, q))}</small>${(() => { const sc = !hOn(HC.find((x) => x[0] === "strat")) && HS.group !== "strategy", st = !hOn(HC.find((x) => x[0] === "status")); return sc || st ? `<div class="hs2">${sc ? `<span class="hst">${esc(hStratName(hSid(p)))}</span>` : ""}${st ? `<span class="tag ${c.st[1]}">${c.st[0]}</span>` : ""}</div>` : ""; })()}</td>`;
     case "strat": return `<td><span class="hst" title="${esc(v.A ? v.A.rule_label || "" : "")}">${esc(hStratName(hSid(p)))}</span></td>`;
     case "qty": return `<td class="n">${L.qty}${!hOn(HC.find((x) => x[0] === "avg")) ? `<small>@ ${inr(L.avg)}</small>` : ""}</td>`;   // average cost under the quantity when its own column does not fit
     case "avg": return `<td class="n">${inr(L.avg)}</td>`;
