@@ -782,6 +782,43 @@ def pos_message(ev, now=None):
     out.append("\nOpen My Positions: https://screenedstocks.vercel.app/#positions\nResearch alert, not financial advice.")
     return "\n".join(out)[:4000]
 
+def holdings_snapshot(positions, quotes, auto=None, now=None):
+    """Compact live summary of all open holdings for intraday alerts."""
+    now = now or dt.datetime.now(IST)
+    lines, val, inv, day, seen = [], 0.0, 0.0, 0.0, set()
+    for p in positions or []:
+        qty, avg = p.get("qty") or 0, p.get("avg") or p.get("buy") or 0
+        if qty <= 0 or not avg: continue
+        ident = p.get("id") or "|".join(str(p.get(x)) for x in ("exchange", "symbol", "buy", "sl", "target", "qty", "date"))
+        if ident in seen: continue
+        seen.add(ident)
+        q = (quotes or {}).get(pos_key(p))
+        if not q: continue
+        e = effective(p, (auto or {}).get(pos_key(p)))
+        px, chg = q["price"], q.get("chg")
+        val += qty * px; inv += qty * avg
+        if chg is not None: day += qty * (px - px / (1 + chg / 100))
+        pl_pct = (px / avg - 1) * 100
+        parts = [f"• {p['symbol']}: {rs(px)}"]
+        if chg is not None: parts.append(f"{'+' if chg >= 0 else '−'}{abs(chg):.1f}%")
+        parts.append(f"P&L {'+' if pl_pct >= 0 else '−'}{abs(pl_pct):.1f}%")
+        sl, tg = e.get("sl"), e.get("target")
+        if sl:
+            d = (px / sl - 1) * 100
+            parts.append("🛑 SL HIT" if d <= 0 else f"SL {rs(sl)} ({d:.1f}%)")
+        if tg:
+            dtg = (tg / px - 1) * 100
+            parts.append("🎯 TG HIT" if dtg <= 0 else f"TG {rs(tg)} ({dtg:.1f}%)")
+        lines.append(" · ".join(parts))
+    if not lines: return ""
+    un = val - inv
+    un_pct = (un / inv * 100) if inv else 0.0
+    ts = f"{now:%d %b}, {now:%I:%M %p}".replace(" 0", " ").replace("AM", "am").replace("PM", "pm")
+    head = (f"💼 Live Positions ({len(lines)}) · {ts}\n"
+            f"Value ₹{val:,.0f} · P&L {'+' if un >= 0 else '−'}₹{abs(un):,.0f} ({'+' if un_pct >= 0 else '−'}{abs(un_pct):.1f}%) · "
+            f"Today {'+' if day >= 0 else '−'}₹{abs(day):,.0f}")
+    return head + "\n" + "\n".join(lines)
+
 # ---- alerts ----
 def fmt_cr(x): return "" if not x else (f"₹{x / 1e5:.2f}L Cr" if x >= 1e5 else f"₹{x:,.0f} Cr")
 
@@ -797,9 +834,10 @@ def format_msg(sigs, title, cap):
     lines.append("\nResearch alert only, not financial advice.")
     return "\n".join(lines)[:4000]
 
-def notify(text):
+def notify(text, skip_chats=None):
     sent = False
     toks = _tokens()
+    skip = {str(c).strip() for c in (skip_chats or []) if c}
     chats = []
     if os.getenv("TELEGRAM_CHAT_ID"):
         chats.append(os.getenv("TELEGRAM_CHAT_ID").strip())
@@ -811,6 +849,7 @@ def notify(text):
                     chats.append(u["chat"])
         except Exception:
             pass
+    chats = [c for c in chats if str(c).strip() not in skip]
 
     if toks and chats:
         for chat in chats:
@@ -994,8 +1033,17 @@ def main():
         return last is None or k.endswith((":sl", ":tg", ":asl", ":atg", ":ax"))
     sk = lambda s: f"{s['exchange']}:{s['symbol']}:{s['type']}"
     new = [] if a.summary else [s for s in sigs if sk(s) not in st["sent"]]
-    if new and notify(format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])):
-        st["sent"] += [sk(s) for s in new]
+    sent_sig_chats, sig_sent_any = set(), False
+    if new:
+        sig_text = format_msg(new, f"📈 {c['ma_period']}-{c['ma_type']} alert {now:%H:%M} IST", c["max_near_alerts"])
+        for u in users:
+            if not u["chat"]: continue
+            snap = holdings_snapshot(u["positions"], quotes, auto.get(u["uid"]), now)
+            if snap and send_telegram(u["chat"], (snap + "\n\n" + sig_text)[:4000]):
+                sent_sig_chats.add(str(u["chat"]).strip()); sig_sent_any = True
+                st["pos_sent"][hk(f"{u['uid']}:snap")] = t_now
+        if notify(sig_text, skip_chats=sent_sig_chats): sig_sent_any = True
+        if sig_sent_any: st["sent"] += [sk(s) for s in new]
     ev = [e for e in position_events(pos, quotes, c) if due(e[0])]
     if ev and notify(pos_message(ev, now)):
         st["pos_sent"].update({hk(k): t_now for k, _ in ev})
@@ -1003,11 +1051,25 @@ def main():
     if xc and xc["pairs"] >= 100 and xc["mismatch"] > max(3, 0.05 * xc["pairs"]) and not st.get("xwarn") and not a.summary:
         w = ", ".join(f"{x['symbol']} NSE {x['nse']} vs BSE {x['bse']}" for x in xc["worst"][:3])
         if notify(f"⚠️ Data check: {xc['mismatch']} of {xc['pairs']} dual-listed stocks have NSE and BSE closes that differ by more than 0.5% ({w}). Treat prices with care until it clears."): st["xwarn"] = 1
+    in_session = (latest == now.date()) and dt.time(9, 15) <= now.time() <= dt.time(15, 45)
     for u in users:
         if not u["chat"]: continue
         uev = [e for e in position_events(u["positions"], quotes, c, auto.get(u["uid"])) + level_events(changes.get(u["uid"]), quotes) + watch_events(u.get("watchlist"), quotes, c) if due(f"{u['uid']}:{e[0]}")]
-        if uev and send_telegram(u["chat"], pos_message(uev, now)):
-            st["pos_sent"].update({hk(f"{u['uid']}:{k}"): t_now for k, _ in uev}); ev += uev
+        snap_key = hk(f"{u['uid']}:snap")
+        snap_due = (not a.summary) and in_session and (str(u["chat"]).strip() not in sent_sig_chats) and ((t_now - (st["pos_sent"].get(snap_key) or 0)) >= 1700)
+        if not uev and not snap_due: continue
+        snap = holdings_snapshot(u["positions"], quotes, auto.get(u["uid"]), now)
+        if uev and snap:
+            msg = (pos_message(uev, now) + "\n\n" + snap)[:4000]
+        elif uev:
+            msg = pos_message(uev, now)
+        elif snap:
+            msg = (snap + "\n\nOpen My Positions: https://screenedstocks.vercel.app/#positions\nResearch alert, not financial advice.")[:4000]
+        else:
+            continue
+        if send_telegram(u["chat"], msg):
+            if uev: st["pos_sent"].update({hk(f"{u['uid']}:{k}"): t_now for k, _ in uev}); ev += uev
+            if snap: st["pos_sent"][snap_key] = t_now
     if a.summary or not (ROOT / "nifty.json").exists(): update_nifty()
     if a.summary and st.get("summary_sent") != today_str:
         if notify(format_msg(sigs, f"📊 {c['ma_period']}-DMA daily summary", c["max_near_alerts"])):
