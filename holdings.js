@@ -5,8 +5,8 @@
 const HC = [   // key, header, priority (1 = always shown, 4 = widest screens only), numeric, sort value, title
   ["share", "Share", 0, false, (r) => r.p.symbol, "Stock symbol, exchange, and company name. Tap row to view transaction history and technical analysis."],
   ["qty", "Qty", 1, true, (r) => r.c.L.qty, "Total number of shares currently held in your open position."],
-  ["avg", "Avg cost", 1, true, (r) => r.c.L.avg, "Average price paid per share for the shares you still hold (total money spent ÷ quantity). Sales do not change it."],
   ["chg", "Day% Change", 1, true, (r) => (r.c.q && r.c.q.chg != null ? r.c.q.chg : null), "Daily price percentage change compared to yesterday's closing price."],
+  ["avg", "ASP", 1, true, (r) => r.c.L.avg, "Average Share Price (ASP): Average price paid per share for the shares you still hold (total money spent ÷ quantity). Sales do not change it."],
   ["ltp", "LTP", 1, true, (r) => r.c.px, "Last traded price on the exchange shown. Updated every 15 minutes during market hours."],
   ["tg", "Target", 1, true, (r) => { const v = lv(r.p); return v.tg || null; }, "Take-profit target price set by the strategy. When the LTP reaches or exceeds this level, the screener signals to sell and lock in profit."],
   ["stop", "Stop loss", 1, true, (r) => { const v = lv(r.p); return v.sl && r.c.px ? r.c.px / v.sl - 1 : null; }, "Protective exit price. If price touches or breaches this level, an alert signals to sell and cut loss."],
@@ -35,7 +35,7 @@ let HLV = 0, HW = 0, HRT = null;
 const HDROP = new Set();   // columns left out because they do not fit this screen (never the core ones, never ones you switched on)
 addEventListener("resize", () => { clearTimeout(HRT); HRT = setTimeout(() => { const w = document.documentElement.clientWidth; if (w !== HW && typeof view_ !== "undefined" && view_ === "pos") { HDROP.clear(); render(); } }, 120); });
 const hOn = (c) => (c[2] === 0 ? true : HS.cols[c[0]] != null ? HS.cols[c[0]] : !HDROP.has(c[0]) && c[2] <= hLevel());
-const HCORE = new Set(["share", "ltp", "chg", "inv", "val", "pl", "stop", "tg", "tl", "act"]);
+const HCORE = new Set(["share", "qty", "chg", "avg", "ltp", "tg", "stop", "inv", "val", "pl", "tl", "act"]);
 /* after drawing: if the table is wider than the screen, drop the least important optional column and redraw.
    HCORE columns are never auto-dropped; manually toggled-on columns (HS.cols[k] != null) are never auto-dropped. */
 function hFit() {
@@ -107,7 +107,7 @@ function hTable(oc, T) {
   HLV = hLevel();
   const cols = HC.filter(hOn), showRet = !cols.some((c) => c[0] === "ret"), showChg = cols.some((c) => c[0] === "chg"), n = cols.length;
   const avgIn = !cols.some((c) => c[0] === "avg");
-  const th = cols.map(([k, l, , num, f, t]) => f ? `<th class="${num ? "n" : ""}" aria-sort="${HS.k === k ? (HS.d > 0 ? "ascending" : "descending") : "none"}" title="${esc(t)}"><button type="button" onclick="hSort('${k}')"><span class="hth-l">${k === "qty" && avgIn ? "Qty · avg" : l}</span>${HS.k === k ? `<i>${HS.d > 0 ? "▲" : "▼"}</i>` : ""}${typeof uiI === "function" ? uiI(k === "qty" && avgIn ? "Qty · avg" : l, t) : ""}</button></th>` : `<th></th>`).join("");
+  const th = cols.map(([k, l, , num, f, t]) => f ? `<th class="${num ? "n" : ""}" aria-sort="${HS.k === k ? (HS.d > 0 ? "ascending" : "descending") : "none"}" title="${esc(t)}"><button type="button" onclick="hSort('${k}')"><span class="hth-l">${k === "qty" && avgIn ? "Qty · ASP" : l}</span>${HS.k === k ? `<i>${HS.d > 0 ? "▲" : "▼"}</i>` : ""}${typeof uiI === "function" ? uiI(k === "qty" && avgIn ? "Qty · ASP" : l, t) : ""}</button></th>` : `<th></th>`).join("");
   const sum = (rows) => { const s = { inv: 0, val: 0, pl: 0, day: 0, risk: 0, priced: 0, dayBase: 0 }; rows.forEach((r) => { s.inv += r.c.invested; s.val += r.c.value; if (r.c.unreal != null) s.pl += r.c.unreal; if (r.c.day != null) { s.day += r.c.day; s.dayBase += r.c.value - r.c.day; } const x = hRisk(r); if (x != null) s.risk += x; }); return s; };
   const agg = (s, label, cls, extra) => `<tr class="${cls}">${cols.map(([k]) => {
     if (k === "share") return `<td class="hs">${label}${extra || ""}</td>`;
@@ -142,7 +142,7 @@ function hTools() {
 }
 function hCsv() {
   const rows = POS.map((p) => ({ p, c: calc(p) })).filter((x) => x.c.open), tv = rows.reduce((a, r) => a + r.c.value, 0);
-  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Avg cost", "LTP", "Day% Change", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
+  const H = ["Symbol", "Exchange", "Company", "Strategy", "Qty", "Day% Change", "ASP", "LTP", "Price as of", "Invested", "Current value", "P&L", "Return %", "Today", "Weight %", "Stop loss", "Stop type", "Risk to stop", "Target", "Days left", "Status", "First bought"];
   const q = (x) => { const s = x == null ? "" : String(x); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }, r2 = (x) => (x == null ? "" : Math.round(x * 100) / 100);
   const lines = [H.join(",")].concat(rows.map((r) => { const { p, c } = r, v = lv(p); return [p.symbol, p.exchange, pName(p, c.q), hStratName(hSid(p)), c.L.qty, r2(c.L.avg), r2(c.px), r2(c.q && c.q.chg), pxSrc(p, c.q), r2(c.invested), r2(c.value), r2(c.unreal), r2(c.unrealPct), r2(c.day), tv ? r2(c.value / tv * 100) : "", r2(v.sl), v.slAuto ? "automatic" : "yours", r2(hRisk(r)), r2(v.tg), v.A ? v.A.days_left : "", c.st ? c.st[0] : "", c.L.since].map(q).join(","); }));
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" })); a.download = "holdings-" + todayStr() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
